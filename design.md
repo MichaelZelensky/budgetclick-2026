@@ -2,14 +2,14 @@
 
 ## Goals
 
-* Offline-first personal finance application.
-* Single codebase for all clients.
-* Desktop + iOS + web support.
-* Client-side encryption.
-* User-owned storage.
-* Minimum infrastructure cost.
-* S3-compatible storage as the shared source of truth.
-* No backend services.
+- Offline-first personal finance application.
+- Single codebase for all clients.
+- Desktop + iOS + web support.
+- Client-side encryption.
+- User-owned storage.
+- Minimum infrastructure cost.
+- S3-compatible storage as the shared source of truth.
+- No backend services.
 
 ---
 
@@ -21,13 +21,14 @@ The application is a web-based offline-first client.
 
 Clients:
 
-* Web browser
-* iOS PWA
-* Desktop browser/PWA
+- Web browser
+- iOS PWA
+- Desktop browser/PWA
 
 All clients share the same Vue.js + TypeScript codebase.
 
 ```
+
 Vue Application
 |
 v
@@ -38,6 +39,7 @@ Shared Core Logic
 v                v
 IndexedDB        S3 Storage
 (local data)     (sync source)
+
 ```
 
 ---
@@ -46,16 +48,16 @@ IndexedDB        S3 Storage
 
 ## Frontend
 
-* Vue.js
-* TypeScript
-* PWA
-* Browser APIs only
+- Vue.js
+- TypeScript
+- PWA
+- Browser APIs only
 
 ## Local Storage
 
-* IndexedDB
-* Local cache
-* Offline operations
+- IndexedDB
+- Local cache
+- Offline operations
 
 ## Remote Storage
 
@@ -63,10 +65,10 @@ S3-compatible object storage.
 
 Examples:
 
-* AWS S3
-* Cloudflare R2
-* Backblaze B2
-* MinIO
+- AWS S3
+- Cloudflare R2
+- Backblaze B2
+- MinIO
 
 ---
 
@@ -76,13 +78,21 @@ Examples:
 
 No:
 
-* Backend API
-* Authentication service
-* Database service
-* Lambda functions
-* Notification services
+- Backend API
+- Authentication service
+- Database service
+- Lambda functions
+- Notification services
 
 Only storage is required.
+
+The current priority is:
+
+- client-side privacy
+- simplicity
+- cost efficiency
+
+Future versions may introduce additional security layers if required.
 
 ---
 
@@ -96,10 +106,10 @@ Storage contains only encrypted objects.
 
 TODO:
 
-* Key derivation
-* Encryption algorithm
-* File format
-* Key backup/recovery
+- Key derivation
+- Encryption algorithm
+- File format
+- Key backup/recovery
 
 Assumption:
 
@@ -113,111 +123,156 @@ No application authentication.
 
 Identity is based on:
 
-* Storage location
-* Local configuration
-* Encryption key
+- Storage location
+- Local configuration
+- Encryption key
 
 TODO:
 
-* User setup flow
-* Recovery flow
+- User setup flow
+- Recovery flow
 
 ---
 
 # Storage Layout
 
 ```
+
 bucket/
 
 manifest.json
 
-accounts/
-    accounts.json
+reference/
+accounts.json
+contractors.json
+categories.json
 
-chunks/
-    <accountId>/
-        <yyyy-mm>.chunk
+chunks/ <accountId>/ <yyyy-mm>.chunk
 
-statistics/
-    <yyyy-mm>.json
+statistics/ <yyyy-mm>.json
 
-attachments/
-    <attachmentId>
+attachments/ <attachmentId>
+
 ```
 
 All objects are encrypted.
 
+Storage design principles:
+
+- Reference data is separated from time-based transaction data.
+- Monthly chunks contain operational data.
+- Attachments are stored separately.
+- Storage format should allow future expansion.
+
 TODO:
 
 - are attachments encrypted too?
-- attachments stored as flat list or separated by month?
-- where are contractors stored?
-- rename /accounts to /reference, and store all necessary reference data (accounts, contractors, ...) here.
+- Attachment storage optimization.
+- Attachment metadata format.
+- Reference data versioning.
+
 
 ---
 
 # Data Model
 
-## Record
+## Domain Model Principles
 
-Fields:
+The MVP focuses on personal finance tracking.
 
-* id
-* in/out type
-* amount
-* accountId
-* description
-* expenseId
-* contractorId
-* datetime
-* attachments
-* actual/planned
-* isActual
-* recurrencyId
+The initial model should avoid limiting future expansion into:
 
-TODO:
+- asset tracking
+- net worth calculation
+- banking integrations
+- third-party integrations
+- multi-user encrypted storage
+- secret storage
 
-* Schema
-* Versioning
-* Deletion model
+Initial implementation remains simple.
+
+Future concepts should be introduced as separate entities rather than extending financial records indefinitely.
 
 ---
 
-## Account
+# Record
 
-Fields:
+A record represents a financial event.
 
-* id
-* name
-* description
-* currency
-* current amount
+MVP fields:
+
+- id
+- in/out type
+- amount
+- accountId
+- description
+- expenseId
+- contractorId
+- datetime
+- attachments
+- isActual
+- recurrencyId
+
+Future compatibility:
+
+Records should remain independent from future concepts such as:
+
+- assets
+- liabilities
+- valuations
+- external transactions
 
 TODO:
 
-* Schema
+- Schema
+- Versioning
+- Deletion model
 
 ---
 
-## Recurrency
+# Account
+
+Represents a financial account or balance container.
+
+Fields:
+
+- id
+- name
+- description
+- currency
+- current amount
+
+Future compatibility:
+
+Accounts should not represent all possible financial assets.
+
+Future asset tracking should introduce separate entities.
+
+TODO:
+
+- Schema
+
+---
+
+# Recurrency
 
 Rules:
 
-* Records can belong to a recurrence.
-* Planned records are generated from recurrence.
-* Actual records are independent.
-* Recurrence changes affect planned records only.
-* Records can detach from recurrence.
+- Records can belong to a recurrence.
+- Planned records are generated from recurrence.
+- Actual records are independent.
+- Recurrence changes affect planned records only.
+- Records can detach from recurrence.
 
 MVP:
 
-* Recurrency engine is not implemented.
-* Planned records are manually created using the `isActual` flag.
+- Recurrency engine is not implemented.
+- Planned records are manually created using the `isActual` flag.
 
 TODO:
 
-* Data model
-* Generation algorithm
+- Data model
+- Generation algorithm
 
 ---
 
@@ -228,29 +283,33 @@ Identifiers are optimized for a single-user application.
 Format:
 
 ```
+
 <type>_<4 character id>
+
 ```
 
 Examples:
 
 ```
+
 r_Ab3x   record
 a_K92p   account
 f_91Lm   file
-```
+
+````
 
 Rules:
 
-* Separate namespaces per entity type.
-* Custom ID generator.
-* Integrity validation included.
-* Collision checking performed locally.
+- Separate namespaces per entity type.
+- Custom ID generator.
+- Integrity validation included.
+- Collision checking performed locally.
 
 Rationale:
 
-* Single-user scope.
-* Monthly chunk separation.
-* Millions of possible combinations per entity type.
+- Single-user scope.
+- Monthly chunk separation.
+- Millions of possible combinations per entity type.
 
 ---
 
@@ -258,17 +317,17 @@ Rationale:
 
 Local database contains:
 
-* decrypted working data
-* sync queue
-* local change log
-* indexes
-* cached statistics
+- decrypted working data
+- sync queue
+- local change log
+- indexes
+- cached statistics
 
 TODO:
 
-* IndexedDB schema
-* Indexes
-* Migration strategy
+- IndexedDB schema
+- Indexes
+- Migration strategy
 
 ## Migration Strategy (initial recommendation)
 
@@ -281,7 +340,7 @@ Example:
   "schemaVersion": 1,
   "data": {}
 }
-```
+````
 
 Migration rules:
 
@@ -466,7 +525,7 @@ Cover:
 
 ## User Scenario Tests
 
-Validate real workflows:
+Validate real workflows.
 
 Examples:
 
@@ -521,6 +580,31 @@ No native wrapper.
 
 ---
 
+# Future Domain Compatibility
+
+The initial application focuses on personal finance tracking.
+
+The design should avoid blocking future features:
+
+* asset tracking
+* net worth calculation
+* banking integrations
+* third-party integrations
+* multi-user encrypted storage
+* secret storage
+
+Principles:
+
+* Keep financial events separate from financial entities.
+* Avoid making expense records the only financial object.
+* Keep storage formats extensible.
+* Keep external integrations abstract.
+* Avoid hard dependency on single-user assumptions in core models.
+
+Future features are not part of MVP implementation.
+
+---
+
 # Future Improvements
 
 * Optional private storage mode.
@@ -528,26 +612,3 @@ No native wrapper.
 * Version history.
 * Backup snapshots.
 * Multi-user support.
-
----
-
-# Future Domain Expansion
-
-The initial application focuses on personal finance tracking.
-
-The data model should remain compatible with future expansion into:
-
-- asset tracking
-- net worth calculation
-- banking integrations
-- third-party integrations
-- multi-user encrypted vaults
-- secret storage
-
-Design principles:
-
-- Separate transactions from assets.
-- Separate accounts from assets.
-- Store historical valuations.
-- Keep external integrations abstract.
-- Avoid assumptions of single-user ownership in core models.
