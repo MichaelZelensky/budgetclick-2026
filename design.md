@@ -528,3 +528,26 @@ No native wrapper.
 * Version history.
 * Backup snapshots.
 * Multi-user support.
+
+---
+
+# Future Domain Expansion
+
+The initial application focuses on personal finance tracking.
+
+The data model should remain compatible with future expansion into:
+
+- asset tracking
+- net worth calculation
+- banking integrations
+- third-party integrations
+- multi-user encrypted vaults
+- secret storage
+
+Design principles:
+
+- Separate transactions from assets.
+- Separate accounts from assets.
+- Store historical valuations.
+- Keep external integrations abstract.
+- Avoid assumptions of single-user ownership in core models.
