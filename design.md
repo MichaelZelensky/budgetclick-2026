@@ -1,15 +1,15 @@
-# Budgetclick 2026 - Personal Finance Tracker - Design Specification
+# BudgetClick 2026 - Personal Finance Tracker - Design Specification
 
 ## Goals
 
-- Offline-first personal finance application.
-- Single codebase for all clients.
-- Desktop + iOS + web support.
-- Client-side encryption.
-- User-owned storage.
-- Minimum infrastructure cost.
-- S3-compatible storage as the shared source of truth.
-- No backend services.
+* Offline-first personal finance application.
+* Single codebase for all clients.
+* Desktop + iOS + web support.
+* Client-side encryption.
+* User-owned storage.
+* Minimum infrastructure cost.
+* S3-compatible storage as the shared source of truth.
+* No backend services.
 
 ---
 
@@ -21,14 +21,13 @@ The application is a web-based offline-first client.
 
 Clients:
 
-- Web browser
-- iOS PWA
-- Desktop browser/PWA
+* Web browser
+* iOS PWA
+* Desktop browser/PWA
 
 All clients share the same Vue.js + TypeScript codebase.
 
 ```
-
 Vue Application
 |
 v
@@ -39,7 +38,6 @@ Shared Core Logic
 v                v
 IndexedDB        S3 Storage
 (local data)     (sync source)
-
 ```
 
 ---
@@ -48,16 +46,16 @@ IndexedDB        S3 Storage
 
 ## Frontend
 
-- Vue.js
-- TypeScript
-- PWA
-- Browser APIs only
+* Vue.js
+* TypeScript
+* PWA
+* Browser APIs only
 
 ## Local Storage
 
-- IndexedDB
-- Local cache
-- Offline operations
+* IndexedDB
+* Local cache
+* Offline operations
 
 ## Remote Storage
 
@@ -65,10 +63,10 @@ S3-compatible object storage.
 
 Examples:
 
-- AWS S3
-- Cloudflare R2
-- Backblaze B2
-- MinIO
+* AWS S3
+* Cloudflare R2
+* Backblaze B2
+* MinIO
 
 ---
 
@@ -78,11 +76,11 @@ Examples:
 
 No:
 
-- Backend API
-- Authentication service
-- Database service
-- Lambda functions
-- Notification services
+* Backend API
+* Authentication service
+* Database service
+* Lambda functions
+* Notification services
 
 Only storage is required.
 
@@ -98,10 +96,10 @@ Storage contains only encrypted objects.
 
 TODO:
 
-- Key derivation
-- Encryption algorithm
-- File format
-- Key backup/recovery
+* Key derivation
+* Encryption algorithm
+* File format
+* Key backup/recovery
 
 Assumption:
 
@@ -115,21 +113,20 @@ No application authentication.
 
 Identity is based on:
 
-- Storage location
-- Local configuration
-- Encryption key
+* Storage location
+* Local configuration
+* Encryption key
 
 TODO:
 
-- User setup flow
-- Recovery flow
+* User setup flow
+* Recovery flow
 
 ---
 
 # Storage Layout
 
 ```
-
 bucket/
 
 manifest.json
@@ -148,8 +145,14 @@ attachments/
     <attachmentId>
 ```
 
-
 All objects are encrypted.
+
+TODO:
+
+- are attachments encrypted too?
+- attachments stored as flat list or separated by month?
+- where are contractors stored?
+- rename /accounts to /reference, and store all necessary reference data (accounts, contractors, ...) here.
 
 ---
 
@@ -159,23 +162,24 @@ All objects are encrypted.
 
 Fields:
 
-- id
-- in/out type
-- amount
-- accountId
-- description
-- expenseId
-- contractorId
-- datetime
-- attachments
-- actual/planned
-- recurrencyId
+* id
+* in/out type
+* amount
+* accountId
+* description
+* expenseId
+* contractorId
+* datetime
+* attachments
+* actual/planned
+* isActual
+* recurrencyId
 
 TODO:
 
-- Schema
-- Versioning
-- Deletion model
+* Schema
+* Versioning
+* Deletion model
 
 ---
 
@@ -183,15 +187,15 @@ TODO:
 
 Fields:
 
-- id
-- name
-- description
-- currency
-- current amount
+* id
+* name
+* description
+* currency
+* current amount
 
 TODO:
 
-- Schema
+* Schema
 
 ---
 
@@ -199,82 +203,166 @@ TODO:
 
 Rules:
 
-- Records can belong to a recurrence.
-- Planned records are generated from recurrence.
-- Actual records are independent.
-- Recurrence changes affect planned records only.
-- Records can detach from recurrence.
+* Records can belong to a recurrence.
+* Planned records are generated from recurrence.
+* Actual records are independent.
+* Recurrence changes affect planned records only.
+* Records can detach from recurrence.
+
+MVP:
+
+* Recurrency engine is not implemented.
+* Planned records are manually created using the `isActual` flag.
 
 TODO:
 
-- Data model
-- Generation algorithm
+* Data model
+* Generation algorithm
+
+---
+
+# Identifier Strategy
+
+Identifiers are optimized for a single-user application.
+
+Format:
+
+```
+<type>_<4 character id>
+```
+
+Examples:
+
+```
+r_Ab3x   record
+a_K92p   account
+f_91Lm   file
+```
+
+Rules:
+
+* Separate namespaces per entity type.
+* Custom ID generator.
+* Integrity validation included.
+* Collision checking performed locally.
+
+Rationale:
+
+* Single-user scope.
+* Monthly chunk separation.
+* Millions of possible combinations per entity type.
 
 ---
 
 # Local Database
 
-TODO:
-
-- IndexedDB schema
-- Indexes
-- Migration strategy
-
 Local database contains:
 
-- decrypted working data
-- sync queue
-- indexes
-- cached statistics
+* decrypted working data
+* sync queue
+* local change log
+* indexes
+* cached statistics
+
+TODO:
+
+* IndexedDB schema
+* Indexes
+* Migration strategy
+
+## Migration Strategy (initial recommendation)
+
+All stored data should contain a schema version.
+
+Example:
+
+```json
+{
+  "schemaVersion": 1,
+  "data": {}
+}
+```
+
+Migration rules:
+
+* Never modify existing migrations.
+* Add new migrations only.
+* Apply migrations sequentially.
+* Test migrations between versions.
+
+Detailed migration strategy will be designed together with:
+
+* data schema
+* storage format
+* synchronization
+* encryption format
 
 ---
 
-# Synchronization
+# Synchronization Model
 
-Offline-first model.
+Remote synchronization unit:
 
-Local changes happen immediately.
+```
+account + month
+```
 
-Sync happens when connection is available.
+Example:
 
-Triggers:
+```
+chunks/
+    account123/
+        2026-01.chunk
+        2026-02.chunk
+```
 
-- application startup
-- connection restored
-- manual sync
+Each chunk contains the complete state for that period.
 
-TODO:
+No remote operation log is stored.
 
-- Sync protocol
-- Manifest format
-- Change tracking
-- Conflict resolution
-- Retry strategy
+---
+
+# Local Change Log
+
+Each client maintains a local-only change log.
+
+Purpose:
+
+* track local modifications
+* prepare chunk regeneration
+* support sync workflow
+
+The change log is not synchronized to S3.
 
 ---
 
 # Sync Flow
 
 ```
-
 User action
 |
 v
 Local database
 |
 v
-Sync queue
+Local change log
 |
 v
-Encrypted S3 objects
-
+Regenerate affected chunk
+|
+v
+Encrypt
+|
+v
+Upload encrypted S3 object
 ```
 
 TODO:
 
-- Upload flow
-- Download flow
-- Merge rules
+* Upload flow
+* Download flow
+* Merge rules
+* Conflict resolution
 
 ---
 
@@ -284,11 +372,15 @@ Monthly precomputed statistics.
 
 Stored encrypted.
 
+MVP:
+
+* Statistics engine is deferred.
+
 TODO:
 
-- Calculation rules
-- Storage format
-- Refresh strategy
+* Calculation rules
+* Storage format
+* Refresh strategy
 
 ---
 
@@ -298,9 +390,9 @@ Attachments are encrypted before upload.
 
 TODO:
 
-- Storage format
-- Metadata
-- Deduplication
+* Storage format
+* Metadata
+* Deduplication
 
 ---
 
@@ -308,10 +400,9 @@ TODO:
 
 The project uses a simple modular structure.
 
-The initial implementation can be a single Vue application with clear internal modules. Modules can later be extracted into separate packages if needed.
+The initial implementation can be a single Vue application with clear internal modules.
 
 ```
-
 BudgetClick 2.0
 |
 +-- src/
@@ -352,81 +443,51 @@ BudgetClick 2.0
 |       +-- forms
 |       +-- tables
 |       +-- layouts
-
 ```
 
-## Module Responsibilities
+---
 
-### app
+# Testing Strategy
 
-Vue application layer.
+Testing is defined at the end of each development iteration.
 
-Responsible for:
+Testing is performed on each build.
 
-- screens
-- navigation
-- user interactions
-- connecting UI to application logic
+## Automated Tests
 
-### core
+Cover:
 
-Application domain logic.
+* encryption/decryption
+* ID generation
+* data serialization
+* migrations
+* sync logic
+* storage adapters
 
-Responsible for:
+## User Scenario Tests
 
-- records
-- accounts
-- recurrency
-- calculations
-- statistics
-
-No dependency on UI or storage.
-
-### sync
-
-Offline synchronization logic.
-
-Responsible for:
-
-- detecting changes
-- uploading changes
-- downloading updates
-- conflict resolution
-
-### encryption
-
-Client-side security layer.
-
-Responsible for:
-
-- key handling
-- encryption
-- decryption
-- encrypted object formats
-
-### storage
-
-Data access abstraction.
-
-Implementations:
-
-- IndexedDB for local storage
-- S3 for remote storage
-
-The rest of the application does not directly access storage APIs.
-
-### components
-
-Reusable Vue UI components.
+Validate real workflows:
 
 Examples:
 
-- buttons
-- forms
-- tables
-- dialogs
+* Create records offline and sync later.
+* Modify data on multiple devices.
+* Restore data from storage.
+* Recover from application restart.
 
+---
 
+# Non Goals
+
+The initial version will not include:
+
+* User accounts managed by BudgetClick.
+* Cloud storage managed by BudgetClick.
+* Banking integrations.
+* Server-side analytics.
+* Multi-user collaboration.
+* Shared wallets.
+* Social features.
 
 ---
 
@@ -436,15 +497,15 @@ Uses the same web application.
 
 Capabilities:
 
-- Offline operation
-- IndexedDB storage
-- Web Crypto API
-- Direct S3 sync
+* Offline operation.
+* IndexedDB storage.
+* Web Crypto API.
+* Direct S3 sync.
 
 Limitations:
 
-- No reliable background execution
-- Browser storage lifecycle limitations
+* No reliable background execution.
+* Browser storage lifecycle limitations.
 
 ---
 
@@ -454,7 +515,7 @@ Uses the same web application.
 
 Initial target:
 
-- Browser/PWA
+* Browser/PWA.
 
 No native wrapper.
 
@@ -462,8 +523,8 @@ No native wrapper.
 
 # Future Improvements
 
-- Optional private storage mode
-- Better conflict resolution
-- Version history
-- Backup snapshots
-- Multi-user support
+* Optional private storage mode.
+* Better conflict resolution.
+* Version history.
+* Backup snapshots.
+* Multi-user support.
