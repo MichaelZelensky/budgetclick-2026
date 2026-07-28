@@ -94,17 +94,29 @@ All sensitive data is encrypted locally before upload.
 
 Storage contains only encrypted objects.
 
+The storage provider is considered untrusted.
+
+All storage objects are encrypted, including:
+
+- manifest
+- reference data
+- monthly chunks
+- statistics
+- attachments
+
+Object names should be obfuscated where practical. Whether monthly chunk names remain predictable for synchronization efficiency will be decided in the storage specification.
+
 TODO:
 
 - Key derivation
 - Encryption algorithm
-- File format
+- Object envelope format
+- Key hierarchy
 - Key backup/recovery
 
 Assumption:
 
-Loss of encryption key means permanent data loss.
-
+Loss of the encryption key means permanent data loss.
 
 # Identity
 
@@ -116,26 +128,30 @@ Identity is based on:
 - Local configuration
 - Encryption key
 
+Each client installation generates a persistent `clientId`.
+
+The `clientId` is used only for synchronization and conflict detection. It is not part of user identity.
+
 TODO:
 
 - User setup flow
 - Recovery flow
 
-
 # Storage Layout
 
 ```
-
 bucket/
-  manifest.json
+  manifest
   reference/
-    accounts.json
-    contractors.json
-    categories.json
-  chunks/ <accountId>/ <yyyy-mm>.chunk
-  statistics/ <yyyy-mm>.json
-  attachments/ <attachmentId>
-
+    accounts
+    contractors
+    categories
+  chunks/
+    <accountId>/
+      <yyyy-mm>.chunk
+  statistics/
+    <yyyy-mm>
+  attachments/
 ```
 
 All objects are encrypted.
@@ -144,6 +160,7 @@ Storage design principles:
 
 - Reference data is separated from time-based transaction data.
 - Monthly chunks contain operational data.
+- Every chunk is self-describing.
 - Attachments are stored separately.
 - Storage format should allow future expansion.
 
@@ -152,6 +169,7 @@ TODO:
 - Attachment storage optimization.
 - Attachment metadata format.
 - Reference data versioning.
+- Object naming / obfuscation strategy.
 
 
 # Data Model
@@ -179,16 +197,18 @@ A record represents a financial event.
 MVP fields:
 
 - id
-- in/out type
+- direction
 - amount
 - accountId
-- description
-- expenseId
+- categoryId
 - contractorId
+- description
 - datetime
 - attachments
 - isActual
 - recurrencyId
+- createdAt
+- updatedAt
 
 Future compatibility:
 
@@ -203,7 +223,7 @@ TODO:
 
 - Schema
 - Versioning
-- Deletion model - tombstone (isDeleted: true)
+- Deletion model (tombstone)
 
 
 # Account
@@ -216,7 +236,7 @@ Fields:
 - name
 - description
 - currency
-- current amount
+- current balance
 
 Future compatibility:
 
@@ -258,7 +278,7 @@ Format:
 
 ```
 
-<type>_<4 character [azAZ09] id>
+<type>_<8 character [azAZ09] id>
 
 ```
 
@@ -266,11 +286,11 @@ Examples:
 
 ```
 
-r_Ab3x   record
-a_K92p   account
-f_91Lm   file
+r_Ak39LmP2
+a_K92PxLq7
+f_91LmQaX2
 
-````
+```
 
 Rules:
 
@@ -283,7 +303,7 @@ Rationale:
 
 - Single-user scope.
 - Monthly chunk separation.
-- Millions of possible combinations per entity type.
+- Extremely low collision probability.
 
 
 # Local Database
@@ -329,9 +349,16 @@ Detailed migration strategy will be designed together with:
 * synchronization
 * encryption format
 
+Migration consists of two independent layers:
+
+- Local IndexedDB migration
+- Remote storage migration
+
+Both migration systems use explicit version numbers and evolve independently.
+
 TODO:
 
-- backwards compatibility with the saved data
+- Backwards compatibility with saved data.
 
 
 # Synchronization Model
@@ -354,6 +381,30 @@ chunks/
 Each chunk contains the complete state for that period.
 
 No remote operation log is stored.
+
+Synchronization follows an optimistic concurrency model.
+
+Whenever possible, conflicting changes are merged automatically.
+
+Manual conflict resolution is planned for a future iteration.
+
+
+# Chunk Metadata
+
+Each monthly chunk is self-describing.
+
+Chunk metadata is stored together with the chunk rather than in the manifest.
+
+Metadata will include:
+
+- schema version
+- chunk version
+- account
+- month
+- createdAt
+- updatedAt
+
+Keeping metadata inside the chunk allows every chunk to be migrated independently from the manifest.
 
 
 # Local Change Log
@@ -394,9 +445,9 @@ TODO:
 
 * Upload flow
 * Download flow
-* Merge rules
-* Conflict resolution
-* When is manifest.json updated in this flow?
+* Optimistic concurrency
+* Automatic merge strategy
+* Manifest update lifecycle
 
 
 # Statistics
@@ -522,7 +573,11 @@ Limitations:
 
 
 TODO:
-- Make sure that PWA will work on iOS like a standalone app - with cached s3 configuration and passphrase (without the need to set up on every startup)
+
+- Verify that the PWA behaves like a standalone application on iOS.
+- Verify persistence of IndexedDB.
+- Verify persistence of local configuration.
+- Evaluate secure persistence of the encryption key/passphrase.
 
 
 ## Desktop
@@ -567,3 +622,5 @@ Future features are not part of MVP implementation.
 * Version history.
 * Backup snapshots.
 * Multi-user support.
+* Storage version history.
+* Key rotation.

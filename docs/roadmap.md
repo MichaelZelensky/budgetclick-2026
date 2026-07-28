@@ -1,160 +1,182 @@
 # BudgetClick 2026 - Development Roadmap
 
-## Phase 0 - Design Finalization
+## Phase 0 - Architecture & Design
 
 Goal:
-Create enough technical clarity before implementation.
+
+Complete the technical specification before implementation.
 
 Activities:
 
-- Refine design specification
-- Define data model
-- Define IndexedDB schema
-- Define S3 storage format
-- Define sync strategy
-- Define encryption format
+- Finalize `design.md`
+- Finalize `storage-contract.md`
+- Finalize `data-schema.md`
+- Finalize `sync.md`
+- Finalize `encryption.md`
+- Finalize `migrations.md`
+- Validate iOS PWA feasibility
 - Define application state model
 
 Expected outcome:
 
-- Stable technical foundation
+- Stable architecture
+- Stable storage format
+- Stable synchronization model
+- Stable data model
+- Stable encryption model
 - Ready for implementation
 
----
-
-# Phase 1 - Development Environment
+## Phase 1 - Development Environment
 
 Goal:
+
 Create the development and deployment foundation.
 
 Activities:
 
 - Setup repository (done)
-- Setup ai-assisted tooling
+- Setup AI-assisted tooling
 - Setup Vue + TypeScript project
 - Setup PWA configuration
 - Setup development environment
 - Setup VS Code Dev Container
 - Setup local testing environment
 - Setup deployment pipeline
-- Setup S3 development storage (s3 bucket for PWA download / install ?)
+- Setup development S3 storage
 
 Expected outcome:
 
-- Application stub can be developed, built, deployed, and installed.
+- Application can be built, deployed and installed.
+- Development workflow is established.
 
----
-
-# Phase 2 - MVP Implementation
+## Phase 2 - MVP Implementation
 
 Goal:
+
 Build the first usable version.
 
 Scope:
 
 - Application shell
-- Configuration screen
+- Initial setup flow
 - Local IndexedDB storage
 - Encryption layer
 - S3 connection
+- Synchronization engine
 - Account management
-- Expense categories
+- Categories
 - Contractors
-- Records:
-  - income/expense
-  - planned/actual
-  - attachments
+- Records
+  - income / expense
+  - planned / actual
+- Monthly statistics
 - Basic offline workflow
+
+Included:
+
+- Automatic synchronization
+- Automatic merge
+- Optimistic concurrency
 
 Excluded:
 
-- Recurrency
-- Advanced statistics
-- Multi-device conflict resolution
+- Manual conflict resolution
+- Recurrence engine
+- Attachments
+- Banking integrations
 - Multi-user features
 
 Expected outcome:
 
-- Personal finance tracker usable by one user.
+- Personal finance tracker usable on multiple devices.
 
----
-
-# Phase 3 - Iteration 1
+## Phase 3 - Iteration 1
 
 Goal:
+
 Improve usability and reliability.
 
 Activities:
 
-- Improve UI/UX
+- Manual conflict resolution
+- Improve synchronization reliability
+- Improve UI / UX
 - Improve data entry flow
-- Add validations (what is it?)
-- Improve sync reliability
-- Add automated tests
+- Add validation
+- Expand automated tests
 - Run user scenario tests
 
 Expected outcome:
 
 - Stable daily-use version.
 
----
-
-# Phase 4 - Iteration 2
+## Phase 4 - Iteration 2
 
 Goal:
+
 Improve productivity features.
 
 Activities:
 
-- Recurrency design implementation
+- Recurrence engine
 - Planned transaction improvements
-- Better search/filtering
-- More reporting capabilities
+- Better search
+- Better filtering
+- Reporting improvements
 
 Expected outcome:
 
 - More automated personal finance management.
 
----
-
-# Phase 5 - Iteration 3
+## Phase 5 - Iteration 3
 
 Goal:
-Advanced features.
+
+Advanced functionality.
 
 Activities:
 
-- Monthly statistics
+- Attachment support
 - Reports
 - Data visualization
-- Export/import
+- Export / Import
 - Backup tools
+- Key rotation
 
 Expected outcome:
 
-- Complete personal finance assistant.
+- Mature personal finance platform.
 
----
+## Every Iteration Includes
 
-# Every Iteration Includes
-
-## Development
+### Development
 
 - Feature implementation
 - Refactoring
 - Documentation updates
 
-## Quality
+### Quality
 
 - Automated tests
 - User scenario tests
 - Manual validation
 
-## Documentation
+### Documentation
 
 Update:
 
-- design specification
-- data formats
-- migration notes
-- decisions log
+- design.md
+- storage-contract.md
+- data-schema.md
+- sync.md
+- encryption.md
+- migrations.md
+
+### Architecture
+
+Review:
+
+- Design decisions
+- Storage format
+- Synchronization strategy
+- Migration strategy
