@@ -11,11 +11,8 @@
 - S3-compatible storage as the shared source of truth.
 - No backend services.
 
----
 
 # Architecture
-
-## Overview
 
 The application is a web-based offline-first client.
 
@@ -42,7 +39,6 @@ IndexedDB        S3 Storage
 
 ```
 
----
 
 # Technology Stack
 
@@ -70,11 +66,8 @@ Examples:
 - Backblaze B2
 - MinIO
 
----
 
 # Infrastructure
-
-## Principles
 
 No:
 
@@ -94,11 +87,8 @@ The current priority is:
 
 Future versions may introduce additional security layers if required.
 
----
 
 # Security Model
-
-## Encryption
 
 All sensitive data is encrypted locally before upload.
 
@@ -115,7 +105,6 @@ Assumption:
 
 Loss of encryption key means permanent data loss.
 
----
 
 # Identity
 
@@ -132,26 +121,20 @@ TODO:
 - User setup flow
 - Recovery flow
 
----
 
 # Storage Layout
 
 ```
 
 bucket/
-
-manifest.json
-
-reference/
-accounts.json
-contractors.json
-categories.json
-
-chunks/ <accountId>/ <yyyy-mm>.chunk
-
-statistics/ <yyyy-mm>.json
-
-attachments/ <attachmentId>
+  manifest.json
+  reference/
+    accounts.json
+    contractors.json
+    categories.json
+  chunks/ <accountId>/ <yyyy-mm>.chunk
+  statistics/ <yyyy-mm>.json
+  attachments/ <attachmentId>
 
 ```
 
@@ -166,17 +149,12 @@ Storage design principles:
 
 TODO:
 
-- are attachments encrypted too?
 - Attachment storage optimization.
 - Attachment metadata format.
 - Reference data versioning.
 
 
----
-
 # Data Model
-
-## Domain Model Principles
 
 The MVP focuses on personal finance tracking.
 
@@ -193,7 +171,6 @@ Initial implementation remains simple.
 
 Future concepts should be introduced as separate entities rather than extending financial records indefinitely.
 
----
 
 # Record
 
@@ -226,9 +203,8 @@ TODO:
 
 - Schema
 - Versioning
-- Deletion model
+- Deletion model - tombstone (isDeleted: true)
 
----
 
 # Account
 
@@ -252,7 +228,6 @@ TODO:
 
 - Schema
 
----
 
 # Recurrency
 
@@ -274,7 +249,6 @@ TODO:
 - Data model
 - Generation algorithm
 
----
 
 # Identifier Strategy
 
@@ -284,7 +258,7 @@ Format:
 
 ```
 
-<type>_<4 character id>
+<type>_<4 character [azAZ09] id>
 
 ```
 
@@ -311,7 +285,6 @@ Rationale:
 - Monthly chunk separation.
 - Millions of possible combinations per entity type.
 
----
 
 # Local Database
 
@@ -356,7 +329,10 @@ Detailed migration strategy will be designed together with:
 * synchronization
 * encryption format
 
----
+TODO:
+
+- backwards compatibility with the saved data
+
 
 # Synchronization Model
 
@@ -370,16 +346,15 @@ Example:
 
 ```
 chunks/
-    account123/
-        2026-01.chunk
-        2026-02.chunk
+  account123/
+    2026-01.chunk
+    2026-02.chunk
 ```
 
 Each chunk contains the complete state for that period.
 
 No remote operation log is stored.
 
----
 
 # Local Change Log
 
@@ -393,7 +368,6 @@ Purpose:
 
 The change log is not synchronized to S3.
 
----
 
 # Sync Flow
 
@@ -422,8 +396,8 @@ TODO:
 * Download flow
 * Merge rules
 * Conflict resolution
+* When is manifest.json updated in this flow?
 
----
 
 # Statistics
 
@@ -431,17 +405,12 @@ Monthly precomputed statistics.
 
 Stored encrypted.
 
-MVP:
-
-* Statistics engine is deferred.
-
 TODO:
 
 * Calculation rules
 * Storage format
 * Refresh strategy
 
----
 
 # Attachments
 
@@ -453,7 +422,6 @@ TODO:
 * Metadata
 * Deduplication
 
----
 
 # Client Structure
 
@@ -463,48 +431,35 @@ The initial implementation can be a single Vue application with clear internal m
 
 ```
 BudgetClick 2.0
-|
-+-- src/
-|   |
-|   +-- app/
-|   |   |
-|   |   +-- Vue application
-|   |   +-- pages
-|   |   +-- routing
-|   |
-|   +-- core/
-|   |   |
-|   |   +-- data models
-|   |   +-- business rules
-|   |   +-- record management
-|   |   +-- recurrence logic
-|   |   +-- statistics logic
-|   |
-|   +-- sync/
-|   |   |
-|   |   +-- synchronization engine
-|   |   +-- change tracking
-|   |   +-- conflict handling
-|   |
-|   +-- encryption/
-|   |   |
-|   |   +-- key management
-|   |   +-- encrypt/decrypt operations
-|   |
-|   +-- storage/
-|   |   |
-|   |   +-- IndexedDB adapter
-|   |   +-- S3 adapter
-|   |
-|   +-- components/
-|       |
-|       +-- shared Vue components
-|       +-- forms
-|       +-- tables
-|       +-- layouts
+
+src/
+  app/
+    Vue application
+    pages
+    routing
+  core/
+    data models
+    business rules
+    record management
+    recurrence logic
+    statistics logic
+  sync/
+    synchronization engine
+    change tracking
+    conflict handling
+  encryption/
+    key management
+    encrypt/decrypt operations
+  storage/
+    IndexedDB adapter
+    S3 adapter
+  components/
+    shared Vue components
+    forms
+    tables
+    layouts
 ```
 
----
 
 # Testing Strategy
 
@@ -534,7 +489,6 @@ Examples:
 * Restore data from storage.
 * Recover from application restart.
 
----
 
 # Non Goals
 
@@ -548,9 +502,9 @@ The initial version will not include:
 * Shared wallets.
 * Social features.
 
----
+# Clients
 
-# iOS PWA
+## iOS PWA
 
 Uses the same web application.
 
@@ -566,9 +520,12 @@ Limitations:
 * No reliable background execution.
 * Browser storage lifecycle limitations.
 
----
 
-# Desktop
+TODO:
+- Make sure that PWA will work on iOS like a standalone app - with cached s3 configuration and passphrase (without the need to set up on every startup)
+
+
+## Desktop
 
 Uses the same web application.
 
@@ -578,7 +535,6 @@ Initial target:
 
 No native wrapper.
 
----
 
 # Future Domain Compatibility
 
@@ -603,7 +559,6 @@ Principles:
 
 Future features are not part of MVP implementation.
 
----
 
 # Future Improvements
 
