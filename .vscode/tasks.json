@@ -4,7 +4,7 @@
     {
       "label": "Concat files",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./concat-from-clipboard.ps1",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat-from-clipboard.ps1",
       "problemMatcher": [],
       "runOptions": {
         "runOn": "folderOpen"

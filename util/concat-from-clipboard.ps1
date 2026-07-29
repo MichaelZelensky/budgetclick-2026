@@ -24,7 +24,7 @@
 # ########################################
 
 param(
-  [string]$OutFile = "files-content.txt",
+  [string]$OutFile = "util/files-content.txt",
   [int]$MaxBytes = 1048576, # 1 MB
   [switch]$IncludePatchExample
 )
