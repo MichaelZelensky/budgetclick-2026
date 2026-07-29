@@ -8,12 +8,12 @@ Complete the technical specification before implementation.
 
 Activities:
 
-- Finalize `design.md`
-- Finalize `storage-contract.md`
-- Finalize `data-schema.md`
-- Finalize `sync.md`
-- Finalize `encryption.md`
-- Finalize `migrations.md`
+- ✅Finalize `design.md`
+- ✅Finalize `storage-contract.md`
+- ✅Finalize `data-schema.md`
+- ✅Finalize `sync.md`
+- ✅Finalize `encryption.md`
+- ✅Finalize `migrations.md`
 - Validate iOS PWA feasibility
 - Define application state model
 
@@ -34,8 +34,8 @@ Create the development and deployment foundation.
 
 Activities:
 
-- Setup repository (done)
-- Setup AI-assisted tooling
+- ✅Setup repository (done)
+- ✅Setup AI-assisted tooling
 - Setup Vue + TypeScript project
 - Setup PWA configuration
 - Setup development environment
