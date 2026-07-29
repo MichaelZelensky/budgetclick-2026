@@ -363,18 +363,14 @@ TODO:
 
 # Synchronization Model
 
-Remote synchronization unit:
-
-```
-account + month
-```
+Remote synchronization unit: month
 
 Example:
 
 ```
 chunks/
-  account123/
-    2026-01.chunk
+  transactions/
+    2026-01.chunk -> obfuscated as c_adiuw2, mapped in the manifest
     2026-02.chunk
 ```
 
@@ -387,6 +383,8 @@ Synchronization follows an optimistic concurrency model.
 Whenever possible, conflicting changes are merged automatically.
 
 Manual conflict resolution is planned for a future iteration.
+
+Before syncronization, a manifest-temporary must be created - to recover broken synchronizations and block concurrent clients.
 
 
 # Chunk Metadata
