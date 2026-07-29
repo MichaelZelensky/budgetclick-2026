@@ -1,28 +1,6 @@
 # BudgetClick 2026 - Storage Contract
 
-## Purpose
-
-This document defines the remote storage structure used by BudgetClick.
-
-It specifies:
-
-- storage layout
-- storage object responsibilities
-- object lifecycle
-- object ownership
-- versioning
-- migration responsibilities
-
-This document intentionally does not define:
-
-- synchronization protocol
-- encryption algorithms
-- data schemas
-
-Those are specified separately.
-
-
-# Design Principles
+## Design Principles
 
 Storage follows these principles:
 
@@ -40,15 +18,17 @@ Storage follows these principles:
 bucket/
   manifest
   reference/
-    accounts
-    categories
-    contractors
+    accounts  -> obfuscated as kakaoi3, mapped in manifest
+    categories -> obfuscated as adsadsla32, mapped in manifest
+    contractors  -> obfuscated as uqfj8u3, mapped in manifest
   chunks/
-    <accountId>/
-      <yyyy-mm>.chunk
+    <yyyy-mm>.chunk  -> obfuscated as c_a3f32, mapped in manifest
   statistics/
-    <yyyy-mm>
+    <yyyy-mm> -> obfuscated as s_adsla32, mapped in manifest
   attachments/
+		attachments-map -> obfuscated as vaknqo988, mapped in manifest
+    sharded/ -> obfuscated as afdi23, mapped in manifest
+			attachement_name -> obfuscated as s_adsla32, mapped in attachments-map (?)
 ```
 
 All objects are encrypted before upload.
@@ -56,6 +36,9 @@ All objects are encrypted before upload.
 Object names should be obfuscated where practical.
 
 Whether monthly chunk names remain predictable for synchronization efficiency is intentionally left open until the synchronization protocol is finalized.
+
+TODO:
+- think about attachment mapping. Maybe mapping in record will be enough. Do we also need to keep the attachment meta, e.g. original filename, etc? -> probably storing the obfuscated file name for MVP is enough.
 
 
 # Storage Object Lifecycle
@@ -98,16 +81,6 @@ It allows the synchronization engine to determine:
 The manifest is the entry point into the storage.
 
 
-### Owner
-
-Synchronization engine.
-
-
-### Update Frequency
-
-Whenever remote storage changes.
-
-
 ### Contains
 
 Initially expected to contain:
@@ -118,13 +91,6 @@ Initially expected to contain:
 - monthly chunk versions
 
 Additional metadata may be introduced in future versions.
-
-
-### Does Not Contain
-
-- financial records
-- attachment contents
-- decrypted metadata
 
 
 ## Reference Objects
@@ -140,16 +106,6 @@ Examples:
 Reference objects change significantly less often than transaction data.
 
 
-### Owner
-
-Core data layer.
-
-
-### Update Frequency
-
-Only when reference data changes.
-
-
 ### Notes
 
 Reference data is intentionally separated from monthly transaction chunks to reduce synchronization work.
@@ -159,23 +115,8 @@ Reference data is intentionally separated from monthly transaction chunks to red
 
 Monthly chunks are the primary synchronization unit.
 
-Synchronization scope:
+Each chunk contains the complete state for all accounts during one month.
 
-```
-Account + Month
-```
-
-Each chunk contains the complete state for one account during one month.
-
-
-### Owner
-
-Synchronization engine.
-
-
-### Update Frequency
-
-Whenever records inside the chunk change.
 
 
 ### Chunk Metadata
@@ -202,13 +143,6 @@ This allows chunks to be migrated independently.
 - transaction records
 
 
-### Does Not Contain
-
-- reference entities
-- statistics
-- attachments
-
-
 ## Statistics
 
 Statistics contain precomputed aggregated data.
@@ -222,12 +156,6 @@ Purpose:
 Statistics are derived from transaction data.
 
 The calculation strategy is specified separately.
-
-
-### Owner
-
-Statistics engine.
-
 
 ## Attachments
 
@@ -269,20 +197,6 @@ Changing a category should not regenerate monthly chunks.
 
 Changing a monthly chunk should not modify reference objects.
 
-
-# Object Ownership
-
-Every storage object has exactly one owning subsystem.
-
-| Object | Owner |
-|----------|-------|
-| Manifest | Synchronization |
-| Reference objects | Core Data |
-| Monthly chunks | Synchronization |
-| Statistics | Statistics |
-| Attachments | Attachment subsystem |
-
-Only the owning subsystem may modify an object.
 
 
 # Naming Strategy
@@ -335,12 +249,3 @@ Expected future object types include:
 - backups
 
 New functionality should introduce new storage objects whenever possible rather than extending existing ones.
-
-
-# Related Documents
-
-- design.md
-- data-schema.md
-- sync.md
-- encryption.md
-- migrations.md
