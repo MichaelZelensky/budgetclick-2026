@@ -138,24 +138,6 @@ TODO:
 - Recovery flow
 
 
-# Data Model
-
-The MVP focuses on personal finance tracking.
-
-The initial model should avoid limiting future expansion into:
-
-- asset tracking
-- net worth calculation
-- banking integrations
-- third-party integrations
-- multi-user encrypted storage
-- secret storage
-
-Initial implementation remains simple.
-
-Future concepts should be introduced as separate entities rather than extending financial records indefinitely.
-
-
 # Record
 
 A record represents a financial event.
@@ -234,42 +216,6 @@ TODO:
 
 - Data model
 - Generation algorithm
-
-
-# Identifier Strategy
-
-Identifiers are optimized for a single-user application.
-
-Format:
-
-```
-
-<type>_<8 character [azAZ09] id>
-
-```
-
-Examples:
-
-```
-
-r_Ak39LmP2
-a_K92PxLq7
-f_91LmQaX2
-
-```
-
-Rules:
-
-- Separate namespaces per entity type.
-- Custom ID generator.
-- Integrity validation included.
-- Collision checking performed locally.
-
-Rationale:
-
-- Single-user scope.
-- Monthly chunk separation.
-- Extremely low collision probability.
 
 
 # Local Database
@@ -397,7 +343,6 @@ src/
     pages
     routing
   core/
-    data models
     business rules
     record management
     recurrence logic
