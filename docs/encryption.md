@@ -52,14 +52,6 @@ Master Key
 Data Encryption Key
 ```
 
-Future versions may introduce additional derived keys for:
-
-- attachments
-- shared storage
-- backups
-
-The MVP requires only one data encryption key.
-
 # Key Derivation
 
 The user's passphrase is never used directly for encryption.
@@ -201,13 +193,3 @@ Encryption versioning remains independent from:
 # Migration
 
 Changes to the encryption format require storage migration.
-
-Migration procedures are defined in `migrations.md`.
-
-# Open Decisions
-
-The following decisions remain intentionally open:
-
-- Compression
-- Secure local persistence strategy
-- Key rotation strategy
