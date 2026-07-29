@@ -1,0 +1,14 @@
+{
+  "encryptionVersion": 1,
+  "kdf": {
+    "algorithm": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 600000,
+    "saltLength": 16,
+    "keyLength": 256
+  },
+  "cipher": {
+    "algorithm": "AES-GCM",
+    "ivLength": 12
+  }
+}

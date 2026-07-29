@@ -1,24 +1,5 @@
 # BudgetClick 2026 - Encryption Specification
 
-## Purpose
-
-This document defines the encryption architecture used by BudgetClick.
-
-It specifies:
-
-- key hierarchy
-- object encryption
-- object envelope
-- key management
-- security assumptions
-
-This document intentionally does not define:
-
-- synchronization protocol
-- storage layout
-- data schemas
-
-
 # Design Principles
 
 The encryption system follows these principles:
@@ -29,7 +10,6 @@ The encryption system follows these principles:
 - Every encrypted object is authenticated.
 - Encryption is independent from storage layout.
 - Encryption is independent from synchronization.
-
 
 # Security Assumptions
 
@@ -46,7 +26,6 @@ The storage provider must not be able to read application data.
 
 Loss of the encryption key results in permanent loss of encrypted data.
 
-
 # Encryption Scope
 
 The following objects are encrypted:
@@ -58,7 +37,6 @@ The following objects are encrypted:
 - Attachments
 
 No user data is stored unencrypted.
-
 
 # Key Hierarchy
 
@@ -82,7 +60,6 @@ Future versions may introduce additional derived keys for:
 
 The MVP requires only one data encryption key.
 
-
 # Key Derivation
 
 The user's passphrase is never used directly for encryption.
@@ -93,18 +70,25 @@ Instead:
 Passphrase
       │
       ▼
-Key Derivation Function
+PBKDF2
       │
       ▼
 Master Key
+      │
+      ▼
+Data Encryption Key
 ```
 
-TODO:
+The MVP uses:
 
-- Key derivation algorithm
-- Salt format
-- Iteration parameters
+- PBKDF2
+- SHA-256
+- AES-256-GCM
+- Random per-user salt
 
+Encryption parameters are defined in `client/settings.json`.
+
+The salt is stored separately from encrypted data and is required to derive the encryption key.
 
 # Object Encryption
 
@@ -135,28 +119,19 @@ Decrypt
 Deserialize
 ```
 
+# Object Format
 
-# Object Envelope
+Encrypted objects are stored as raw binary.
 
-Every encrypted storage object uses a common envelope.
+The MVP does not use an encryption envelope.
 
-Example:
+Each encrypted object contains:
 
-```json
-{
-  "version": 1,
-  "payload": "<encrypted bytes>"
-}
+```
+IV || Ciphertext || Authentication Tag
 ```
 
-The final envelope will additionally contain encryption metadata required for decryption.
-
-TODO:
-
-- Envelope schema
-- Metadata fields
-- Authentication metadata
-
+Encryption parameters are defined globally in `client/settings.json`.
 
 # Randomness
 
@@ -164,8 +139,7 @@ Every encryption operation must use fresh cryptographic randomness.
 
 Encryption must never produce identical ciphertext for identical plaintext.
 
-The exact nonce strategy will be defined together with the encryption algorithm.
-
+Every encryption operation uses a fresh random initialization vector (IV).
 
 # Object Authentication
 
@@ -175,28 +149,11 @@ Object tampering must always be detected during decryption.
 
 Objects failing authentication must never be accepted by the application.
 
-
 # Compression
 
-Compression, if enabled, occurs before encryption.
+Compression is not part of the MVP.
 
-```
-Object
-    │
-    ▼
-Serialize
-    │
-    ▼
-Compress
-    │
-    ▼
-Encrypt
-```
-
-Compression must never occur after encryption.
-
-The compression algorithm is intentionally left unspecified.
-
+The encryption pipeline is designed to allow optional compression before encryption in future versions.
 
 # Passphrase Handling
 
@@ -204,17 +161,19 @@ The user provides a passphrase during setup.
 
 The application derives encryption keys from the passphrase.
 
-The raw passphrase must never be uploaded to remote storage.
+The raw passphrase is never uploaded to remote storage.
 
-Persistence of the passphrase or derived keys is platform-dependent and will be evaluated separately.
+The user enters the passphrase when opening the application.
 
+The application may optionally remember the derived encryption key locally.
+
+The raw passphrase is never stored.
 
 # Key Rotation
 
 Key rotation is not part of the MVP.
 
 Future versions may support re-encrypting all storage objects with a new master key.
-
 
 # Recovery
 
@@ -227,17 +186,17 @@ Recovery is possible only if the user still possesses:
 
 Loss of either makes encrypted data unrecoverable.
 
-
 # Versioning
 
-The encryption format is versioned independently from:
+The encryption format is defined by `client/settings.json`.
+
+Changes to the encryption format require re-encrypting all stored objects.
+
+Encryption versioning remains independent from:
 
 - data schema
 - storage format
 - synchronization
-
-This allows future cryptographic improvements without redesigning the application.
-
 
 # Migration
 
@@ -245,23 +204,10 @@ Changes to the encryption format require storage migration.
 
 Migration procedures are defined in `migrations.md`.
 
-
 # Open Decisions
 
-The following decisions remain intentionally open until implementation:
+The following decisions remain intentionally open:
 
-- Key derivation algorithm
-- Encryption algorithm
-- Authentication algorithm
-- Envelope format
-- Compression algorithm
-- Secure persistence strategy
+- Compression
+- Secure local persistence strategy
 - Key rotation strategy
-
-
-# Related Documents
-
-- design.md
-- storage-contract.md
-- sync.md
-- migrations.md

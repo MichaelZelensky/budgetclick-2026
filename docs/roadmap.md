@@ -61,6 +61,7 @@ Scope:
 - Initial setup flow
 - Local IndexedDB storage
 - Encryption layer
+- PBKDF2 key derivation
 - S3 connection
 - Synchronization engine
 - Account management
@@ -81,6 +82,7 @@ Included:
 Excluded:
 
 - Manual conflict resolution
+- Compression
 - Recurrence engine
 - Attachments
 - Banking integrations
@@ -99,12 +101,14 @@ Improve usability and reliability.
 Activities:
 
 - Manual conflict resolution
+- Compression
 - Improve synchronization reliability
 - Improve UI / UX
 - Improve data entry flow
 - Add validation
 - Expand automated tests
 - Run user scenario tests
+- Argon2id key derivation
 
 Expected outcome:
 
