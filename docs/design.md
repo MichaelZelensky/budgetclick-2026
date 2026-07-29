@@ -137,40 +137,6 @@ TODO:
 - User setup flow
 - Recovery flow
 
-# Storage Layout
-
-```
-bucket/
-  manifest
-  reference/
-    accounts
-    contractors
-    categories
-  chunks/
-    <accountId>/
-      <yyyy-mm>.chunk
-  statistics/
-    <yyyy-mm>
-  attachments/
-```
-
-All objects are encrypted.
-
-Storage design principles:
-
-- Reference data is separated from time-based transaction data.
-- Monthly chunks contain operational data.
-- Every chunk is self-describing.
-- Attachments are stored separately.
-- Storage format should allow future expansion.
-
-TODO:
-
-- Attachment storage optimization.
-- Attachment metadata format.
-- Reference data versioning.
-- Object naming / obfuscation strategy.
-
 
 # Data Model
 
