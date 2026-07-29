@@ -173,36 +173,6 @@ When the application starts:
 - Apply required migrations.
 - Store new version.
 
-# Client Compatibility
-
-Supported storage version is determined by the migration version.
-
-If:
-
-```
-settings.migrationVersion == manifest.migration.version
-```
-
-the application starts normally.
-
-If:
-
-```
-settings.migrationVersion > manifest.migration.version
-```
-
-the client performs the required storage migrations.
-
-If:
-
-```
-settings.migrationVersion < manifest.migration.version
-```
-
-startup is aborted and the user is instructed to update the application.
-
-Older clients never modify newer storage.
-
 # Migration Failure
 
 If migration fails:
