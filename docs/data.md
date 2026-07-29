@@ -15,15 +15,6 @@ The data model follows these principles:
 
 Every persisted object contains a schema version.
 
-Example:
-
-```json
-{
-  "schemaVersion": 1,
-  "data": {}
-}
-```
-
 Schema versions are used by both local and remote migrations.
 
 # Entity Types
@@ -33,13 +24,6 @@ Persisted entity schemas are defined in:
 ```
 client/types/
 ```
-
-Current entities:
-
-- Transaction
-- Account
-- Category
-- Contractor
 
 # Relationships
 
@@ -84,6 +68,24 @@ Rules:
 - Separate namespace per entity.
 - Random generation.
 - Local collision detection.
+
+## Type Prefixes
+
+| Entity | Prefix | Example |
+|----------|--------|---------|
+| Transaction | `t_` | `t_Ak39LmP2` |
+| Account | `a_` | `a_Qw82NdXa` |
+| Category | `c_` | `c_Fd91LpRt` |
+| Contractor | `o_` | `o_Xy82LmQa` |
+| Attachment | `f_` | `f_Mn73BxKe` |
+| Recurrence *(future)* | `r_` | `r_Cv62NdQa` |
+
+Rules:
+
+- Prefixes are globally unique.
+- Prefixes never change once assigned.
+- Every persisted entity type has its own namespace.
+- Future entity types must receive a unique prefix.
 
 # Lifecycle
 
