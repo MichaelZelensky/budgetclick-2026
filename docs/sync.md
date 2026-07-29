@@ -162,6 +162,9 @@ Objects are synchronized independently.
 
 A conflict affecting one object does not prevent synchronization of other objects.
 
+TODO:
+- race condition: client A uploads new chunk, client B uploads the same chunk, client A uploads manifest, but the chunk is already overwritten. Maybe we need a sync lock with expiration period?
+
 # Merge Strategy
 
 Automatic merge is the default behavior.
@@ -199,37 +202,6 @@ If automatic merge is not possible:
 - notify the user
 
 Future versions will provide manual conflict resolution.
-
-# Deleted Entities
-
-Deleted entities remain as tombstones.
-
-Tombstones are synchronized like normal entities.
-
-Physical removal is deferred.
-
-# Reference Data
-
-Reference data is synchronized independently from monthly chunks.
-
-Updating categories should never require rewriting transaction chunks.
-
-# Attachments
-
-Attachments are synchronized independently.
-
-Attachment synchronization strategy will be specified separately.
-
-# Statistics
-
-Statistics are synchronized as independent storage objects.
-
-Whenever transaction data changes:
-
-- affected statistics are recalculated
-- affected statistics are synchronized
-
-Calculation rules are specified separately.
 
 # Synchronization Triggers
 
