@@ -137,6 +137,15 @@ TODO:
 - User setup flow
 - Recovery flow
 
+# Version Types
+
+BudgetClick uses multiple independent version numbers.
+
+* Schema version
+* Manifest version
+* Storage version
+* Migration version
+* Encryption version
 
 # Record
 

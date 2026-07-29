@@ -5,13 +5,19 @@ export type Month = string;
 
 export type Manifest = {
   schemaVersion: number;
-  manifestVersion: number;
+  version: number;
   createdAt: string;
   updatedAt: string;
   updatedBy: string;
   references: ManifestReferences;
   chunks: Record<Month, ManifestEntry>;
   attachments: ManifestAttachments;
+  migration: {
+    version: number;
+    state: "idle" | "running";
+    startedAt?: string;
+    startedBy?: string;
+  }
 };
 
 export type ManifestEntry = {

@@ -1,4 +1,5 @@
 export type Settings = {
+  migrationVersion: number;
   encryptionVersion: number;
   kdf: KdfSettings;
   cipher: CipherSettings;

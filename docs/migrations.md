@@ -1,19 +1,5 @@
 # BudgetClick 2026 - Migration Specification
 
-## Purpose
-
-This document defines how persisted data evolves between application versions.
-
-It specifies:
-
-- schema versioning
-- storage versioning
-- local database migrations
-- remote storage migrations
-- migration rules
-
-Migration implementation is independent from synchronization and encryption.
-
 # Design Principles
 
 Migration follows these principles:
@@ -21,58 +7,33 @@ Migration follows these principles:
 - Existing migrations are immutable.
 - New migrations are append-only.
 - Migrations are deterministic.
-- Every migration is versioned.
+- Every migration has a unique version.
 - Local and remote migrations are independent.
 - Failed migrations never corrupt user data.
+- Storage migration is exclusive.
+- Interrupted migrations must be safely recoverable.
 
-# Version Types
+# Migration Version
 
-BudgetClick uses multiple independent version numbers.
+The migration version identifies the latest completed storage migration.
 
-## Schema Version
+The client stores its supported migration version in `Settings`.
 
-The schema version describes the structure of application data.
-
-Examples:
-
-- Adding a field to a record
-- Renaming a property
-- Introducing a new entity
-
-Schema version is stored together with every persisted object.
+The remote storage stores the current migration version in the manifest.
 
 Example:
 
-```json
-{
-    "schemaVersion": 1,
-    "data": {}
-}
+```
+settings.migrationVersion = 5
+
+manifest.migration.version = 5
 ```
 
-## Storage Version
+Comparison:
 
-The storage version describes how objects are stored.
-
-Examples:
-
-- Storage layout changes
-- Manifest changes
-- Object envelope changes
-
-Storage version is independent from the schema version.
-
-## Encryption Version
-
-The encryption version describes the encryption format.
-
-Examples:
-
-- New encryption algorithm
-- New object envelope
-- New key hierarchy
-
-Encryption version is defined by the encryption specification.
+- Equal → normal startup.
+- Client version is newer → run migrations.
+- Client version is older → abort startup and require application update.
 
 # Migration Types
 
@@ -90,20 +51,81 @@ Responsibilities:
 
 Local migration occurs before the application starts.
 
-## Remote Migration
+## Storage Migration
 
-Migrates encrypted storage objects.
+Migrates remote storage.
 
 Responsibilities:
 
-- storage objects
 - manifest
+- reference objects
 - monthly chunks
-- reference data
 - statistics
 - attachments
+- storage layout
 
-Remote migration occurs during synchronization.
+Storage migration executes before synchronization.
+
+Synchronization is blocked until migration completes.
+
+# Storage Migration Lock
+
+Storage migration is exclusive.
+
+The migration state is stored in the manifest.
+
+Example:
+
+```json
+{
+    "migration": {
+        "version": 5,
+        "state": "idle"
+    }
+}
+```
+
+States:
+
+- idle
+- running
+
+Only one client may perform a storage migration at a time.
+
+If another client detects a running migration, it waits and retries.
+
+Migration locks have a limited lifetime.
+
+If the lease expires, another client may safely retry the migration.
+
+# Migration Programs
+
+Each storage migration is implemented as an independent program.
+
+Example:
+
+```
+client/
+    migrations/
+        1/
+            index.ts
+        2/
+            index.ts
+        3/
+            index.ts
+```
+
+Migration programs are responsible for their own workflow.
+
+Typical responsibilities include:
+
+- object transformations
+- storage layout updates
+- manifest updates
+- validation
+- cleanup
+
+Migrations execute sequentially until the manifest migration version matches the client migration version.
 
 # Migration Rules
 
@@ -113,6 +135,8 @@ Every migration must:
 - migrate from one version only
 - produce deterministic results
 - be repeatable
+- be idempotent
+- be safely recoverable after interruption
 - never modify previous migrations
 
 Migration chain example:
@@ -121,7 +145,7 @@ Migration chain example:
 1 → 2 → 3 → 4
 ```
 
-Direct migrations are not required.
+Direct migrations are never implemented.
 
 Example:
 
@@ -129,35 +153,7 @@ Example:
 1 → 4
 ```
 
-is never implemented.
-
-# Object Migration
-
-Every storage object is migrated independently.
-
-Example:
-
-```
-Download
-
-↓
-
-Decrypt
-
-↓
-
-Read Version
-
-↓
-
-Migrate
-
-↓
-
-Use Object
-```
-
-Objects that already match the current version are not migrated.
+is not allowed.
 
 # Local Database Migration
 
@@ -177,34 +173,47 @@ When the application starts:
 - Apply required migrations.
 - Store new version.
 
-# Remote Storage Migration
+# Client Compatibility
 
-Remote storage objects are migrated individually.
+Supported storage version is determined by the migration version.
 
-Migration does not require migrating the entire storage at once.
+If:
 
-Objects are migrated when they are downloaded or updated.
+```
+settings.migrationVersion == manifest.migration.version
+```
 
-This allows gradual upgrades across devices.
+the application starts normally.
 
-# Backward Compatibility
+If:
 
-The application supports opening storage created by older versions whenever possible.
+```
+settings.migrationVersion > manifest.migration.version
+```
 
-Older application versions are not required to understand newer storage formats.
+the client performs the required storage migrations.
 
-Backward compatibility is maintained through migrations rather than multiple runtime code paths.
+If:
+
+```
+settings.migrationVersion < manifest.migration.version
+```
+
+startup is aborted and the user is instructed to update the application.
+
+Older clients never modify newer storage.
 
 # Migration Failure
 
 If migration fails:
 
-- preserve the original object
-- abort the current operation
+- preserve the original data
+- abort the migration
+- release or allow expiration of the migration lock
 - report the error
-- never upload partially migrated data
+- never leave storage in an inconsistent state
 
-The application should remain in a recoverable state.
+Migration programs must support safe retry after interruption.
 
 # Migration Testing
 
@@ -214,9 +223,10 @@ Tests should verify:
 
 - forward migration
 - deterministic output
+- idempotency
+- interrupted migration recovery
 - unsupported versions
 - corrupted input
-- rollback safety where applicable
 
 Existing migration tests must never be removed.
 
@@ -228,13 +238,6 @@ Future migrations may include:
 - encryption updates
 - schema changes
 - attachment format updates
+- key hierarchy updates
 
 The migration framework should support long-term evolution without requiring data resets.
-
-# Related Documents
-
-- design.md
-- storage-contract.md
-- data-schema.md
-- encryption.md
-- sync.md
