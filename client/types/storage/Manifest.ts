@@ -11,7 +11,6 @@ export type Manifest = {
   updatedBy: string;
   references: ManifestReferences;
   chunks: Record<Month, ManifestEntry>;
-  statistics: Record<Month, ManifestEntry>;
   attachments: ManifestAttachments;
 };
 
@@ -27,6 +26,5 @@ export type ManifestReferences = {
 };
 
 export type ManifestAttachments = {
-  map: ManifestEntry;
   root: string;
 };
