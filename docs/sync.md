@@ -1,20 +1,5 @@
 # BudgetClick 2026 - Synchronization Specification
 
-## Purpose
-
-This document defines how BudgetClick synchronizes data between the local database and remote storage.
-
-It specifies:
-
-- synchronization responsibilities
-- synchronization flow
-- manifest lifecycle
-- optimistic concurrency
-- merge strategy
-- conflict detection
-
-Encryption, storage format and data schemas are specified separately.
-
 # Design Principles
 
 Synchronization follows these principles:
@@ -26,44 +11,6 @@ Synchronization follows these principles:
 - Synchronization never blocks user interaction.
 - Automatic merge whenever possible.
 - Manual conflict resolution is a future feature.
-
-# Synchronization Unit
-
-The synchronization unit is:
-
-```
-Account + Month
-```
-
-Example:
-
-```
-chunks/
-    account1/
-        2026-01.chunk
-        2026-02.chunk
-```
-
-Changing a record affects only one monthly chunk.
-
-Reference data is synchronized independently.
-
-# Synchronization Responsibilities
-
-The synchronization engine is responsible for:
-
-- downloading remote objects
-- uploading local changes
-- conflict detection
-- automatic merge
-- updating the manifest
-- keeping local storage consistent
-
-The synchronization engine is not responsible for:
-
-- encryption
-- migrations
-- business rules
 
 # Local Workflow
 
@@ -98,15 +45,19 @@ Detect Dirty Objects
 
 ↓
 
+For Each Dirty Object
+
+↓
+
 Download Manifest
 
 ↓
 
-Compare Versions
+Compare Object Version
 
 ↓
 
-Download Remote Objects (if needed)
+Download Remote Object (if needed)
 
 ↓
 
@@ -122,11 +73,15 @@ Encrypt
 
 ↓
 
-Upload
+Upload Object
 
 ↓
 
 Update Manifest
+
+↓
+
+Next Dirty Object
 
 ↓
 
@@ -152,19 +107,31 @@ It is never synchronized.
 
 The manifest represents the current state of remote storage.
 
-The synchronization engine downloads the manifest before every synchronization.
+The synchronization engine downloads the manifest before synchronizing each dirty object.
 
 The manifest is used to determine:
 
-- available objects
+- object locations
 - object versions
-- changed objects
 
 The manifest itself is encrypted.
 
+# Object Keys
+
+Every synchronized object has a stable, randomly generated storage object key.
+
+The object key:
+
+- is generated when the object is created
+- never changes
+- is stored in the manifest
+- obfuscates storage object names
+
+Objects are overwritten in place using their stable object key.
+
 # Object Version
 
-Every storage object contains a version.
+Every synchronized object contains a version.
 
 Whenever an object changes:
 
@@ -172,20 +139,28 @@ Whenever an object changes:
 version = version + 1
 ```
 
-Version comparison determines whether synchronization is required.
+The manifest stores the latest synchronized version for every object.
+
+Version comparison determines whether synchronization or merging is required.
 
 # Optimistic Concurrency
 
 Synchronization assumes conflicts are uncommon.
 
-Before uploading an object:
+Before synchronizing a dirty object:
 
 1. Download the latest manifest.
-2. Compare object versions.
-3. If unchanged, upload.
-4. If changed, merge first.
+2. Compare the remote object version with the local base version.
+3. If the versions match, upload the local object.
+4. If the remote version is newer, download the remote object and merge.
+5. Upload the merged object.
+6. Update the manifest.
 
-No object is overwritten without first checking the remote version.
+If another client updates the manifest before it can be uploaded, synchronization of the current object is repeated using the latest manifest.
+
+Objects are synchronized independently.
+
+A conflict affecting one object does not prevent synchronization of other objects.
 
 # Merge Strategy
 
@@ -292,7 +267,7 @@ Typical failures include:
 - object conflict
 - decryption failure
 
-Synchronization should resume safely after the failure is resolved.
+Synchronization resumes safely after the failure is resolved.
 
 # Future Improvements
 
@@ -301,13 +276,4 @@ Future versions may introduce:
 - manual conflict resolution
 - background synchronization
 - incremental synchronization
-- object history
 - synchronization diagnostics
-
-# Related Documents
-
-- design.md
-- storage-contract.md
-- data-schema.md
-- encryption.md
-- migrations.md

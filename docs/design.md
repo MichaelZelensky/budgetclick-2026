@@ -327,32 +327,6 @@ TODO:
 - Backwards compatibility with saved data.
 
 
-# Synchronization Model
-
-Remote synchronization unit: month
-
-Example:
-
-```
-chunks/
-  transactions/
-    2026-01.chunk -> obfuscated as c_adiuw2, mapped in the manifest
-    2026-02.chunk
-```
-
-Each chunk contains the complete state for that period.
-
-No remote operation log is stored.
-
-Synchronization follows an optimistic concurrency model.
-
-Whenever possible, conflicting changes are merged automatically.
-
-Manual conflict resolution is planned for a future iteration.
-
-Before syncronization, a manifest-temporary must be created - to recover broken synchronizations and block concurrent clients.
-
-
 # Chunk Metadata
 
 Each monthly chunk is self-describing.
@@ -382,36 +356,6 @@ Purpose:
 * support sync workflow
 
 The change log is not synchronized to S3.
-
-
-# Sync Flow
-
-```
-User action
-|
-v
-Local database
-|
-v
-Local change log
-|
-v
-Regenerate affected chunk
-|
-v
-Encrypt
-|
-v
-Upload encrypted S3 object
-```
-
-TODO:
-
-* Upload flow
-* Download flow
-* Optimistic concurrency
-* Automatic merge strategy
-* Manifest update lifecycle
 
 
 # Statistics
