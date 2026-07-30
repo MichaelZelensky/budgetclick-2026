@@ -2,5 +2,9 @@ files-content.txt
 tmp.md
 node_modules/
 client/dist/
+
 client/src/schemas/*.schema.json
 !client/src/schemas/.gitkeep
+
+client/src/validators/default/*.js
+!client/src/validators/default/.gitkeep

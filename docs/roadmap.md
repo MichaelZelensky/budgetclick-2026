@@ -35,16 +35,16 @@ Build from the bottom up. The higher-level modules depend on the lower ones, and
 Suggested order:
 
 0. **Base**
-- schema generation
-- build process
-- validators generation
-- implement tests
-- build the production desktop running environment (docker container)
+- ✅schema generation
+- ✅build process
+- ✅validators generation
+- ✅implement tests
+- ✅build the production desktop running environment (docker container)
 
 1. **Settings**
 
-   * Load `settings.json`
-   * Validate settings
+   * Load `config.json` and `settings.json`
+   * Validate config and settings
    * Global constants
 
 2. **Encryption**
@@ -118,7 +118,7 @@ Activities:
 
 - ✅Setup repository (done)
 - ✅Setup AI-assisted tooling
-- Setup Vue + TypeScript project
+- ✅Setup Vue + TypeScript project
 - Setup PWA configuration
 - Setup development environment
 - Setup VS Code Dev Container

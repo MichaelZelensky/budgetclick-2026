@@ -9,7 +9,7 @@
     "docker-test-client": "tsx client/tests/e2e/docker/startup.test.ts"
   },
   "devDependencies": {
-    "glob": "^13.0.6",
+    "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.9.0",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3"
