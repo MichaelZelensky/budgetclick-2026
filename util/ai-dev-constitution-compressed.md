@@ -23,11 +23,12 @@
 
 ## Functions
 
-- `const abc = () => {};`
+- `const abc = (a: TypeA, b: TypeB) => {};`
 - Avoid `function` syntax unless explicitly required.
 - `const` only.
 - Prefer pure functions.
 - Small and modular.
+- Arguments in one line unless too long: `abc(a, b);`, `const abc = (a: TypeA, b: TypeB) => {};`
 
 ## Formatting
 
