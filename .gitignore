@@ -1,2 +1,4 @@
 files-content.txt
 tmp.md
+node_modules/
+dist/
