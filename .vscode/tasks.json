@@ -22,6 +22,19 @@
       },
       "isBackground": true,
       "problemMatcher": "$tsc-watch"
+    },
+    {
+      "label": "Generate schemas",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "tsx",
+        "../util/generate-schemas.ts"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/client"
+      },
+      "problemMatcher": []
     }
   ]
 }

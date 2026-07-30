@@ -1,4 +1,6 @@
 files-content.txt
 tmp.md
 node_modules/
-dist/
+client/dist/
+client/src/schemas/*.schema.json
+!client/src/schemas/.gitkeep
