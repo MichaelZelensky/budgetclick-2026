@@ -14,6 +14,7 @@ Activities:
 - ✅Finalize `sync.md`
 - ✅Finalize `encryption.md`
 - ✅Finalize `migrations.md`
+- Set up the client:
 - Validate iOS PWA feasibility
 - Define application state model
 
@@ -26,6 +27,86 @@ Expected outcome:
 - Stable encryption model
 - Ready for implementation
 
+### Client module setup priority:
+
+```
+Build from the bottom up. The higher-level modules depend on the lower ones, and this minimizes rework.
+
+Suggested order:
+
+0. **Base**
+- schema generation
+- build process
+- validators generation
+- implement tests
+
+1. **Settings**
+
+   * Load `settings.json`
+   * Validate settings
+   * Global constants
+
+2. **Encryption**
+
+   * Key derivation
+   * AES-GCM encrypt/decrypt
+   * Serialization helpers
+   * Tests
+
+3. **Storage**
+
+   * Storage interfaces
+   * IndexedDB adapter
+   * S3 adapter
+   * Binary read/write
+
+4. **Local Database (IndexedDB)**
+
+   * Database initialization
+   * Object stores
+   * Transactions
+   * Version management
+
+5. **Migrations**
+
+   * Local migration framework
+   * Storage migration framework
+   * Runner
+   * Version checks
+
+6. **Repositories (`data/`)**
+
+   * AccountRepository
+   * CategoryRepository
+   * TransactionRepository
+   * ContractorRepository
+
+7. **State**
+
+   * Reactive application state
+   * Current settings
+   * Current database
+   * Sync status
+
+8. **Cache**
+
+   * Derived balances
+   * Statistics
+   * Query caching
+
+9. **Sync**
+
+   * Manifest
+   * Dirty tracking
+   * Merge
+   * Upload/download
+
+10. **Views**
+
+    * Setup wizard
+    * Unlock screen
+    * Main application
+```
 ## Phase 1 - Development Environment
 
 Goal:

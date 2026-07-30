@@ -2,6 +2,9 @@
   "private": true,
   "name": "budgetclick-2026",
   "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "build": "tsx util/build.ts"
+  },
   "devDependencies": {
     "glob": "^13.0.6",
     "ts-json-schema-generator": "^2.9.0",
