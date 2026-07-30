@@ -45,6 +45,37 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Docker: Build Client",
+      "dependsOn": [
+        "Build"
+      ],
+      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "docker-build-client"
+      ],
+      "problemMatcher": []
+    }
+    {
+      "label": "Docker: Run Client",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "docker-run-client"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Test Client",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "docker-test-client"
+      ],
+      "problemMatcher": []
     }
   ]
 }
