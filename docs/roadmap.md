@@ -14,7 +14,7 @@ Activities:
 - ✅Finalize `sync.md`
 - ✅Finalize `encryption.md`
 - ✅Finalize `migrations.md`
-- Set up the client:
+- Set up the client
 - Validate iOS PWA feasibility
 - Define application state model
 
@@ -39,6 +39,7 @@ Suggested order:
 - build process
 - validators generation
 - implement tests
+- build the production desktop running environment (docker container)
 
 1. **Settings**
 
