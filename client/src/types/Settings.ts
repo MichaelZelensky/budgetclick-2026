@@ -1,7 +1,7 @@
 /**
  * Settings.
  */
-export type Settings {
+export type Settings = {
   /**
    * @minimum 1
    */
