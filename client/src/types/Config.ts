@@ -1,6 +1,9 @@
+import { LogLevel } from "@/types/Logger";
+
 export type Config = {
   migrationVersion: number;
   encryptionVersion: number;
+  logLevel: LogLevel;
   kdf: KdfConfig;
   cipher: CipherConfig;
 };

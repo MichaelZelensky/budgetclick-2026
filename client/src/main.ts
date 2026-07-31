@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 import { initializeApplication } from "@/init";
+import { logger } from "@/logger.js";
 
 const main = async () => {
     await initializeApplication();
@@ -8,7 +9,7 @@ const main = async () => {
 };
 
 main().catch(error => {
-    console.error(error);
+    logger.error(error);
     document.body.innerHTML = `
         <h1>Startup failed</h1>
         <pre>${String(error)}</pre>
