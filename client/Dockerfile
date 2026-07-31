@@ -13,6 +13,7 @@ RUN pnpm build
 FROM nginx:alpine
 
 COPY --from=build /app/client/dist /usr/share/nginx/html
+COPY --from=build /app/client/config.json /usr/share/nginx/html/config.json
 
 EXPOSE 80
 
