@@ -45,7 +45,9 @@ Suggested order:
 1. **Settings**
 
    * ✅Load `config.json` and `settings.json`
+   * Load the user settings, add the view, persist the user settings in the browser memory
    * ✅Validate config and settings
+   * validate the loaded settings
    * ✅Global constants (app state with immutable objects)
 
 2. **Encryption**
