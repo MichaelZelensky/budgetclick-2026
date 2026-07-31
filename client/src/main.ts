@@ -1,15 +1,13 @@
 import { createApp } from "vue";
 import App from "./App.vue";
-import { initializeState } from "@/state";
-import { loadConfig } from "@/config/loadConfig";
+import { initializeApplication } from "@/init";
 
-async function main(): Promise<void> {
-    initializeState();
-    await loadConfig();
+const main = async () => {
+    await initializeApplication();
     createApp(App).mount("#app");
-}
+};
 
-main().catch((error) => {
+main().catch(error => {
     console.error(error);
     document.body.innerHTML = `
         <h1>Startup failed</h1>

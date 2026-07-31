@@ -8,6 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:run": "vitest run -c vitest.config.ts",
+    "test:watch": "vitest -c vitest.config.ts",
     "generate-schemas": "tsx ../util/generate-schemas.ts"
   },
   "dependencies": {
