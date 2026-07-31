@@ -1,4 +1,5 @@
 {
+  "migrationVersion": 1,
   "encryptionVersion": 1,
   "kdf": {
     "algorithm": "PBKDF2",
