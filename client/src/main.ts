@@ -1,8 +1,10 @@
 import { createApp } from "vue";
 import App from "./App.vue";
-import { loadConfig } from "./config/loadConfig";
+import { initializeState } from "@/state";
+import { loadConfig } from "@/config/loadConfig";
 
 async function main(): Promise<void> {
+    initializeState();
     await loadConfig();
     createApp(App).mount("#app");
 }

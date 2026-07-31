@@ -40,12 +40,13 @@ Suggested order:
 - ✅validators generation
 - ✅implement tests
 - ✅build the production desktop running environment (docker container)
+- logger with log levels
 
 1. **Settings**
 
-   * Load `config.json` and `settings.json`
-   * Validate config and settings
-   * Global constants
+   * ✅Load `config.json` and `settings.json`
+   * ✅Validate config and settings
+   * ✅Global constants (app state with immutable objects)
 
 2. **Encryption**
 
