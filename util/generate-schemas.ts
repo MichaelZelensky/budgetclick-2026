@@ -37,83 +37,113 @@ const removeFiles = async (dir: string, suffix: string) => {
     }
 };
 
-const generateValidators = async (schemasDir: string,	validatorsDir: string) => {
-	await removeFiles(validatorsDir, ".js");
+const generateValidators = async (schemasDir: string, validatorsDir: string) => {
+    await removeFiles(validatorsDir, ".js");
+    await removeFiles(validatorsDir, ".d.ts");
 
-	const schemaFiles = await readdir(schemasDir, {
-		withFileTypes: true,
-	});
-	schemaFiles.sort((a, b) => a.name.localeCompare(b.name));
-	
+    const schemaFiles = await readdir(schemasDir, {
+        withFileTypes: true,
+    });
+    schemaFiles.sort((a, b) => a.name.localeCompare(b.name));
 
-	const indexExports: string[] = [];
+    const indexExports: string[] = [];
+    const indexDeclarations: string[] = [];
 
-	for (const file of schemaFiles) {
-		if (!file.isFile()) {
-			continue;
-		}
+    for (const file of schemaFiles) {
+        if (!file.isFile()) {
+            continue;
+        }
 
-		if (!file.name.endsWith(".schema.json")) {
-			continue;
-		}
+        if (!file.name.endsWith(".schema.json")) {
+            continue;
+        }
 
-		const schemaFile = path.join(
-			schemasDir,
-			file.name,
-		);
+        const schemaFile = path.join(
+            schemasDir,
+            file.name,
+        );
 
-		const validatorName = file.name.replace(
-			/\.schema\.json$/,
-			"",
-		);
+        const validatorName = file.name.replace(
+            /\.schema\.json$/,
+            "",
+        );
 
-		const validatorFile = path.join(
-			validatorsDir,
-			`${validatorName}.js`,
-		);
+        const validatorFile = path.join(
+            validatorsDir,
+            `${validatorName}.js`,
+        );
 
-		console.log(`Generating ${validatorName} validator...`);
+        const declarationFile = path.join(
+            validatorsDir,
+            `${validatorName}.d.ts`,
+        );
 
-		const schema = JSON.parse(
-			await readFile(schemaFile, "utf8"),
-		) as AnySchema;
+        console.log(`Generating ${validatorName} validator...`);
 
-		const ajv = new Ajv({
-			code: {
-				esm: true,
-				source: true,
-			},
-		});
+        const schema = JSON.parse(
+            await readFile(schemaFile, "utf8"),
+        ) as AnySchema;
 
-		const validate = ajv.compile(schema);
+        const ajv = new Ajv({
+            code: {
+                esm: true,
+                source: true,
+            },
+        });
 
-		const code = standaloneCode(
-			ajv,
-			validate,
-		);
+        const validate = ajv.compile(schema);
 
-		await writeFile(
-			validatorFile,
-			code + "\n",
-		);
+        const code = standaloneCode(
+            ajv,
+            validate,
+        );
 
-		console.log(
-			`  -> ${path.relative(repoDir, validatorFile)}`,
-		);
+        await writeFile(
+            validatorFile,
+            code + "\n",
+        );
 
-		indexExports.push(
-			`export { default as ${validatorName} } from "./${validatorName}.js";`,
-		);
-	}
+        await writeFile(
+            declarationFile,
+`import type { ErrorObject } from "ajv";
+import type { ${validatorName} } from "@/types/${validatorName}";
 
-	indexExports.sort();
+declare const validate: {
+    (data: unknown): data is ${validatorName};
+    errors?: ErrorObject[] | null;
+};
 
-	await writeFile(
-		path.join(validatorsDir, "index.js"),
-		indexExports.join("\n") + "\n",
-	);
+export default validate;
+`,
+        );
 
-	console.log(`Generated ${indexExports.length} validator(s).`);
+        console.log(
+            `  -> ${path.relative(repoDir, validatorFile)}`,
+        );
+
+        indexExports.push(
+            `export { default as ${validatorName} } from "./${validatorName}.js";`,
+        );
+
+        indexDeclarations.push(
+            `export { default as ${validatorName} } from "./${validatorName}.js";`,
+        );
+    }
+
+    indexExports.sort();
+    indexDeclarations.sort();
+
+    await writeFile(
+        path.join(validatorsDir, "index.js"),
+        indexExports.join("\n") + "\n",
+    );
+
+    await writeFile(
+        path.join(validatorsDir, "index.d.ts"),
+        indexDeclarations.join("\n") + "\n",
+    );
+
+    console.log(`Generated ${indexExports.length} validator(s).`);
 };
 
 const walk = async (dir: string): Promise<string[]> => {

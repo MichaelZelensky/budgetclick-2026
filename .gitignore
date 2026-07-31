@@ -7,4 +7,5 @@ client/src/schemas/*.schema.json
 !client/src/schemas/.gitkeep
 
 client/src/validators/default/*.js
+client/src/validators/default/*.d.ts
 !client/src/validators/default/.gitkeep
