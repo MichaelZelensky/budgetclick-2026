@@ -14,9 +14,9 @@ Activities:
 - ✅Finalize `sync.md`
 - ✅Finalize `encryption.md`
 - ✅Finalize `migrations.md`
-- Set up the client
+- ✅Set up the client
 - Validate iOS PWA feasibility
-- Define application state model
+- ✅Define application state model
 
 Expected outcome:
 
@@ -40,12 +40,13 @@ Suggested order:
 - ✅validators generation
 - ✅implement tests
 - ✅build the production desktop running environment (docker container)
-- logger with log levels
+- ✅logger with log levels
 
 1. **Settings**
 
    * ✅Load `config.json` and `settings.json`
    * Load the user settings, add the view, persist the user settings in the browser memory
+   * Local user settings (passphrase and storage path)
    * ✅Validate config and settings
    * validate the loaded settings
    * ✅Global constants (app state with immutable objects)
@@ -124,8 +125,8 @@ Activities:
 - ✅Setup Vue + TypeScript project
 - Setup PWA configuration
 - Setup development environment
-- Setup VS Code Dev Container
-- Setup local testing environment
+- ✅Setup VS Code Dev Container
+- ✅Setup local testing environment
 - Setup deployment pipeline
 - Setup development S3 storage
 
