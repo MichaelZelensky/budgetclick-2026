@@ -38,6 +38,7 @@
 - Indent; do not align vertically.
 - No visual separators.
 - Keep related lines together.
+- Indent with 2 spaces
 
 ## Comments
 

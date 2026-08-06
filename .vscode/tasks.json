@@ -2,16 +2,25 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Concat files",
+      "label": "[dev] Concat files (chunked)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat-from-clipboard.ps1",
-      "problemMatcher": [],
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000",
+      "problemMatcher": []
     },
     {
-      "label": "Run client",
+      "label": "[dev] Concat files (with constitution)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution constitution-compressed.md",
+      "problemMatcher": []
+    },
+    {
+      "label": "[dev] Apply LLM patch",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/apply-patch.ps1",
+      "problemMatcher": []
+    },
+    {
+      "label": "[Vue] Run dev client",
       "type": "shell",
       "command": "pnpm",
       "args": [
@@ -24,7 +33,7 @@
       "problemMatcher": "$tsc-watch"
     },
     {
-      "label": "Generate schemas",
+      "label": "[dev] Generate schemas and validators",
       "type": "shell",
       "command": "pnpm",
       "args": [
@@ -37,7 +46,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Build",
+      "label": "[Vue] Build",
       "type": "shell",
       "command": "pnpm build",
       "group": {
@@ -47,7 +56,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Docker: Build Client",
+      "label": "[Docker] Build Client",
       "dependsOn": [
         "Build"
       ],
@@ -60,7 +69,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Docker: Run Client",
+      "label": "[Docker] Run Client",
       "type": "shell",
       "command": "pnpm",
       "args": [
@@ -69,7 +78,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Docker: Test Client",
+      "label": "[Docker] Test Client",
       "type": "shell",
       "command": "pnpm",
       "args": [
