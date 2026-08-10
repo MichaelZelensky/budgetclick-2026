@@ -9,3 +9,8 @@ client/src/schemas/*.schema.json
 client/src/validators/default/*.js
 client/src/validators/default/*.d.ts
 !client/src/validators/default/.gitkeep
+
+util/concat-out/*
+!util/concat-out/.gitkeep
+
+llm.patch
