@@ -45,7 +45,7 @@ Suggested order:
 1. **Settings**
 
    * ✅Load `config.json` and `settings.json`
-   * Load the user settings, add the view, persist the user settings in the browser memory
+   * ✅Load the user settings, add the view, persist the user settings in the browser memory
    * Local user settings (passphrase and storage path)
    * ✅Validate config and settings
    * validate the loaded settings
