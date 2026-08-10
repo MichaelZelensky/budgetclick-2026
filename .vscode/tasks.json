@@ -10,7 +10,7 @@
     {
       "label": "[dev] Concat files (with constitution)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution constitution-compressed.md",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution util/constitution-compressed.md -MaxChars 10000",
       "problemMatcher": []
     },
     {
