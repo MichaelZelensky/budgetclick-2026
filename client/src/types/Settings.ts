@@ -8,7 +8,7 @@ export type Settings = {
   schemaVersion: number;
 
   /**
-   * @pattern ^[a-z]+$
+   * @pattern ^[a-z0-9]+$
    */
   storage: string;
-}
+};
