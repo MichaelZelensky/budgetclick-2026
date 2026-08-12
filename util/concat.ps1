@@ -13,7 +13,6 @@
 # powershell.exe -NoProfile -ExecutionPolicy Bypass `
 #   -File ./util/concat.ps1 `
 #   -Constitution constitution-compressed.md `
-#   -CodingInstructions coding-instructions.md `
 #   -OutputFormat patch `
 #   -MaxChars 120000
 #
@@ -21,7 +20,6 @@
 
 param(
     [string]$Constitution,
-    [string]$CodingInstructions,
 
     [ValidateSet("patch", "full-code")]
     [string]$OutputFormat = "patch",
@@ -97,12 +95,6 @@ function CreateHeader {
     $instructionText = ReadText $instructionFile
     if ($instructionText.Length -gt 0) {
         [void]$builder.AppendLine($instructionText.TrimEnd())
-        [void]$builder.AppendLine()
-    }
-
-    $codingInstructionsText = ReadText $CodingInstructions
-    if ($codingInstructionsText.Length -gt 0) {
-        [void]$builder.AppendLine($codingInstructionsText.TrimEnd())
         [void]$builder.AppendLine()
     }
 

@@ -1,16 +1,40 @@
 {
   "version": "2.0.0",
   "tasks": [
+{
+      "label": "[dev] Concat (chunked, full-code)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000",
+      "problemMatcher": []
+    },
     {
-      "label": "[dev] Concat files (chunked)",
+      "label": "[dev] Concat (constitution, full-code)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md",
+      "problemMatcher": []
+    },
+    {
+      "label": "[dev] Concat (chunks, constitution, full-code)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md -MaxChars 10000",
+      "problemMatcher": []
+    },
+    {
+      "label": "[dev] Concat (chunked, patch)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat files (with constitution)",
+      "label": "[dev] Concat (constitution, patch)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution util/constitution-compressed.md -MaxChars 10000",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md",
+      "problemMatcher": []
+    },
+    {
+      "label": "[dev] Concat (chunks, constitution, patch)",
+      "type": "shell",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md -MaxChars 10000",
       "problemMatcher": []
     },
     {

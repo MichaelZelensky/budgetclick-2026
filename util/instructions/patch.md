@@ -4,8 +4,23 @@ Rules:
 
 - Modify only the provided files.
 - Do not include explanations.
-- Do not wrap the output in markdown.
-- Do not include any text before or after the operations.
+- Wrap the entire output in exactly one markdown code block.
+- Use a plain fenced code block with triple backticks.
+- Do not put any text before or after the code block.
+- Preserve all indentation exactly as required by the constitution.
+- Every line of replacement text must retain its intended indentation.
+- Do not remove leading spaces from replacement text.
+
+Patch selection rules:
+
+- Prefer `insert` over `diff` when adding new lines without modifying existing lines.
+- Prefer `delete` over `diff` when removing complete existing lines.
+- Use `diff` only when existing lines must actually be replaced.
+- Before producing a `diff`, verify that the specified range contains exactly the existing lines being replaced.
+- Do not include unchanged surrounding lines in a `diff`.
+- Line numbers refer to the original input files, not to the modified files.
+- Preserve all unchanged lines exactly.
+- For every operation, choose the smallest possible affected line range.
 
 Operations:
 
