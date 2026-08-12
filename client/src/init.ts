@@ -1,5 +1,5 @@
-import { initializeState, initializeConfig, initializeSettings } from "@/state";
-import { loadConfig } from "@/config/loadConfig";
+﻿import { initializeState, initializeConfig, initializeSettings } from "@/state";
+import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
