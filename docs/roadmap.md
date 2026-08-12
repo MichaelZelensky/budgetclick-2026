@@ -46,9 +46,8 @@ Suggested order:
 
    * ✅Load `config.json` and `settings.json`
    * ✅Load the user settings, add the view, persist the user settings in the browser memory
-   * Local user settings (passphrase and storage path)
+   * ✅Local user settings (passphrase and storage path)
    * ✅Validate config and settings
-   * validate the loaded settings
    * ✅Global constants (app state with immutable objects)
 
 2. **Encryption**
@@ -124,7 +123,7 @@ Activities:
 - ✅Setup AI-assisted tooling
 - ✅Setup Vue + TypeScript project
 - Setup PWA configuration
-- Setup development environment
+- ✅Setup development environment
 - ✅Setup VS Code Dev Container
 - ✅Setup local testing environment
 - Setup deployment pipeline
@@ -144,6 +143,7 @@ Build the first usable version.
 Scope:
 
 - Application shell
+- App GUI styling
 - Initial setup flow
 - Local IndexedDB storage
 - Encryption layer
