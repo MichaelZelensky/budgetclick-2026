@@ -1,5 +1,6 @@
-import type { Settings } from "@/types/Settings";
+﻿import type { Settings } from "@/types/Settings";
 import validateSettings from "@/validators/default/Settings.js";
+import { fetchAndValidate } from "@/utils/fetch-and-validate";
 
 const settingsStorageKey = "budgetclick.settings";
 
@@ -25,24 +26,7 @@ export const loadSettings = async (): Promise<Settings> => {
 
     return settings as Settings;
   }
-
-  const response = await fetch("/settings.json");
-
-  if (!response.ok) {
-    throw new Error(`Failed to load settings.json (${response.status})`);
-  }
-
-  const settings: unknown = await response.json();
-
-  if (!validateSettings(settings)) {
-    const errors = validateSettings.errors
-      ?.map(x => `${x.instancePath || "/"}: ${x.message}`)
-      .join("\n");
-
-    throw new Error(`Invalid settings.json\n${errors}`);
-  }
-
-  return settings as Settings;
+  return fetchAndValidate<Settings>("/settings.json", validateSettings, "settings.json");
 };
 
 export const saveSettings = (settings: Settings): void => {
