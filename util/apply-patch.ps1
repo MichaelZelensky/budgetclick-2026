@@ -28,7 +28,7 @@ function GetBeforeLines {
     if ($Start -le 1) {
         return @()
     }
-    return $File[0..($Start - 2)]
+    return @($File[0..($Start - 2)])
 }
 
 function GetAfterLines {
@@ -39,7 +39,7 @@ function GetAfterLines {
     if ($End -ge $File.Count) {
         return @()
     }
-    return $File[$End..($File.Count - 1)]
+    return @($File[$End..($File.Count - 1)])
 }
 
 function EnsureParentDirectory {
@@ -75,11 +75,11 @@ while ($current -lt $lines.Count) {
     $start = [int]$rangeParts[0]
     $end = [int]$rangeParts[1]
     $replacement = ReadBlock -Lines $lines -Current ([ref]$current)
-    $file = Get-Content -LiteralPath $path
+    $file = @(Get-Content -LiteralPath $path)
     $before = GetBeforeLines -File $file -Start $start
     $after = GetAfterLines -File $file -End $end
     EnsureParentDirectory -Path $path
-    @($before + $replacement + $after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
+    @($before) + @($replacement) + @($after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
   }
   elseif ($header -match "^insert (.+)$") {
     $path = $Matches[1]
@@ -87,11 +87,11 @@ while ($current -lt $lines.Count) {
     $line = [int]$lines[$current]
     $current++
     $insert = ReadBlock -Lines $lines -Current ([ref]$current)
-    $file = Get-Content -LiteralPath $path
-    $before = if ($line -gt 0) { $file[0..($line - 1)] } else { @() }
-    $after = if ($line -lt $file.Count) { $file[$line..($file.Count - 1)] } else { @() }
+    $file = @(Get-Content -LiteralPath $path)
+    $before = if ($line -gt 0) { @($file[0..($line - 1)]) } else { @() }
+    $after = if ($line -lt $file.Count) { @($file[$line..($file.Count - 1)]) } else { @() }
     EnsureParentDirectory -Path $path
-    @($before + $insert + $after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
+    @($before) + @($insert) + @($after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
   }
   elseif ($header -match "^delete (.+)$") {
     $path = $Matches[1]
@@ -101,11 +101,11 @@ while ($current -lt $lines.Count) {
     $rangeParts = $range.Split("-")
     $start = [int]$rangeParts[0]
     $end = [int]$rangeParts[1]
-    $file = Get-Content -LiteralPath $path
+    $file = @(Get-Content -LiteralPath $path)
     $before = GetBeforeLines -File $file -Start $start
     $after = GetAfterLines -File $file -End $end
     EnsureParentDirectory -Path $path
-    @($before + $after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
+    @($before) + @($after) | Set-Content -LiteralPath $path -Encoding utf8 -Force
   }
   elseif ($header -match "^new (.+)$") {
     $path = $Matches[1]
