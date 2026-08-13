@@ -26,7 +26,7 @@ export const loadSettings = async (): Promise<Settings> => {
 
     return settings as Settings;
   }
-  return fetchAndValidate<Settings>("/settings.json", validateSettings, "settings.json");
+  return fetchAndValidate<Settings>(`${import.meta.env.BASE_URL}settings.json`, validateSettings, "settings.json");
 };
 
 export const saveSettings = (settings: Settings): void => {
