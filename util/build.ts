@@ -29,7 +29,7 @@ async function run(
 
 async function main(): Promise<void> {
     console.log("Generating schemas and validators...");
-    await run("pnpm", ["generate-schemas"], path.join(repoDir, "client"));
+    await run("pnpm", ["generate-schemas"], repoDir);
 
     console.log();
     console.log("Building client...");
