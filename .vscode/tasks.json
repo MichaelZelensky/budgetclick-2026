@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
 {
-      "label": "[dev] Concat (chunked, full-code)",
+      "label": "[dev] Concat (chunks, full-code)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000",
       "problemMatcher": []
@@ -20,7 +20,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (chunked, patch)",
+      "label": "[dev] Concat (chunks, patch)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000",
       "problemMatcher": []
@@ -70,7 +70,7 @@
       "problemMatcher": []
     },
     {
-      "label": "[Vue] Build",
+      "label": "Build Client",
       "type": "shell",
       "command": "pnpm build",
       "group": {
