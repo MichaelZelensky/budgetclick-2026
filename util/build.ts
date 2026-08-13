@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+﻿import { spawn } from "node:child_process";
 import path from "node:path";
 
 const repoDir = path.resolve(import.meta.dirname, "..");
@@ -28,6 +28,10 @@ async function run(
 }
 
 async function main(): Promise<void> {
+    console.log("Generating schemas and validators...");
+    await run("pnpm", ["generate-schemas"], path.join(repoDir, "client"));
+
+    console.log();
     console.log("Building client...");
     await run("pnpm", ["build"], path.join(repoDir, "client"));
 
