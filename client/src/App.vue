@@ -6,10 +6,14 @@
       </RouterLink>
 
       <RouterLink to="/settings" aria-label="Settings" title="Settings">
-        <i class="bi bi-gear"></i>
+        <GearIcon />
       </RouterLink>
     </header>
 
     <RouterView />
   </div>
 </template>
+
+<script setup lang="ts">
+import GearIcon from "@/components/icons/gear.vue";
+</script>
