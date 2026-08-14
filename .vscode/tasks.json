@@ -2,43 +2,43 @@
   "version": "2.0.0",
   "tasks": [
 {
-      "label": "[dev] Concat (chunks, full-code)",
+      "label": "[Dev] Concat (chunks, full-code)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (constitution, full-code)",
+      "label": "[Dev] Concat (constitution, full-code)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (chunks, constitution, full-code)",
+      "label": "[Dev] Concat (chunks, constitution, full-code)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md -MaxChars 10000",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (chunks, patch)",
+      "label": "[Dev] Concat (chunks, patch)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (constitution, patch)",
+      "label": "[Dev] Concat (constitution, patch)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Concat (chunks, constitution, patch)",
+      "label": "[Dev] Concat (chunks, constitution, patch)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md -MaxChars 10000",
       "problemMatcher": []
     },
     {
-      "label": "[dev] Apply LLM patch",
+      "label": "[Dev] Apply LLM patch",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/apply-patch.ps1",
       "problemMatcher": []
@@ -57,7 +57,7 @@
       "problemMatcher": "$tsc-watch"
     },
     {
-      "label": "[dev] Generate schemas and validators",
+      "label": "[Dev] Generate schemas and validators",
       "type": "shell",
       "command": "pnpm",
       "args": [
@@ -70,13 +70,20 @@
       "problemMatcher": []
     },
     {
-      "label": "Build Client",
+      "label": "[Vue] Build Client",
       "type": "shell",
       "command": "pnpm build",
       "group": {
         "kind": "build",
         "isDefault": true
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "[Vue] Preview Client (must be built first)",
+      "type": "shell",
+      "command": "pnpm --dir client exec vite preview --host 0.0.0.0",
+      "isBackground": true,
       "problemMatcher": []
     },
     {
