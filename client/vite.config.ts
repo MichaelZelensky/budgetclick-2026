@@ -5,22 +5,23 @@ import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/budgetclick-pwa/",
+  base: "/bc-pwa/",
 
   plugins: [
     vue(),
 
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
 
       manifest: {
         name: "BudgetClick",
         short_name: "BudgetClick",
-        start_url: "/budgetclick-pwa/",
-        scope: "/budgetclick-pwa/",
+        start_url: "/bc-pwa/",
+        scope: "/bc-pwa/",
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: "#0f6e56",
+        theme_color: "#2563EB",
 
         icons: [
           {
@@ -43,7 +44,9 @@ export default defineConfig({
       },
 
       workbox: {
-        navigateFallback: "/budgetclick-pwa/index.html",
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}",
+        ],
       },
     }),
   ],

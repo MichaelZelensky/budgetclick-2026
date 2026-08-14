@@ -26,15 +26,15 @@ importers:
 
   client:
     dependencies:
-      bootstrap-icons:
-        specifier: ^1.13.1
-        version: 1.13.1
       vue:
         specifier: ^3.5.0
         version: 3.5.41(typescript@5.9.3)
       vue-router:
         specifier: ^5.0.0
         version: 5.2.0(@vue/compiler-sfc@3.5.41)(esbuild@0.28.2)(rollup@4.62.4)(vite@7.3.6(@types/node@26.2.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))(vue@3.5.41(typescript@5.9.3))
+      workbox-window:
+        specifier: ^7.4.1
+        version: 7.4.1
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^6.0.0
@@ -1163,9 +1163,6 @@ packages:
 
   birpc@2.9.0:
     resolution: {integrity: sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw==}
-
-  bootstrap-icons@1.13.1:
-    resolution: {integrity: sha512-ijombt4v6bv5CLeXvRWKy7CuM3TRTuPEuGaGKvTV5cz65rQSY8RQ2JcHt6b90cBBAC7s8fsf2EkQDldzCoXUjw==}
 
   brace-expansion@2.1.4:
     resolution: {integrity: sha512-hGfVzPxthbf3+2yjg/RBs60cB0FhqBS/zvdV/4wn4/BmN0bNMMHPc4V/BbFieqf1TKAGGAHnY4eSjajCl0f2Xg==}
@@ -3488,8 +3485,6 @@ snapshots:
   baseline-browser-mapping@2.11.13: {}
 
   birpc@2.9.0: {}
-
-  bootstrap-icons@1.13.1: {}
 
   brace-expansion@2.1.4:
     dependencies:
