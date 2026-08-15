@@ -15,7 +15,7 @@ Activities:
 - ✅Finalize `encryption.md`
 - ✅Finalize `migrations.md`
 - ✅Set up the client
-- Validate iOS PWA feasibility
+- ✅Validate iOS PWA feasibility
 - ✅Define application state model
 
 Expected outcome:
@@ -126,7 +126,7 @@ Activities:
 - ✅Setup development environment
 - ✅Setup VS Code Dev Container
 - ✅Setup local testing environment
-- Setup deployment pipeline
+- ✅Setup deployment pipeline
 - Setup development S3 storage
 
 Expected outcome:
