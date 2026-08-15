@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+client_dist_dir="$repo_dir/client/dist"
+production_repo_dir="/c/--backedup/work/git/liteed.com"
+production_pwa_dir="$production_repo_dir/public/bc-pwa"
+
+echo "==> Building BudgetClick..."
+pnpm --dir "$repo_dir" build
+
+if [[ ! -d "$client_dist_dir" ]]; then
+    echo "ERROR: Build directory does not exist: $client_dist_dir"
+    exit 1
+fi
+
+if [[ ! -d "$production_repo_dir/.git" ]]; then
+    echo "ERROR: Production directory is not a Git repository: $production_repo_dir"
+    exit 1
+fi
+
+if [[ "$production_pwa_dir" != */public/bc-pwa ]]; then
+    echo "ERROR: Refusing to remove unexpected path: $production_pwa_dir"
+    exit 1
+fi
+
+echo "==> Removing previous PWA deployment..."
+rm -rf "$production_pwa_dir"
+
+echo "==> Copying new PWA deployment..."
+mkdir -p "$production_pwa_dir"
+cp -R "$client_dist_dir"/. "$production_pwa_dir"/
+
+echo "==> Staging PWA deployment..."
+git -C "$production_repo_dir" add public/bc-pwa
+
+if git -C "$production_repo_dir" diff --cached --quiet -- public/bc-pwa; then
+    echo "==> No changes to deploy."
+    exit 0
+fi
+
+echo "==> Committing..."
+git -C "$production_repo_dir" commit -m "Deploy BudgetClick PWA"
+
+echo "==> Pushing..."
+git -C "$production_repo_dir" push
+
+echo
+echo "==> BudgetClick PWA deployed successfully."

@@ -1,7 +1,16 @@
 {
   "version": "2.0.0",
   "tasks": [
-{
+    {
+      "label": "[PWA] Deploy to Production",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "./util/deploy.sh1"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "[Dev] Concat (chunks, full-code)",
       "type": "shell",
       "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000",
