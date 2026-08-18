@@ -4,10 +4,9 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "tsx util/build.ts",
+    "build-server": "tsc server/lambda/put.ts server/lambda/get.ts server/lambda/list.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --outDir server/lambda/dist",
+    "local-storage": "tsx server/local/index.ts",
     "test-client": "pnpm --dir client test:run",
-    "docker-build-client": "docker build -t budgetclick-client -f client/Dockerfile .",
-    "docker-run-client": "docker run --rm -p 8080:80 budgetclick-client",
-    "docker-test-client": "tsx client/tests/e2e/docker/startup.test.ts",
     "generate-schemas": "tsx util/generate-schemas.ts"
   },
   "devDependencies": {

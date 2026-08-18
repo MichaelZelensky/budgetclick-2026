@@ -53,6 +53,15 @@
       "problemMatcher": []
     },
     {
+      "label": "[Dev] Build Server Lambdas",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "build-server"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "[Vue] Run dev client",
       "type": "shell",
       "command": "pnpm",
@@ -96,34 +105,9 @@
       "problemMatcher": []
     },
     {
-      "label": "[Docker] Build Client",
-      "dependsOn": [
-        "Build"
-      ],
-      "dependsOrder": "sequence",
+      "label": "[Dev] Run Local Storage Server",
       "type": "shell",
-      "command": "pnpm",
-      "args": [
-        "docker-build-client"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "[Docker] Run Client",
-      "type": "shell",
-      "command": "pnpm",
-      "args": [
-        "docker-run-client"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "[Docker] Test Client",
-      "type": "shell",
-      "command": "pnpm",
-      "args": [
-        "docker-test-client"
-      ],
+      "command": "pnpm local-storage",
       "problemMatcher": []
     }
   ]

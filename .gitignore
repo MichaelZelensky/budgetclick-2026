@@ -2,6 +2,7 @@ files-content.txt
 tmp.md
 node_modules/
 client/dist/
+server/lambda/dist/
 
 client/src/schemas/*.schema.json
 !client/src/schemas/.gitkeep
@@ -9,6 +10,9 @@ client/src/schemas/*.schema.json
 client/src/validators/default/*.js
 client/src/validators/default/*.d.ts
 !client/src/validators/default/.gitkeep
+
+storage/*
+!storage/.gitkeep
 
 util/concat-out/*
 !util/concat-out/.gitkeep
