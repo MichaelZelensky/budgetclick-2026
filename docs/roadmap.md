@@ -143,7 +143,14 @@ Build the first usable version.
 Scope:
 
 - Application shell
-- App GUI styling
+   1. Tailwind + base styles + variables
+   2. Responsive breakpoints
+   3. Application shell — header, menu, footer
+   4. Router
+   5. Dashboard + Settings views
+   6. Reusable UI components
+   7. Responsive testing + polish
+   8. Tests where applicable
 - Initial setup flow
 - Local IndexedDB storage
 - Encryption layer
