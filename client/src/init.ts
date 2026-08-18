@@ -3,16 +3,21 @@ import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
+import { initializeManifest } from "@/manifest";
+
+//remove when done testing
+import { testUpdate } from "@/manifest"
+(window as any).testUpdate = testUpdate;
 
 export const initializeApplication = async () => {
   initializeState();
-
   const config = await loadConfig();
   initializeConfig(config);
-
   const settings = await loadSettings();
   initializeSettings(settings);
-
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
+  if (settings.storage !== "") {
+    await initializeManifest();
+  }
 };

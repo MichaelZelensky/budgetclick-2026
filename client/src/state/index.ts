@@ -10,3 +10,9 @@ export {
   getSettings,
   updateSettings,
 } from "@/state/modules/settings";
+
+export {
+  initializeManifest,
+  getManifest,
+  saveManifest,
+} from "@/manifest";

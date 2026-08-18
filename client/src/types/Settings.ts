@@ -8,7 +8,8 @@ export type Settings = {
   schemaVersion: number;
 
   /**
-   * @pattern ^[a-z0-9]+$
+   * Local storage directory or HTTPS S3 storage URL.
+   * @pattern ^(?:[a-z0-9]+|https://[a-z0-9.-]+\.s3[.-][a-z0-9-]+\.amazonaws\.com/?)$
    */
   storage: string;
 };
