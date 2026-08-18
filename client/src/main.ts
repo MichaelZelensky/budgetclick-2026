@@ -3,6 +3,7 @@ import App from "./App.vue";
 import { initializeApplication } from "@/init";
 import { logger } from "@/logger.js";
 import { router } from "@/router";
+import "@/styles/main.scss";
 
 const main = async () => {
   await initializeApplication();
