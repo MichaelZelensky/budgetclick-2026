@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 
-import type { AppState } from "@/state/AppState";
+import type { AppState } from "@/types/AppState";
 
 const state = reactive<AppState>({
   config: null,
