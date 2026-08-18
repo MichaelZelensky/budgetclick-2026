@@ -127,7 +127,7 @@ Activities:
 - ✅Setup VS Code Dev Container
 - ✅Setup local testing environment
 - ✅Setup deployment pipeline
-- Setup development S3 storage
+- ✅Setup development S3 storage
 
 Expected outcome:
 
@@ -148,9 +148,9 @@ Scope:
 - Local IndexedDB storage
 - Encryption layer
 - PBKDF2 key derivation
-- S3 connection
+- ✅S3 connection
 - Synchronization engine
-- Account management
+- Bank account management
 - Categories
 - Contractors
 - Records
