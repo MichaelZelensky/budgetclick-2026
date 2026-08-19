@@ -10,7 +10,7 @@ body {
 }
 
 h1 {
-  @apply tw-text-2xl tw-font-semibold tw-text-zinc-100;
+  @apply tw-text-2xl tw-font-semibold tw-text-zinc-200;
 }
 
 button {
@@ -20,7 +20,7 @@ button {
 input,
 select,
 textarea {
-  @apply tw-border tw-border-zinc-600 tw-rounded-sm tw-bg-zinc-800 tw-text-zinc-100;
+  @apply tw-border tw-border-zinc-600 tw-rounded-sm tw-bg-zinc-800 tw-text-zinc-200;
 }
 
 input {
@@ -36,9 +36,6 @@ button:hover {
 }
 
 a {
-  @apply tw-text-blue-400;
-}
-
-a:hover {
-  @apply tw-text-blue-300;
+  @apply tw-text-sky-600;
+  @apply hover:tw-text-sky-400;
 }

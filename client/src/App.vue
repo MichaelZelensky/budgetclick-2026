@@ -1,25 +1,25 @@
 <template>
-  <div>
-    <header>
-      <RouterLink v-if="isManifestInitialized" to="/" aria-label="Home">
-        BudgetClick
-      </RouterLink>
-      <span v-else>BudgetClick</span>
-      <RouterLink to="/settings" aria-label="Settings" title="Settings">
-        <GearIcon />
-      </RouterLink>
-    </header>
-    <main v-if="!isManifestInitialized">
-      <p>Storage is not initialized</p>
-      <RouterView />
+  <div class="tw-flex tw-h-screen tw-flex-col">
+    <Header />
+
+    <main class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto tw-px-4 tw-py-2">
+      <div v-if="!isManifestInitialized">
+        <p>Storage is not initialized</p>
+        <RouterView />
+      </div>
+
+      <RouterView v-else />
     </main>
-    <RouterView v-else />
+
+    <Footer />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import GearIcon from "@/components/icons/gear.vue";
+
+import Footer from "@/components/layout/Footer.vue";
+import Header from "@/components/layout/Header.vue";
 import { getState } from "@/state";
 
 const isManifestInitialized = computed(() => getState().manifest !== null);
