@@ -12,7 +12,7 @@ Storage follows these principles:
 
 # Storage Configuration
 
-BudgetClick supports local and remote storage. The storage type is controlled by user settings.
+BudgetClick supports local and remote storage. The storage type is controlled by enviroment variables. The storage path is stored in the user settings.
 
 ## Local Storage
 

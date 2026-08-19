@@ -10,7 +10,6 @@ The Lambda does not own or authenticate against user storage. User S3 storage is
 server/
   put.ts
   get.ts
-  list.ts
 ```
 
 Each Lambda exports:
@@ -24,7 +23,6 @@ AWS Lambda handler names:
 ```text
 put.handler
 get.handler
-list.handler
 ```
 
 ## Local development
@@ -58,7 +56,6 @@ Create three Lambda functions:
 ```text
 budgetclick-storage-put
 budgetclick-storage-get
-budgetclick-storage-list
 ```
 
 Use a current Node.js Lambda runtime.
@@ -68,7 +65,6 @@ Set the handlers to:
 ```text
 put.handler
 get.handler
-list.handler
 ```
 
 Upload the corresponding compiled JavaScript file from `server/dist/`.
@@ -83,7 +79,6 @@ The bucket must allow public:
 
 * `GET`
 * `PUT`
-* `LIST`
 
 The storage path identifies the user's bucket. There is no BudgetClick-controlled prefix.
 
@@ -118,17 +113,6 @@ Request:
 ```
 
 The response body is base64 encoded.
-
-### LIST
-
-Request:
-
-```json
-{
-  "storagePath": "https://example-bucket.s3.us-east-1.amazonaws.com/",
-  "prefix": ""
-}
-```
 
 ## Deployment
 
