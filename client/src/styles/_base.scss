@@ -13,6 +13,10 @@ h1 {
   @apply tw-text-2xl tw-font-semibold tw-text-zinc-200;
 }
 
+h2 {
+  @apply tw-text-lg tw-font-semibold;
+}
+
 button {
   @apply tw-cursor-pointer;
 }

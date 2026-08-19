@@ -1,0 +1,21 @@
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.zinc.600") theme("colors.zinc.900");
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  @apply tw-bg-zinc-900;
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply tw-rounded-full tw-bg-zinc-600;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  @apply tw-bg-zinc-500;
+}
