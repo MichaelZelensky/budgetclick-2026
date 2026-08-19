@@ -3,12 +3,11 @@
     <Header />
 
     <main class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto tw-px-4 tw-py-2">
-      <div v-if="!isManifestInitialized">
-        <p>Storage is not initialized</p>
-        <RouterView />
-      </div>
+      <InlineAlert v-if="!isManifestInitialized" variant="warning">
+        Storage is not initialized or misconfigured. Please check your settings and ensure that the storage is properly configured.
+      </InlineAlert>
 
-      <RouterView v-else />
+      <RouterView />
     </main>
 
     <Footer />
@@ -20,6 +19,7 @@ import { computed } from "vue";
 
 import Footer from "@/components/layout/Footer.vue";
 import Header from "@/components/layout/Header.vue";
+import InlineAlert from "@/components/ui/InlineAlert.vue";
 import { getState } from "@/state";
 
 const isManifestInitialized = computed(() => getState().manifest !== null);

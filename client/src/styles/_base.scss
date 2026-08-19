@@ -29,10 +29,7 @@ input {
 
 button {
   @apply tw-rounded-sm tw-border tw-border-zinc-600 tw-px-3 tw-py-1.5 tw-text-zinc-300;
-}
-
-button:hover {
-  @apply tw-bg-zinc-800;
+  @apply tw-bg-zinc-800 tw-text-zinc-200 hover:tw-bg-zinc-700 hover:tw-text-zinc-100;
 }
 
 a {
