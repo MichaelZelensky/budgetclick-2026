@@ -144,7 +144,7 @@ Scope:
 
 - Application shell
    1. ✅Tailwind + base styles + variables
-   2. Responsive breakpoints
+   2. ✅Responsive breakpoints
    3. Application shell — header, menu, footer
    4. Router
    5. Dashboard + Settings views

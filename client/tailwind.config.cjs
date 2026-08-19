@@ -4,6 +4,12 @@ module.exports = {
   content: ["./src/**/*.{vue,ts,tsx,js,jsx}", "./src/**/*.scss"],
   darkMode: "class",
   theme: {
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+    },
     extend: {
       colors: {
         primary: "#3b82f6",
