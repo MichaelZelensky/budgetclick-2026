@@ -1,0 +1,44 @@
+@tailwind base;
+
+html {
+  @apply tw-bg-zinc-900 tw-text-zinc-200;
+}
+
+body {
+  @apply tw-m-0 tw-bg-zinc-900 tw-text-zinc-200 tw-font-sans;
+  font-size: 14px;
+}
+
+h1 {
+  @apply tw-text-2xl tw-font-semibold tw-text-zinc-100;
+}
+
+button {
+  @apply tw-cursor-pointer;
+}
+
+input,
+select,
+textarea {
+  @apply tw-border tw-border-zinc-600 tw-rounded-sm tw-bg-zinc-800 tw-text-zinc-100;
+}
+
+input {
+  @apply tw-px-2 tw-py-1;
+}
+
+button {
+  @apply tw-rounded-sm tw-border tw-border-zinc-600 tw-px-3 tw-py-1.5 tw-text-zinc-300;
+}
+
+button:hover {
+  @apply tw-bg-zinc-800;
+}
+
+a {
+  @apply tw-text-blue-400;
+}
+
+a:hover {
+  @apply tw-text-blue-300;
+}
