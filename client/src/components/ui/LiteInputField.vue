@@ -1,6 +1,7 @@
 <template>
   <div class="tw-mb-2">
     <input
+      class="tw-w-full"
       ref="inputElement"
       v-model="internalValue"
       :type="type"
