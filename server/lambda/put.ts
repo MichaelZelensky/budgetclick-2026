@@ -4,6 +4,8 @@ type LambdaResponse = {
   body: string;
 };
 
+const MAX_BODY_SIZE = 10 * 1024 * 1024; //10 MB
+
 const getStorageUrl = (storagePath: string, key: string) => {
   const baseUrl = new URL(storagePath);
   if (baseUrl.protocol !== "https:") {
@@ -44,6 +46,13 @@ export const handler = async (event: {
     }
     const storageUrl = getStorageUrl(storagePath, key);
     const body = event.isBase64Encoded ? Uint8Array.from(atob(event.body), x => x.charCodeAt(0)) : new TextEncoder().encode(event.body);
+    if (body.byteLength > MAX_BODY_SIZE) {
+      return {
+        statusCode: 413,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Request body exceeds 10 MB limit" }),
+      };
+    }
     const response = await fetch(storageUrl, {
       method: "PUT",
       headers: {
