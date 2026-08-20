@@ -365,3 +365,6 @@ All application data stored in S3 remains encrypted before upload. Public S3 acc
 # Future Compatibility
 
 New functionality should introduce new storage object types whenever possible rather than extending existing ones.
+
+Security:
+- storage uses public S3 bucket, an attacker can write anything to it.

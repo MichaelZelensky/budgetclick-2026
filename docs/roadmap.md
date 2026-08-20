@@ -149,9 +149,8 @@ Scope:
    4. ✅Router
    5. ✅Dashboard + Settings views
    6. ✅Reusable UI components
-   7. Spreadsheet UI polish
-   8. Responsive testing + polish
-   9. Tests where applicable
+   7. ✅Responsive testing + polish
+   8. ✅Tests where applicable
 - Initial setup flow
 - Local IndexedDB storage
 - Encryption layer
