@@ -8,7 +8,7 @@
 
     <label>
       Storage
-      <LiteInputField v-model="settings.storage" />
+      <LiteInputField v-model="settings.storage" class="tw-w-full" placeholder="storage/path"/>
     </label>
 
     <ButtonGroup>

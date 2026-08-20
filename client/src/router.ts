@@ -1,17 +1,19 @@
 ﻿import { createRouter, createWebHashHistory } from "vue-router";
 
-import SettingsView from "@/views/SettingsView.vue";
-
 export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
       path: "/",
-      component: () => import("@/views/HomeView.vue"),
+      component: () => import("@/components/views/Dashboard.vue"),
     },
     {
       path: "/settings",
-      component: SettingsView,
+      component: () => import("@/components/views/Settings.vue"),
+    },
+    {
+      path: "/:pathMatch(.*)*",
+      component: () => import("@/components/views/NotFound.vue"),
     },
   ],
 });
