@@ -5,7 +5,6 @@
 </template>
 
 <script setup lang="ts">
-import { isDefined } from '@liteed-core/common/util/defined';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -16,7 +15,7 @@ const props = defineProps({
 });
 
 const computedStyles = computed(() => {
-  if (isDefined(props.forceHeight) && props.forceHeight !== '') {
+  if (props.forceHeight !== undefined && props.forceHeight !== '') {
     return {
       height: props.forceHeight
     };
@@ -32,7 +31,7 @@ const computedStyles = computed(() => {
   
   &::before {
     @apply tw-absolute tw-inset-0;
-    @apply tw-bg-zinc-50 dark:tw-bg-zinc-900;
+    @apply tw-bg-zinc-800;
     @apply tw-opacity-90;
     content: '';
     z-index: -1;
