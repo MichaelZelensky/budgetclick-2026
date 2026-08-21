@@ -18,15 +18,19 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
 import Footer from "@/components/layout/Footer.vue";
 import Header from "@/components/layout/Header.vue";
 import Setup from "@/components/Setup.vue";
 import SpinnerOverlay from "@/components/ui/overlays/SpinnerOverlay.vue";
 import { useRoute } from "vue-router";
-import { getSettings } from "@/state/modules/settings";
+import { getSettings, getState } from "@/state";
 
 const route = useRoute();
-const isFirstLaunch = computed(() => getSettings().storage === "-" || getSettings().clientId === "-");
+
+const isFirstLaunch = computed(() => {
+  const settings = getSettings();
+  return settings.storage === "-" || settings.clientId === "-" || getState().manifest === null;
+});
+
 const isDashboard = computed(() => route.path === "/");
 </script>

@@ -1,6 +1,6 @@
 ﻿import { initializeState, initializeConfig, initializeSettings } from "@/state";
 import { loadConfig } from "@/config";
-import { loadSettings, saveSettings } from "@/settings";
+import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
 import { initializeManifest } from "@/manifest";
@@ -13,7 +13,7 @@ export const initializeApplication = async () => {
   initializeSettings(settings);
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
-  if (settings.storage !== "") {
+  if (settings.storage !== "-") {
     await initializeManifest();
   }
 };

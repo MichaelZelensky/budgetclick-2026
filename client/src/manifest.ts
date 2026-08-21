@@ -24,6 +24,44 @@ const encodeManifest = (manifest: Manifest): Uint8Array => {
   return new TextEncoder().encode(JSON.stringify(manifest));
 };
 
+const generateObjectKey = (): string => {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+};
+
+export const createManifest = (clientId: string): Manifest => {
+  const now = new Date().toISOString();
+
+  return {
+    schemaVersion: 1,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+    updatedBy: clientId,
+    references: {
+      accounts: {
+        objectKey: generateObjectKey(),
+        version: 0,
+      },
+      categories: {
+        objectKey: generateObjectKey(),
+        version: 0,
+      },
+      contractors: {
+        objectKey: generateObjectKey(),
+        version: 0,
+      },
+    },
+    chunks: {},
+    attachments: {
+      root: generateObjectKey(),
+    },
+    migration: {
+      version: 1,
+      state: "idle",
+    },
+  };
+};
+
 export const initializeManifest = async (): Promise<boolean> => {
   try {
     const body = await getFile(manifestKey);
@@ -50,11 +88,7 @@ export const saveManifest = async (manifest: Manifest): Promise<void> => {
   getState().manifest = structuredClone(validatedManifest);
 };
 
-
-// remove when done testing
-export const testUpdate = async (): Promise<void> => {
-  const manifest: Manifest = structuredClone(toRaw(getManifest()));
-  manifest.version += 1;
-  manifest.updatedAt = new Date().toISOString();
+export const initializeNewManifest = async (clientId: string): Promise<void> => {
+  const manifest = createManifest(clientId);
   await saveManifest(manifest);
 };
