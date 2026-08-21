@@ -12,6 +12,10 @@ export const router = createRouter({
       component: () => import("@/components/views/Settings.vue"),
     },
     {
+      path: "/help",
+      component: () => import("@/components/views/Help.vue"),
+    },
+    {
       path: "/:pathMatch(.*)*",
       component: () => import("@/components/views/NotFound.vue"),
     },

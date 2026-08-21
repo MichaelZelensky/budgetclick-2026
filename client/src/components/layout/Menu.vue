@@ -7,6 +7,10 @@
     <RouterLink to="/settings" @click="close">
       Settings
     </RouterLink>
+
+    <RouterLink to="/help" @click="close">
+      Help
+    </RouterLink>
   </nav>
 </template>
 
