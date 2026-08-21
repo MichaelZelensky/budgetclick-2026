@@ -19,7 +19,6 @@
       </span>
 
       <Menu
-        v-if="isManifestInitialized"
         :open="isMenuOpen"
         @close="isMenuOpen = false"
       />
@@ -28,13 +27,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-
+import { ref } from "vue";
 import ListIcon from "@/components/icons/List.vue";
 import Menu from "@/components/layout/Menu.vue";
-import { getState } from "@/state";
 
 const isMenuOpen = ref(false);
-
-const isManifestInitialized = computed(() => getState().manifest !== null);
 </script>

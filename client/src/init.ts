@@ -1,13 +1,9 @@
 ﻿import { initializeState, initializeConfig, initializeSettings } from "@/state";
 import { loadConfig } from "@/config";
-import { loadSettings } from "@/settings";
+import { loadSettings, saveSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
 import { initializeManifest } from "@/manifest";
-
-//remove when done testing
-import { testUpdate } from "@/manifest"
-(window as any).testUpdate = testUpdate;
 
 export const initializeApplication = async () => {
   initializeState();

@@ -142,7 +142,8 @@ Build the first usable version.
 
 Scope:
 
-- Application shell
+- ✅S3 connection
+- ✅Application shell
    1. ✅Tailwind + base styles + variables
    2. ✅Responsive breakpoints
    3. ✅Application shell — header, menu, footer
@@ -152,10 +153,13 @@ Scope:
    7. ✅Responsive testing + polish
    8. ✅Tests where applicable
 - Initial setup flow
+   1. ✅Provide user guidance
+   2. Initialize manifest if the storage is new
 - Local IndexedDB storage
+   1. Set up IndexedDb
+   2. Implement Migration (migration scripts + migration engine)
 - Encryption layer
 - PBKDF2 key derivation
-- ✅S3 connection
 - Synchronization engine
 - Bank account management
 - Categories

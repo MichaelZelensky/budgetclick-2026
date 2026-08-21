@@ -4,13 +4,10 @@
 
     <main
       class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto"
-      :class="{ 'tw-px-4 tw-py-2': !isDashboard }"
+      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isFirstLaunch }"
     >
-      <InlineAlert v-if="!isManifestInitialized" variant="warning">
-        Storage is not initialized or misconfigured. Please check your settings and ensure that the storage is properly configured.
-      </InlineAlert>
-
-      <RouterView />
+      <Setup v-if="isFirstLaunch && isDashboard" />
+      <RouterView v-else />
     </main>
 
     <Footer />
@@ -19,15 +16,15 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRoute } from "vue-router";
 
 import Footer from "@/components/layout/Footer.vue";
 import Header from "@/components/layout/Header.vue";
-import InlineAlert from "@/components/ui/InlineAlert.vue";
-import { getState } from "@/state";
+import Setup from "@/components/Setup.vue";
+import { useRoute } from "vue-router";
+import { getSettings } from "./state/modules/settings";
 
 const route = useRoute();
 
+const isFirstLaunch = computed(() => getSettings().storage === "-" || getSettings().clientId === "-");
 const isDashboard = computed(() => route.path === "/");
-const isManifestInitialized = computed(() => getState().manifest !== null);
 </script>

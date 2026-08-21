@@ -10,11 +10,11 @@ body {
 }
 
 h1 {
-  @apply tw-text-2xl tw-font-semibold tw-text-zinc-200;
+  @apply tw-text-2xl tw-font-semibold tw-text-zinc-200 tw-mb-2;
 }
 
 h2 {
-  @apply tw-text-lg tw-font-semibold;
+  @apply tw-text-lg tw-font-semibold tw-mt-4 tw-mb-2 tw-text-zinc-200;
 }
 
 button {
