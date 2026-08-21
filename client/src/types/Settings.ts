@@ -12,4 +12,10 @@ export type Settings = {
    * @pattern ^.+$
    */
   storage: string;
+
+  /**
+   * Persistent client identifier used for synchronization and conflict detection.
+   * @pattern ^.+$
+   */
+  clientId: string;
 };
