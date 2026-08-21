@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import config from "@/../config.json";
 import { initializeConfig, initializeState, getConfig } from "@/state";
+
+const config = {
+    logLevel: "error",
+};
 
 describe("config state", () => {
     beforeEach(() => {

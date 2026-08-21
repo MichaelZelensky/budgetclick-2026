@@ -57,6 +57,7 @@
     </Modal>
 
     <ErrorModal
+      data-test="error-modal"
       :open="showErrorModal"
       :message="errorModalMessage"
       @close="showErrorModal = false"

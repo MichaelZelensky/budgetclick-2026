@@ -98,6 +98,12 @@
       "problemMatcher": []
     },
     {
+      "label": "[Vue] Test Client",
+      "type": "shell",
+      "command": "pnpm test-client",
+      "problemMatcher": []
+    },
+    {
       "label": "[Vue] Preview Client (must be built first)",
       "type": "shell",
       "command": "pnpm --dir client exec vite preview --host 0.0.0.0",

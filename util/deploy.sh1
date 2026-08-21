@@ -7,6 +7,9 @@ client_dist_dir="$repo_dir/client/dist"
 production_repo_dir="/c/--backedup/work/git/liteed.com"
 production_pwa_dir="$production_repo_dir/public/bc-pwa"
 
+echo "==> Tetsing BudgetClick..."
+pnpm --dir "$repo_dir" test-client
+
 echo "==> Building BudgetClick..."
 pnpm --dir "$repo_dir" build
 

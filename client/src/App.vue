@@ -4,9 +4,9 @@
 
     <main
       class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto"
-      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isFirstLaunch }"
+      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isInitialized }"
     >
-      <Setup v-if="isFirstLaunch && isDashboard" />
+      <Setup v-if="isInitialized && isDashboard" />
       <RouterView v-else />
     </main>
 
@@ -27,7 +27,7 @@ import { getSettings, getState } from "@/state";
 
 const route = useRoute();
 
-const isFirstLaunch = computed(() => {
+const isInitialized = computed(() => {
   const settings = getSettings();
   return settings.storage === "-" || settings.clientId === "-" || getState().manifest === null;
 });
