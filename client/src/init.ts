@@ -4,6 +4,7 @@ import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
 import { initializeManifest } from "@/manifest";
+import { initializeDatabase } from "@/database";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -13,6 +14,7 @@ export const initializeApplication = async () => {
   initializeSettings(settings);
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
+  await initializeDatabase();
   if (settings.storage !== "-") {
     await initializeManifest();
   }

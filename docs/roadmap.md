@@ -152,11 +152,11 @@ Scope:
    6. ✅Reusable UI components
    7. ✅Responsive testing + polish
    8. ✅Tests where applicable
-- Initial setup flow
+- ✅Initial setup flow
    1. ✅Provide user guidance
-   2. Initialize manifest if the storage is new
+   2. ✅Initialize manifest if the storage is new
 - Local IndexedDB storage
-   1. Set up IndexedDb
+   1. ✅Set up IndexedDb
    2. Implement Migration (migration scripts + migration engine)
 - Encryption layer
 - PBKDF2 key derivation
