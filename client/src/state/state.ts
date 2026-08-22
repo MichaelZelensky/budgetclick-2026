@@ -7,7 +7,7 @@ const state = reactive<AppState>({
   settings: null,
   manifest: null,
   data: {
-    accounts: [],
+    accounts: null,
   },
 });
 
@@ -15,7 +15,7 @@ export const initializeState = (): void => {
   state.config = null;
   state.settings = null;
   state.manifest = null;
-  state.data.accounts = [];
+  state.data.accounts = null;
 };
 
 export const getState = (): AppState => {

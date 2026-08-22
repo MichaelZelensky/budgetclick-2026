@@ -6,7 +6,7 @@
       class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto"
       :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isInitialized }"
     >
-      <Setup v-if="isInitialized && isDashboard" />
+      <Setup v-if="isInitialized && !isSettingsOrHelp" />
       <RouterView v-else />
     </main>
 
@@ -32,5 +32,6 @@ const isInitialized = computed(() => {
   return settings?.storage === "-" || settings?.clientId === "-" || getState().manifest === null;
 });
 
-const isDashboard = computed(() => route.path === "/");
+const isDashboard = computed(() => route.path === "/dashboard");
+const isSettingsOrHelp = computed(() => route.path === "/settings" || route.path === "/help");
 </script>

@@ -1,6 +1,6 @@
-import type { Account } from "@/types/data/Account";
 import type { Config } from "@/types/Config";
 import type { Manifest } from "@/types/storage/Manifest";
+import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { Settings } from "@/types/Settings";
 
 export type AppState = {
@@ -8,6 +8,6 @@ export type AppState = {
   settings: Settings | null;
   manifest: Manifest | null;
   data: {
-    accounts: Account[];
+    accounts: AccountsStorage | null;
   };
 };

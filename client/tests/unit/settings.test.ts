@@ -3,7 +3,6 @@ import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import Modal from "@/components/ui/modals/Modal.vue";
 import Settings from "@/components/views/Settings.vue";
-import { initializeState, getState } from "@/state";
 import { saveSettings } from "@/settings";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
 

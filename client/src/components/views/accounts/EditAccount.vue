@@ -45,7 +45,13 @@ import { saveData } from "@/data-flow";
 
 const route = useRoute();
 const router = useRouter();
-const account = getState().data.accounts.find(x => x.id === route.params.id);
+const accountsStorage = getState().data.accounts;
+
+if (accountsStorage === null) {
+  throw new Error("Accounts have not been initialized");
+}
+
+const account = accountsStorage.accounts.find(x => x.id === route.params.id);
 
 if (!account) {
   throw new Error("Account not found");
@@ -59,14 +65,17 @@ const currentBalance = ref(account.currentBalance);
 const save = async () => {
   await saveData({
     key: DataKey.Accounts,
-    data: getState().data.accounts.map((a) => (a.id === account.id ? {
-      ...account,
-      name: name.value,
-      description: description.value,
-      currency: currency.value,
-      currentBalance: currentBalance.value,
-      updatedAt: new Date().toISOString()
-    } : a)),
+    data: {
+      ...accountsStorage,
+      accounts: accountsStorage.accounts.map(x => x.id === account.id ? {
+        ...account,
+        name: name.value,
+        description: description.value,
+        currency: currency.value,
+        currentBalance: currentBalance.value,
+        updatedAt: new Date().toISOString(),
+      } : x),
+    },
   });
   router.push(`/accounts/${account.id}`);
 };

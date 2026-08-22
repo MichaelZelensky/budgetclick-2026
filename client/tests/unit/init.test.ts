@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import config from "@/../public/config.json";
 import settings from "@/../public/settings.json";
 import { initializeApplication } from "@/init";
-import { getState, initializeState } from "@/state";
 
 describe("application initialization", () => {
   beforeEach(() => {

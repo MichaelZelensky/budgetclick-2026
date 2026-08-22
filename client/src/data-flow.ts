@@ -1,12 +1,13 @@
+import { toRaw } from "vue";
 import { getState, updateState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
-import type { Account } from "@/types/data/Account";
+import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import { DataKey } from "./types/data/DataKey.enum";
 
 type DataTypes = {
-  [DataKey.Accounts]: Account[];
+  [DataKey.Accounts]: AccountsStorage;
 };
 
 type SaveDataInput<K extends DataKey> = {
@@ -64,9 +65,10 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
 };
 
 export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
+  const plainData = JSON.parse(JSON.stringify(toRaw(data))) as DataTypes[K];
   const save = getSaveFunction(key);
-  save(data);
-  updateState(key, data);
-  // await putFile(key, encodeData(data));
+  await save(plainData);
+  updateState(key, plainData);
+  await putFile(key, encodeData(plainData));
   // await updateManifest(key);
 };

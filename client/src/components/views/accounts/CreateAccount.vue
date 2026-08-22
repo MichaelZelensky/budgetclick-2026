@@ -51,6 +51,12 @@ const currentBalance = ref(0);
 
 const save = async () => {
   const now = new Date().toISOString();
+  const accountsStorage = getState().data.accounts;
+
+  if (accountsStorage === null) {
+    throw new Error("Accounts have not been initialized");
+  }
+
   const account = {
     id: crypto.randomUUID(),
     name: name.value,
@@ -62,9 +68,13 @@ const save = async () => {
     schemaVersion: 1,
     isDeleted: false,
   };
+
   await saveData({
     key: DataKey.Accounts,
-    data: [...getState().data.accounts, account],
+    data: {
+      ...accountsStorage,
+      accounts: [...accountsStorage.accounts, account],
+    },
   });
   router.push("/accounts");
 };

@@ -28,14 +28,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import Datagrid from "@/components/ui/Datagrid.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
-import { computed } from "vue";
 
 const router = useRouter();
-const accounts = computed(() => getState().data.accounts);
+const accounts = computed(() => getState().data.accounts?.accounts ?? []);
 
 const columns = [
   { key: "name", label: "Name", filterable: true },

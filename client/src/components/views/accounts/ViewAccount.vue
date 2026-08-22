@@ -25,7 +25,13 @@ import { getState } from "@/state/state";
 
 const route = useRoute();
 const router = useRouter();
-const account = getState().data.accounts.find(x => x.id === route.params.id);
+const accountsStorage = getState().data.accounts;
+
+if (accountsStorage === null) {
+  throw new Error("Accounts have not been initialized");
+}
+
+const account = accountsStorage.accounts.find(x => x.id === route.params.id);
 
 if (!account) {
   throw new Error("Account not found");

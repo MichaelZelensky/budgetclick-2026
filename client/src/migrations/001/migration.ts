@@ -1,5 +1,25 @@
 export const migrate = (database: IDBDatabase): void => {
-  database.createObjectStore("accounts", { keyPath: "id" });
-  database.createObjectStore("categories", { keyPath: "id" });
-  database.createObjectStore("contractors", { keyPath: "id" });
+  const accountsStore = database.createObjectStore("accounts");
+  const categoriesStore = database.createObjectStore("categories");
+  const contractorsStore = database.createObjectStore("contractors");
+  const now = new Date().toISOString();
+  const metadata = {
+    schemaVersion: 1,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+    updatedBy: "-",
+  };
+  accountsStore.put({
+    metadata,
+    accounts: [],
+  }, "current");
+  categoriesStore.put({
+    metadata,
+    categories: [],
+  }, "current");
+  contractorsStore.put({
+    metadata,
+    contractors: [],
+  }, "current");
 };

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { initializeConfig, initializeState, getConfig } from "@/state";
 
 const config = {
     logLevel: "error",

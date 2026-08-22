@@ -76,11 +76,12 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import Modal from "@/components/ui/modals/Modal.vue";
 import ErrorModal from "@/components/ui/modals/ErrorModal.vue";
 import { saveSettings } from "@/settings";
-import { getSettings, getState, updateSettings } from "@/state";
+import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { getSettings, updateSettings } from "@/state/modules/settings";
 
 const router = useRouter();
 const error = ref<string | null>(null);
