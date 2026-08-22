@@ -3,11 +3,14 @@ import { getState, updateState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
+import { dbSaveContractors } from "@/repository/contractor";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
+import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import { DataKey } from "./types/data/DataKey.enum";
 
 type DataTypes = {
   [DataKey.Accounts]: AccountsStorage;
+  [DataKey.Contractors]: ContractorsStorage;
 };
 
 type SaveDataInput<K extends DataKey> = {
@@ -50,12 +53,14 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
   switch (key) {
     case DataKey.Accounts:
       return dbSaveAccounts;
+    case DataKey.Contractors:
+      return dbSaveContractors;
     default:
       throw new Error(`No repository found for key: ${key}`);
   }
 };
 
-const updateStorageMetadata = (data: AccountsStorage): AccountsStorage => {
+const updateStorageMetadata = <T extends AccountsStorage | ContractorsStorage>(data: T): T => {
   const now = new Date().toISOString();
   return {
     ...data,
@@ -74,9 +79,11 @@ export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K
   const save = getSaveFunction(key);
   const manifest = getManifest();
   const entry = manifest.references[key];
+
   if (entry === undefined) {
     throw new Error("Manifest reference not found");
   }
+
   await save(updatedData);
   updateState(key, updatedData);
   await putFile(entry.objectKey, encodeData(updatedData));

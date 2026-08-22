@@ -8,6 +8,10 @@
       Accounts
     </RouterLink>
 
+    <RouterLink to="/contractors" @click="close">
+      Contractors
+    </RouterLink>
+
     <RouterLink to="/settings" @click="close">
       Settings
     </RouterLink>
