@@ -1,4 +1,4 @@
-import { getState } from "@/state/state";
+import { getState, updateState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
@@ -54,7 +54,6 @@ const updateManifest = async (key: DataKey): Promise<void> => {
   await putFile("manifest.json", encodeData(updatedManifest));
 };
 
-
 const getSaveFunction = <K extends DataKey>(key: K) => {
   switch (key) {
     case DataKey.Accounts:
@@ -64,10 +63,10 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
   }
 };
 
-export const saveData = <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
+export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
   const save = getSaveFunction(key);
-  return save(data);
-  // updateState(key, data);
+  save(data);
+  updateState(key, data);
   // await putFile(key, encodeData(data));
   // await updateManifest(key);
 };
