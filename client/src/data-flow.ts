@@ -64,11 +64,25 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
   }
 };
 
+const updateStorageMetadata = (data: AccountsStorage): AccountsStorage => {
+  const now = new Date().toISOString();
+  return {
+    ...data,
+    metadata: {
+      ...data.metadata,
+      version: data.metadata.version + 1,
+      updatedAt: now,
+      updatedBy: getState().settings?.clientId ?? "-",
+    },
+  };
+};
+
 export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as DataTypes[K];
+  const updatedData = updateStorageMetadata(plainData);
   const save = getSaveFunction(key);
-  await save(plainData);
-  updateState(key, plainData);
-  await putFile(key, encodeData(plainData));
+  await save(updatedData);
+  updateState(key, updatedData);
+  await putFile(key, encodeData(updatedData));
   // await updateManifest(key);
 };
