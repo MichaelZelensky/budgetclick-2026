@@ -1,10 +1,13 @@
-﻿import { initializeState, initializeConfig, initializeSettings } from "@/state";
-import { loadConfig } from "@/config";
+﻿import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
 import { initializeManifest } from "@/manifest";
 import { initializeDatabase } from "@/database";
+import { initializeData } from "@/repository/data";
+import { initializeConfig } from "@/state/modules/config";
+import { initializeSettings } from "@/state/modules/settings";
+import { initializeState } from "./state/state";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -17,5 +20,6 @@ export const initializeApplication = async () => {
   await initializeDatabase();
   if (settings.storage !== "-") {
     await initializeManifest();
+    await initializeData();
   }
 };

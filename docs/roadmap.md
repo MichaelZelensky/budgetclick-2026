@@ -158,6 +158,7 @@ Scope:
 - Local IndexedDB storage
    1. ✅Set up IndexedDb
    2. ✅Implement Migration (migration scripts + migration engine)
+   3. Implement initial data flow and CRUD for all entities
 - Encryption layer
 - PBKDF2 key derivation
 - Synchronization engine

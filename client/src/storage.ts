@@ -1,4 +1,5 @@
-import { getConfig, getSettings } from "@/state";
+import { getConfig } from "@/state/modules/config";
+import { getSettings } from "@/state/modules/settings";
 
 const getStoragePath = (): string => {
   return getSettings().storage;

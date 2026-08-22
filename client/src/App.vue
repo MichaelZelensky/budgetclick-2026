@@ -23,13 +23,13 @@ import Header from "@/components/layout/Header.vue";
 import Setup from "@/components/Setup.vue";
 import SpinnerOverlay from "@/components/ui/overlays/SpinnerOverlay.vue";
 import { useRoute } from "vue-router";
-import { getSettings, getState } from "@/state";
+import { getState } from "@/state/state";
 
 const route = useRoute();
 
 const isInitialized = computed(() => {
-  const settings = getSettings();
-  return settings.storage === "-" || settings.clientId === "-" || getState().manifest === null;
+  const settings = getState().settings;
+  return settings?.storage === "-" || settings?.clientId === "-" || getState().manifest === null;
 });
 
 const isDashboard = computed(() => route.path === "/");
