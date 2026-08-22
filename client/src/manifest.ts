@@ -1,8 +1,7 @@
 import type { Manifest } from "@/types/storage/Manifest";
 import validateManifest from "@/validators/default/Manifest.js";
 import { getState } from "@/state/state";
-import { getFile, putFile } from "./storage";
-import { toRaw } from "vue";
+import { getFile, putFile } from "@/storage";
 
 const manifestKey = "manifest";
 
@@ -83,7 +82,8 @@ export const getManifest = (): Readonly<Manifest> => {
 };
 
 export const saveManifest = async (manifest: Manifest): Promise<void> => {
-  const validatedManifest = validateManifestData(manifest);
+  const plainManifest = JSON.parse(JSON.stringify(manifest)) as Manifest;
+  const validatedManifest = validateManifestData(plainManifest);
   await putFile(manifestKey, encodeManifest(validatedManifest));
   getState().manifest = structuredClone(validatedManifest);
 };

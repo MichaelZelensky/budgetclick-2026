@@ -19,23 +19,15 @@ const encodeData = (data: unknown): Uint8Array => {
   return new TextEncoder().encode(JSON.stringify(data));
 };
 
-const updateManifest = async (key: DataKey): Promise<void> => {
+const updateManifest = async (key: DataKey, version: number): Promise<void> => {
   const manifest = getManifest();
+  const entry = manifest.references[key];
 
-  if (manifest === null) {
-    throw new Error("Manifest has not been initialized");
-  }
-
-  const references = Object.entries(manifest.references);
-  const reference = references.find(([, entry]) => entry.objectKey === key);
-
-  if (reference === undefined) {
+  if (entry === undefined) {
     throw new Error("Manifest reference not found");
   }
 
-  const [referenceKey, entry] = reference;
   const now = new Date().toISOString();
-  const version = entry.version + 1;
 
   const updatedManifest = {
     ...manifest,
@@ -44,15 +36,14 @@ const updateManifest = async (key: DataKey): Promise<void> => {
     updatedBy: getState().settings?.clientId ?? "-",
     references: {
       ...manifest.references,
-      [referenceKey]: {
+      [key]: {
         ...entry,
         version,
       },
     },
   };
 
-  saveManifest(updatedManifest);
-  await putFile("manifest.json", encodeData(updatedManifest));
+  await saveManifest(updatedManifest);
 };
 
 const getSaveFunction = <K extends DataKey>(key: K) => {
@@ -81,8 +72,13 @@ export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as DataTypes[K];
   const updatedData = updateStorageMetadata(plainData);
   const save = getSaveFunction(key);
+  const manifest = getManifest();
+  const entry = manifest.references[key];
+  if (entry === undefined) {
+    throw new Error("Manifest reference not found");
+  }
   await save(updatedData);
   updateState(key, updatedData);
-  await putFile(key, encodeData(updatedData));
-  // await updateManifest(key);
+  await putFile(entry.objectKey, encodeData(updatedData));
+  await updateManifest(key, updatedData.metadata.version);
 };
