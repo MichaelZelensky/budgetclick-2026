@@ -1,5 +1,5 @@
-import type { Account } from "../data/Account";
-import type { StorageMetadata } from "./StorageMetadata";
+import type { Account } from "@/types/data/Account";
+import type { StorageMetadata } from "@/types/storage/StorageMetadata";
 
 export type AccountsStorage = {
   metadata: StorageMetadata;
