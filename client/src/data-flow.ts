@@ -3,13 +3,16 @@ import { getState, updateState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
+import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
+import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import { DataKey } from "./types/data/DataKey.enum";
 
 type DataTypes = {
   [DataKey.Accounts]: AccountsStorage;
+  [DataKey.Categories]: CategoriesStorage;
   [DataKey.Contractors]: ContractorsStorage;
 };
 
@@ -53,6 +56,8 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
   switch (key) {
     case DataKey.Accounts:
       return dbSaveAccounts;
+    case DataKey.Categories:
+      return dbSaveCategories;
     case DataKey.Contractors:
       return dbSaveContractors;
     default:
@@ -60,7 +65,7 @@ const getSaveFunction = <K extends DataKey>(key: K) => {
   }
 };
 
-const updateStorageMetadata = <T extends AccountsStorage | ContractorsStorage>(data: T): T => {
+const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage>(data: T): T => {
   const now = new Date().toISOString();
   return {
     ...data,

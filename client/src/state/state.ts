@@ -8,6 +8,7 @@ const state = reactive<AppState>({
   manifest: null,
   data: {
     accounts: null,
+    categories: null,
     contractors: null,
   },
 });
@@ -17,6 +18,7 @@ export const initializeState = (): void => {
   state.settings = null;
   state.manifest = null;
   state.data.accounts = null;
+  state.data.categories = null;
   state.data.contractors = null;
 };
 

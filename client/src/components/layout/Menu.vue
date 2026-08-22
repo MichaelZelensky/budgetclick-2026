@@ -12,6 +12,10 @@
       Contractors
     </RouterLink>
 
+    <RouterLink to="/categories" @click="close">
+      Categories
+    </RouterLink>
+
     <RouterLink to="/settings" @click="close">
       Settings
     </RouterLink>

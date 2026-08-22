@@ -24,6 +24,22 @@ export const router = createRouter({
       component: () => import("@/components/views/accounts/EditAccount.vue"),
     },
     {
+      path: "/categories",
+      component: () => import("@/components/views/categories/ListCategories.vue"),
+    },
+    {
+      path: "/categories/create",
+      component: () => import("@/components/views/categories/CreateCategory.vue"),
+    },
+    {
+      path: "/categories/:id",
+      component: () => import("@/components/views/categories/ViewCategory.vue"),
+    },
+    {
+      path: "/categories/:id/edit",
+      component: () => import("@/components/views/categories/EditCategory.vue"),
+    },
+    {
       path: "/contractors",
       component: () => import("@/components/views/contractors/ListContractors.vue"),
     },
