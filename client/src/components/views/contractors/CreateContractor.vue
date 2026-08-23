@@ -51,7 +51,6 @@ const save = async () => {
     description: description.value,
     createdAt: now,
     updatedAt: now,
-    schemaVersion: 1,
     isDeleted: false,
   };
 

@@ -65,7 +65,6 @@ const save = async () => {
     currentBalance: currentBalance.value,
     createdAt: now,
     updatedAt: now,
-    schemaVersion: 1,
     isDeleted: false,
   };
 
