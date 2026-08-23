@@ -1,5 +1,5 @@
 ﻿import { createApp } from "vue";
-import App from "@/App.vue";
+import App from "@/components/App.vue";
 import { initializeApplication } from "@/init";
 import { logger } from "@/logger.js";
 import { router } from "@/router";
