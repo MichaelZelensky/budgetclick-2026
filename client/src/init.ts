@@ -5,8 +5,8 @@ import { LogLevel } from "@/types/Logger";
 import { initializeManifest } from "@/manifest";
 import { initializeDatabase } from "@/database";
 import { initializeData } from "@/repository/data";
-import { initializeConfig } from "@/state/modules/config";
-import { initializeSettings } from "@/state/modules/settings";
+import { initializeConfig } from "@/state/config";
+import { initializeSettings } from "@/state/settings";
 import { initializeState } from "@/state/state";
 
 export const initializeApplication = async () => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { initializeState } from "@/state/state";
-import { initializeConfig } from "@/state/modules/config";
-import { getConfig } from "@/state/modules/config";
+import { initializeConfig } from "@/state/config";
+import { getConfig } from "@/state/config";
 
 const config = {
     logLevel: "error",

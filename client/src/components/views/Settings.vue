@@ -81,7 +81,7 @@ import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import { getSettings, updateSettings } from "@/state/modules/settings";
+import { getSettings, updateSettings } from "@/state/settings";
 
 const router = useRouter();
 const error = ref<string | null>(null);

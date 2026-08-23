@@ -6,7 +6,7 @@ import Settings from "@/components/views/Settings.vue";
 import { saveSettings, loadSettings } from "@/settings";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
 import { initializeState, getState } from "@/state/state";
-import { initializeSettings } from "@/state/modules/settings";
+import { initializeSettings } from "@/state/settings";
 
 vi.mock("@/settings", () => ({
   loadSettings: vi.fn(),
