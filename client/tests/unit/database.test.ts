@@ -3,10 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getDatabase, initializeDatabase } from "@/database";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
-vi.mock("@/migrations/migrate", () => ({
-  migrate: vi.fn(),
-}));
-
 vi.mock("@/state/loading", () => ({
   setLoadingOn: vi.fn(() => "loading-id"),
   setLoadingOff: vi.fn(),
@@ -21,11 +17,15 @@ describe("database", () => {
     expect(() => getDatabase()).toThrow("Database has not been initialized");
   });
 
-  it("initializes database", async () => {
+  it("initializes database and runs migrations", async () => {
     await initializeDatabase();
 
-    expect(getDatabase()).toBeInstanceOf(IDBDatabase);
-    expect(setLoadingOn).toHaveBeenCalledOnce();
+    const database = getDatabase();
+
+    expect(database.objectStoreNames).toContain("accounts");
+    expect(database.objectStoreNames).toContain("categories");
+    expect(database.objectStoreNames).toContain("contractors");
+    expect(setLoadingOn).toHaveBeenCalled();
     expect(setLoadingOff).toHaveBeenCalledWith("loading-id");
   });
 
