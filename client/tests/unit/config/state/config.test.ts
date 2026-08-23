@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { initializeState } from "@/state/state";
+import { initializeConfig } from "@/state/modules/config";
+import { getConfig } from "@/state/modules/config";
 
 const config = {
     logLevel: "error",
@@ -16,6 +19,6 @@ describe("config state", () => {
     });
 
     it("throws before initialization", () => {
-        expect(() => getConfig()).toThrow("Config has not been initialized");
+        expect(() => getConfig()).toThrow("Config has not been initialized.");
     });
 });

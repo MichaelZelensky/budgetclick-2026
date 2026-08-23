@@ -3,10 +3,13 @@ import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import Modal from "@/components/ui/modals/Modal.vue";
 import Settings from "@/components/views/Settings.vue";
-import { saveSettings } from "@/settings";
+import { saveSettings, loadSettings } from "@/settings";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
+import { initializeState, getState } from "@/state/state";
+import { initializeSettings } from "@/state/modules/settings";
 
 vi.mock("@/settings", () => ({
+  loadSettings: vi.fn(),
   saveSettings: vi.fn(),
 }));
 
@@ -86,8 +89,15 @@ const clickSave = async (wrapper: ReturnType<typeof mount>) => {
 };
 
 describe("settings storage initialization", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     initializeState();
+    vi.mocked(loadSettings).mockResolvedValue({
+      schemaVersion: 1,
+      storage: "-",
+      clientId: "client-123",
+    });
+    const settings = await loadSettings();
+    initializeSettings(settings);
 
     getState().settings = {
       schemaVersion: 1,
@@ -139,21 +149,21 @@ describe("settings storage initialization", () => {
     expect(wrapper.find("[data-test='modal']").exists()).toBe(false);
   });
 
-it("shows an error when new manifest initialization fails", async () => {
-  vi.mocked(initializeNewManifest).mockRejectedValueOnce(
-    new Error("Storage failed"),
-  );
+  it("shows an error when new manifest initialization fails", async () => {
+    vi.mocked(initializeNewManifest).mockRejectedValueOnce(
+      new Error("Storage failed"),
+    );
 
-  const wrapper = await mountSettings();
+    const wrapper = await mountSettings();
 
-  await wrapper.findAll("input")[0].setValue("test-storage");
-  await clickSave(wrapper);
-  await wrapper.findComponent(Modal).vm.$emit("ok");
-  await wrapper.vm.$nextTick();
+    await wrapper.findAll("input")[0].setValue("test-storage");
+    await clickSave(wrapper);
+    await wrapper.findComponent(Modal).vm.$emit("ok");
+    await wrapper.vm.$nextTick();
 
-  expect(wrapper.find("[data-test='error-modal']").exists()).toBe(true);
-  expect(wrapper.text()).toContain("Storage could not be initialized.");
-});
+    expect(wrapper.find("[data-test='error-modal']").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Storage could not be initialized.");
+  });
 
   it("saves settings before checking storage", async () => {
     const wrapper = await mountSettings();

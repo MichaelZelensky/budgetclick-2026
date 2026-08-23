@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import config from "@/../public/config.json";
 import settings from "@/../public/settings.json";
 import { initializeApplication } from "@/init";
+import { getState, initializeState } from "@/state/state";
+
+vi.mock("@/database", () => ({
+  initializeDatabase: vi.fn(),
+}));
+
+vi.mock("@/repository/data", () => ({
+  initializeData: vi.fn(),
+}));
 
 describe("application initialization", () => {
   beforeEach(() => {
