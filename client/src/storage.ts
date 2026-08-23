@@ -13,6 +13,10 @@ const getPutUrl = (): string => {
   return import.meta.env.DEV ? "http://localhost:3000/put" : getConfig().storage.putUrl;
 };
 
+const getStorageKey = (key: string): string => {
+  return key === "manifest" ? "manifest" : `${key[0]}/${key}`;
+};
+
 const getArrayBuffer = (body: Uint8Array): ArrayBuffer => {
   const arrayBuffer = new ArrayBuffer(body.byteLength);
   new Uint8Array(arrayBuffer).set(body);
@@ -24,7 +28,7 @@ export const getFile = async (key: string): Promise<ArrayBuffer> => {
     method: "GET",
     headers: {
       "X-Storage-Path": getStoragePath(),
-      "X-Storage-Key": key,
+      "X-Storage-Key": getStorageKey(key),
     },
     cache: "no-store",
   });
@@ -40,7 +44,7 @@ export const putFile = async (key: string, body: Uint8Array): Promise<void> => {
     headers: {
       "Content-Type": "application/octet-stream",
       "X-Storage-Path": getStoragePath(),
-      "X-Storage-Key": key,
+      "X-Storage-Key": getStorageKey(key),
     },
     body: getArrayBuffer(body),
   });
