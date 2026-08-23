@@ -15,6 +15,13 @@
       Storage is initialized.
     </p>
 
+    <p v-else-if="settings.storage !== '-'">
+      Storage is not initialized.
+      <LiteButton @click="showInitializeModal = true" type="link">
+        Initialize
+      </LiteButton>
+    </p>
+
     <label>
       Client ID
       <LiteInputField v-model="settings.clientId" />
@@ -43,6 +50,18 @@
         Cancel
       </LiteButton>
     </ButtonGroup>
+
+    <Modal
+      v-if="showInitializeModal"
+      title="Initialize storage"
+      primary-button-label="Yes"
+      secondary-button-label="No"
+      @ok="initializeStorage"
+      @cancel="showInitializeModal = false"
+      @close="showInitializeModal = false"
+    >
+      Initialize storage at the configured location?
+    </Modal>
 
     <Modal
       v-if="showManifestModal"
@@ -80,11 +99,13 @@ import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
+import { initializeData } from "@/repository/data";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { getSettings, updateSettings } from "@/state/settings";
 
 const router = useRouter();
 const error = ref<string | null>(null);
+const showInitializeModal = ref(false);
 const showManifestModal = ref(false);
 const showErrorModal = ref(false);
 const errorModalMessage = ref("");
@@ -122,7 +143,32 @@ const save = async () => {
 
       if (!initialized) {
         showManifestModal.value = true;
+      } else {
+        await initializeData();
       }
+    }
+  } catch {
+    showError("Storage could not be initialized.");
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+const initializeStorage = async () => {
+  showInitializeModal.value = false;
+  error.value = null;
+  const loadingId = setLoadingOn();
+
+  try {
+    updateSettings(settings);
+    saveSettings(settings);
+
+    const initialized = await initializeManifest();
+
+    if (!initialized) {
+      showManifestModal.value = true;
+    } else {
+      await initializeData();
     }
   } catch {
     showError("Storage could not be initialized.");
@@ -137,6 +183,7 @@ const initializeNewStorage = async () => {
 
   try {
     await initializeNewManifest(settings.clientId);
+    await initializeData();
   } catch {
     showError("Storage could not be initialized.");
   } finally {

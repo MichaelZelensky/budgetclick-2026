@@ -4,9 +4,9 @@
 
     <main
       class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto"
-      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isInitialized }"
+      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard || isSetup }"
     >
-      <Setup v-if="isInitialized && !isSettingsOrHelp" />
+      <Setup v-if="isSetup && !isSettingsOrHelp && !isAccountCreate" />
       <RouterView v-else />
     </main>
 
@@ -27,11 +27,13 @@ import { getState } from "@/state/state";
 
 const route = useRoute();
 
-const isInitialized = computed(() => {
-  const settings = getState().settings;
-  return settings?.storage === "-" || settings?.clientId === "-" || getState().manifest === null;
+const isSetup = computed(() => {
+  const state = getState();
+  const settings = state.settings;
+  return settings?.storage === "-" || settings?.clientId === "-" || state.manifest === null || state.data.accounts?.accounts.length === 0;
 });
 
 const isDashboard = computed(() => route.path === "/dashboard");
 const isSettingsOrHelp = computed(() => route.path === "/settings" || route.path === "/help");
+const isAccountCreate = computed(() => route.path === "/accounts/create");
 </script>
