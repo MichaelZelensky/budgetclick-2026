@@ -52,19 +52,6 @@ const updateManifest = async (key: DataKey, version: number): Promise<void> => {
   await saveManifest(updatedManifest);
 };
 
-const getSaveFunction = <K extends DataKey>(key: K) => {
-  switch (key) {
-    case DataKey.Accounts:
-      return dbSaveAccounts;
-    case DataKey.Categories:
-      return dbSaveCategories;
-    case DataKey.Contractors:
-      return dbSaveContractors;
-    default:
-      throw new Error(`No repository found for key: ${key}`);
-  }
-};
-
 const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage>(data: T): T => {
   const now = new Date().toISOString();
   return {
@@ -81,7 +68,6 @@ const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | C
 export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as DataTypes[K];
   const updatedData = updateStorageMetadata(plainData);
-  const save = getSaveFunction(key);
   const manifest = getManifest();
   const entry = manifest.references[key];
 
@@ -89,7 +75,18 @@ export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K
     throw new Error("Manifest reference not found");
   }
 
-  await save(updatedData);
+  switch (key) {
+    case DataKey.Accounts:
+      await dbSaveAccounts(updatedData as AccountsStorage);
+      break;
+    case DataKey.Categories:
+      await dbSaveCategories(updatedData as CategoriesStorage);
+      break;
+    case DataKey.Contractors:
+      await dbSaveContractors(updatedData as ContractorsStorage);
+      break;
+  }
+
   updateState(key, updatedData);
   await putFile(entry.objectKey, encodeData(updatedData));
   await updateManifest(key, updatedData.metadata.version);

@@ -13,7 +13,7 @@ export type Option<V = string, T = string> = {
 export type Optgroup = {
   label: string;
   disabled?: boolean;
-  options: Option[];
+  options: Option<string | number>[];
 }
 
 export type ChangeEventDataType<T> = T | undefined;

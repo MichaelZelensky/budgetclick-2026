@@ -8,10 +8,10 @@
 import { isDefined } from '@/utils/defined';
 import OptionGroup from '@/components/ui/lite-select/OptionGroup.vue';
 import { computed, PropType, ref, watchEffect } from 'vue';
-import { Option, Optgroup } from '@/components/ui/lite-select/LiteSelect.types';
+import { Option, Optgroup, ChangeEventDataType } from '@/components/ui/lite-select/LiteSelect.types';
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', data: ChangeEventDataType): void
+  (e: 'update:modelValue', data: ChangeEventDataType<string | number>): void
 }>();
 
 const props = defineProps({
@@ -20,7 +20,7 @@ const props = defineProps({
     default: null
   },
   options: {
-    type: Array as PropType<(Option | Optgroup)[]>,
+    type: Array as PropType<(Option<string | number> | Optgroup)[]>,
     default: () => []
   },
   title: {
@@ -43,7 +43,7 @@ watchEffect(() => {
 });
 
 const handleChange = () => {
-  emit('update:modelValue', selectedValue.value as ChangeEventDataType);
+  emit('update:modelValue', selectedValue.value as ChangeEventDataType<string | number>);
 };
 </script>
 

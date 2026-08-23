@@ -15,10 +15,10 @@
     >
       <template #actions="{ item }">
         <div class="tw-flex tw-gap-2">
-          <LiteButton size="sm" @click="view(item.id)">
+          <LiteButton size="sm" @click="view(item.id as string)">
             View
           </LiteButton>
-          <LiteButton size="sm" @click="edit(item.id)">
+          <LiteButton size="sm" @click="edit(item.id as string)">
             Edit
           </LiteButton>
         </div>

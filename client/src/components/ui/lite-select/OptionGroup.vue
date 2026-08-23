@@ -1,5 +1,5 @@
 <template>
-  <optgroup v-if="isOptgroup" :label="option.label" :disabled="option.disabled">
+  <optgroup v-if="objectIsOptgroup(option)" :label="option.label" :disabled="option.disabled">
     <OptionGroup v-for="nestedOption in option.options" :option="nestedOption" :key="nestedOption.value" />
   </optgroup>
   <option v-else-if="isDefined(option.disabled)" :value="option.value" :disabled="option.disabled" :class="className">
@@ -18,23 +18,21 @@ import OptionGroup from '@/components/ui/lite-select/OptionGroup.vue';
 
 const props = defineProps({
   option: {
-    type: Object as PropType<Option | Optgroup>,
+    type: Object as PropType<Option<string | number> | Optgroup>,
     required: true
   }
 });
 
-const objectIsOptgroup = (option: Option | Optgroup): option is Optgroup => 
+const objectIsOptgroup = (option: Option<string | number> | Optgroup): option is Optgroup => 
   isDefined((option as Optgroup).options);
 
-const isOptgroup = computed(() => objectIsOptgroup(props.option));
-
 const className = computed(() => {
-  if (!isOptgroup.value && isDefined(props.option.style)) {
-    return {
-      i: props.option.style.includes('i'),
-      b: props.option.style.includes('b')
-    };
-  }
-  return {};
+  if (objectIsOptgroup(props.option)) return {};
+  const style = props.option.style;
+  if (style === undefined) return {};
+  return {
+    i: style.includes('i'),
+    b: style.includes('b')
+  };
 });
 </script>

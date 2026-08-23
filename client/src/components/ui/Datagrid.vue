@@ -111,7 +111,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="item in paginatedData" :key="item.id">
+          <tr v-for="item in paginatedData" :key="String(item.id)">
             <td
               v-if="selectRowCheckbox"
               :style="{ width: selectColumnWidthPx, minWidth: selectColumnWidthPx }"
@@ -135,7 +135,7 @@
               <span v-else-if="column.type === DatagridColumnType.BOOLEAN && item[column.key]" class="tw-text-green-500">Yes</span>
               <span v-else-if="column.type === DatagridColumnType.BOOLEAN && !item[column.key]" class="tw-text-red-500">No</span>
               <span v-else-if="Array.isArray(item[column.key])">
-                {{ item[column.key].join(', ') }}
+                {{ (item[column.key] as (string | number | boolean)[]).join(', ') }}
               </span>
               <span v-else>
                 {{ isDefined(item[column.key]) ? item[column.key] : 'null' }}
@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, reactive, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, reactive, onBeforeUnmount, nextTick, ComponentPublicInstance } from 'vue';
 import LiteSelect from '@/components/ui/lite-select/LiteSelect.vue';
 import LiteButton from '@/components/ui/LiteButton.vue';
 import LiteInputField from '@/components/ui/LiteInputField.vue';
@@ -405,7 +405,7 @@ const filteredData = computed<DatagridRow[]>(() => {
       const ax = toComparable(avScalar!);
       const bx = toComparable(bvScalar!);
       if (ax === bx) return 0;
-      return (ax > bx ? 1 : -1) * dir;
+      return (ax! > bx! ? 1 : -1) * dir;
     });
   }
 
@@ -465,9 +465,9 @@ const sortBy = (key: string) => {
   if (sortOrder.value === 'none') sortKey.value = '';
 };
 
-const filterInputRefs = ref<Record<string, { focus: () => void } | null>>({});
-const setFilterInputRef = (key: string) => (el: { focus: () => void } | null) => {
-  filterInputRefs.value[key] = el;
+const filterInputRefs = ref<Record<string, InstanceType<typeof LiteInputField> | null>>({});
+const setFilterInputRef = (key: string) => (el: Element | ComponentPublicInstance | null) => {
+  filterInputRefs.value[key] = el as InstanceType<typeof LiteInputField> | null;
 };
 
 const toggleFilter = (key: string) => {
@@ -567,7 +567,7 @@ const bulkActionSelectOptions = computed(() => {
   return [placeholder, ...actionOptions];
 });
 
-const handleBulkActionSelection = (value: string | number | null) => {
+const handleBulkActionSelection = (value: string | number | undefined) => {
   const actionKey = typeof value === 'string' ? value : String(value ?? '');
   if (!actionKey) return;
   if (selectedItemsOnPage.value.length === 0) {
