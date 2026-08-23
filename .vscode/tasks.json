@@ -13,37 +13,37 @@
     {
       "label": "[Dev] Concat (chunks, full-code)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -MaxChars 10000 -OpenOutput",
       "problemMatcher": []
     },
     {
       "label": "[Dev] Concat (constitution, full-code)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md -OpenOutput",
       "problemMatcher": []
     },
     {
       "label": "[Dev] Concat (chunks, constitution, full-code)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md -MaxChars 10000",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -OutputFormat full-code -Constitution ./util/constitution-compressed.md -MaxChars 10000 -OpenOutput",
       "problemMatcher": []
     },
     {
       "label": "[Dev] Concat (chunks, patch)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -MaxChars 10000 -OpenOutput",
       "problemMatcher": []
     },
     {
       "label": "[Dev] Concat (constitution, patch)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md -OpenOutput",
       "problemMatcher": []
     },
     {
       "label": "[Dev] Concat (chunks, constitution, patch)",
       "type": "shell",
-      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md -MaxChars 10000",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./util/concat.ps1 -Constitution ./util/constitution-compressed.md -MaxChars 10000 -OpenOutput",
       "problemMatcher": []
     },
     {

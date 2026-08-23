@@ -26,7 +26,9 @@ param(
 
     [string]$OutDir = "$PSScriptRoot\concat-out",
 
-    [int]$MaxChars = 0
+    [int]$MaxChars = 0,
+
+    [switch]$OpenOutput
 )
 
 $ErrorActionPreference = "Stop"
@@ -215,6 +217,14 @@ WriteChunk `
     -Index $chunkIndex `
     -Builder $builder `
     -IsLast $true
+
+if ($OpenOutput) {
+    $firstOutputPath = Join-Path $OutDir "001.txt"
+
+    if (Test-Path -LiteralPath $firstOutputPath) {
+        code --reuse-window $firstOutputPath
+    }
+}
 
 Write-Host ""
 Write-Host "Done."
