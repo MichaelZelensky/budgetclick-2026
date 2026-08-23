@@ -18,8 +18,8 @@ export const initializeApplication = async () => {
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
   await initializeDatabase();
+  await initializeData();
   if (settings.storage !== "-") {
     await initializeManifest();
-    await initializeData();
   }
 };
