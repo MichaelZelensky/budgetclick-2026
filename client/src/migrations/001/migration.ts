@@ -2,6 +2,7 @@ export const migrate = (database: IDBDatabase): void => {
   const accountsStore = database.createObjectStore("accounts");
   const categoriesStore = database.createObjectStore("categories");
   const contractorsStore = database.createObjectStore("contractors");
+  database.createObjectStore("chunks");
   const now = new Date().toISOString();
   const metadata = {
     schemaVersion: 1,

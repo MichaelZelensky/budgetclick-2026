@@ -10,6 +10,7 @@ const state = reactive<AppState>({
     accounts: null,
     categories: null,
     contractors: null,
+    chunks: {},
   },
 });
 
