@@ -7,7 +7,7 @@ import { initializeDatabase } from "@/database";
 import { initializeData } from "@/repository/data";
 import { initializeConfig } from "@/state/modules/config";
 import { initializeSettings } from "@/state/modules/settings";
-import { initializeState } from "./state/state";
+import { initializeState } from "@/state/state";
 
 export const initializeApplication = async () => {
   initializeState();

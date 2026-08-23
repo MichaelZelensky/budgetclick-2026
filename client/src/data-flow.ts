@@ -8,7 +8,7 @@ import { dbSaveContractors } from "@/repository/contractor";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
-import { DataKey } from "./types/data/DataKey.enum";
+import { DataKey } from "@/types/data/DataKey.enum";
 
 type DataTypes = {
   [DataKey.Accounts]: AccountsStorage;
