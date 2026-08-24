@@ -7,12 +7,15 @@ export const dbGetChunks = async (): Promise<Record<string, ChunkStorage>> => {
   const database = getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
-    const request = transaction.objectStore(objectStoreName).getAll();
-    request.onsuccess = () => {
-      const chunks = request.result as Array<ChunkStorage & { month?: string }>;
-      resolve(Object.fromEntries(chunks.map(x => [x.month, x])));
+    const store = transaction.objectStore(objectStoreName);
+    const keysRequest = store.getAllKeys();
+    const valuesRequest = store.getAll();
+    transaction.oncomplete = () => {
+      const keys = keysRequest.result as string[];
+      const values = valuesRequest.result as ChunkStorage[];
+      resolve(Object.fromEntries(keys.map((key, i) => [key, values[i]])));
     };
-    request.onerror = () => reject(request.error ?? new Error("Failed to get chunks"));
+    transaction.onerror = () => reject(transaction.error ?? new Error("Failed to get chunks"));
   });
 };
 

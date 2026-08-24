@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
-import { DataKey } from "@/types/data/DataKey.enum";
+import { ReferenceDataKey } from "@/types/AppState";
 
 vi.mock("@/manifest", () => ({
   getManifest: vi.fn(),
@@ -75,8 +75,8 @@ describe("data flow", () => {
   });
 
   it("updates, saves, and uploads account data", async () => {
-    await saveData({
-      key: DataKey.Accounts,
+    await saveReferenceData({
+      key: ReferenceDataKey.Accounts,
       data: structuredClone(accountsStorage),
     });
 
@@ -89,7 +89,7 @@ describe("data flow", () => {
     expect(savedData.metadata.version).toBe(2);
     expect(savedData.metadata.updatedBy).toBe("client-123");
     expect(savedData.accounts).toEqual([]);
-    expect(getState().data.accounts).toEqual(savedData);
+    expect(getState().referenceData.accounts).toEqual(savedData);
     expect(uploadedData).toEqual(savedData);
     expect(savedManifest.version).toBe(2);
     expect(savedManifest.references.accounts.version).toBe(2);
@@ -107,8 +107,8 @@ describe("data flow", () => {
     });
 
     await expect(
-      saveData({
-        key: DataKey.Accounts,
+      saveReferenceData({
+        key: ReferenceDataKey.Accounts,
         data: structuredClone(accountsStorage),
       }),
     ).rejects.toThrow("Manifest reference not found");

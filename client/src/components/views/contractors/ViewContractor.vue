@@ -23,7 +23,7 @@ import { getState } from "@/state/state";
 
 const route = useRoute();
 const router = useRouter();
-const contractorsStorage = getState().data.contractors;
+const contractorsStorage = getState().referenceData.contractors;
 
 if (contractorsStorage === null) {
   throw new Error("Contractors have not been initialized");

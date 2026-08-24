@@ -30,12 +30,12 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { getState } from "@/state/state";
-import { DataKey } from "@/types/data/DataKey.enum";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
+import { ReferenceDataKey } from "@/types/AppState";
 
 const route = useRoute();
 const router = useRouter();
-const categoriesStorage = getState().data.categories;
+const categoriesStorage = getState().referenceData.categories;
 
 if (categoriesStorage === null) {
   throw new Error("Categories have not been initialized");
@@ -51,8 +51,8 @@ const name = ref(category.name);
 const description = ref(category.description);
 
 const save = async () => {
-  await saveData({
-    key: DataKey.Categories,
+  await saveReferenceData({
+    key: ReferenceDataKey.Categories,
     data: {
       ...categoriesStorage,
       categories: categoriesStorage.categories.map(x => x.id === category.id ? {

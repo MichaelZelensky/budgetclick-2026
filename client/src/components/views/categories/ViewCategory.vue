@@ -23,7 +23,7 @@ import { getState } from "@/state/state";
 
 const route = useRoute();
 const router = useRouter();
-const categoriesStorage = getState().data.categories;
+const categoriesStorage = getState().referenceData.categories;
 
 if (categoriesStorage === null) {
   throw new Error("Categories have not been initialized");

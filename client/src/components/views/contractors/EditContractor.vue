@@ -30,12 +30,12 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { getState } from "@/state/state";
-import { DataKey } from "@/types/data/DataKey.enum";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
+import { ReferenceDataKey } from "@/types/AppState";
 
 const route = useRoute();
 const router = useRouter();
-const contractorsStorage = getState().data.contractors;
+const contractorsStorage = getState().referenceData.contractors;
 
 if (contractorsStorage === null) {
   throw new Error("Contractors have not been initialized");
@@ -51,8 +51,8 @@ const name = ref(contractor.name);
 const description = ref(contractor.description);
 
 const save = async () => {
-  await saveData({
-    key: DataKey.Contractors,
+  await saveReferenceData({
+    key: ReferenceDataKey.Contractors,
     data: {
       ...contractorsStorage,
       contractors: contractorsStorage.contractors.map(x => x.id === contractor.id ? {

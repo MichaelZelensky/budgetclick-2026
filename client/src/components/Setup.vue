@@ -50,7 +50,7 @@ const state = getState();
 
 const hasStorage = computed(() => state.settings?.storage !== undefined && state.settings.storage !== "-" && state.manifest !== null);
 const hasClientId = computed(() => state.settings?.clientId !== undefined && state.settings.clientId !== "-");
-const hasAccount = computed(() => (state.data.accounts?.accounts.length ?? 0) > 0);
+const hasAccount = computed(() => (state.referenceData.accounts?.accounts.length ?? 0) > 0);
 </script>
 
 <style scoped lang="scss">

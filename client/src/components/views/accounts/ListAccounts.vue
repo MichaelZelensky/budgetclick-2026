@@ -35,7 +35,7 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
 
 const router = useRouter();
-const accounts = computed(() => getState().data.accounts?.accounts ?? []);
+const accounts = computed(() => getState().referenceData.accounts?.accounts ?? []);
 
 const columns = [
   { key: "name", label: "Name", filterable: true },

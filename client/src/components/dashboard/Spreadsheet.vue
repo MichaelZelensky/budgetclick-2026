@@ -35,9 +35,9 @@ type SpreadsheetRow = {
 const state = getState();
 
 const transactions = computed<SpreadsheetRow[]>(() => {
-  const accounts = state.data.accounts?.accounts ?? [];
+  const accounts = state.referenceData.accounts?.accounts ?? [];
 
-  return Object.values(state.data.chunks)
+  return Object.values(state.chunks)
     .flatMap(x => x.transactions)
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
@@ -63,5 +63,5 @@ const columns = [
   { key: "currency", label: "Currency", filterable: true },
   { key: "description", label: "Description", filterable: true },
   { key: "accountName", label: "Account", filterable: true }
-] as const;
+];
 </script>

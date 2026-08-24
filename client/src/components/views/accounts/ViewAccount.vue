@@ -25,7 +25,7 @@ import { getState } from "@/state/state";
 
 const route = useRoute();
 const router = useRouter();
-const accountsStorage = getState().data.accounts;
+const accountsStorage = getState().referenceData.accounts;
 
 if (accountsStorage === null) {
   throw new Error("Accounts have not been initialized");

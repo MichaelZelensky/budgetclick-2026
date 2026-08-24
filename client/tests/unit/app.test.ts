@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createRouter, createMemoryHistory } from "vue-router";
-import App from "@/App.vue";
+import App from "@/components/App.vue";
 import { getState, initializeState } from "@/state/state";
 
 describe("application shell initialization", () => {

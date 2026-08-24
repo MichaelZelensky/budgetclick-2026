@@ -24,7 +24,7 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
-import { saveTransactionData } from "@/data-flow";
+import { saveChunkData } from "@/data-flow";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { TransactionDirection } from "@/types/data/Transaction";
@@ -33,13 +33,13 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
-  getState().data.accounts?.accounts[0]?.id,
+  getState().referenceData.accounts?.accounts[0]?.id,
 );
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 
 const accountOptions = computed<Option[]>(() =>
-  getState().data.accounts?.accounts.map(account => ({
+  getState().referenceData.accounts?.accounts.map(account => ({
     value: account.id,
     text: account.name,
   })) ?? []
@@ -68,7 +68,7 @@ const saveRecord = async (): Promise<void> => {
   const now = new Date().toISOString();
   const transactionDatetime = new Date(datetime.value);
   const month = transactionDatetime.toISOString().slice(0, 7);
-  const existingChunk = getState().data.chunks[month];
+  const existingChunk = getState().chunks[month];
   const chunk: ChunkStorage = existingChunk ?? {
     metadata: {
       schemaVersion: 1,
@@ -80,7 +80,7 @@ const saveRecord = async (): Promise<void> => {
     transactions: [],
   };
 
-  await saveTransactionData({
+  await saveChunkData({
     key: month,
     data: {
       ...chunk,

@@ -40,12 +40,12 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { getState } from "@/state/state";
-import { DataKey } from "@/types/data/DataKey.enum";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
+import { ReferenceDataKey } from "@/types/AppState";
 
 const route = useRoute();
 const router = useRouter();
-const accountsStorage = getState().data.accounts;
+const accountsStorage = getState().referenceData.accounts;
 
 if (accountsStorage === null) {
   throw new Error("Accounts have not been initialized");
@@ -63,8 +63,8 @@ const currency = ref(account.currency);
 const currentBalance = ref(account.currentBalance);
 
 const save = async () => {
-  await saveData({
-    key: DataKey.Accounts,
+  await saveReferenceData({
+    key: ReferenceDataKey.Accounts,
     data: {
       ...accountsStorage,
       accounts: accountsStorage.accounts.map(x => x.id === account.id ? {

@@ -2,7 +2,8 @@ import { dbGetAccounts } from "@/repository/account";
 import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetChunks } from "@/repository/transaction";
-import { updateState } from "@/state/state";
+import { updateReferenceDataState, updateState } from "@/state/state";
+import { ReferenceDataKey } from "@/types/AppState";
 
 export const initializeData = async (): Promise<void> => {
   const accounts = await dbGetAccounts();
@@ -10,8 +11,8 @@ export const initializeData = async (): Promise<void> => {
   const contractors = await dbGetContractors();
   const chunks = await dbGetChunks();
 
-  updateState("accounts", accounts);
-  updateState("categories", categories);
-  updateState("contractors", contractors);
+  updateReferenceDataState(ReferenceDataKey.Accounts, accounts);
+  updateReferenceDataState(ReferenceDataKey.Categories, categories);
+  updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
   updateState("chunks", chunks);
 };

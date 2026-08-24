@@ -39,9 +39,9 @@ import { useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
 import { getState } from "@/state/state";
-import { DataKey } from "@/types/data/DataKey.enum";
+import { ReferenceDataKey } from "@/types/AppState";
 
 const router = useRouter();
 const name = ref("");
@@ -51,7 +51,7 @@ const currentBalance = ref(0);
 
 const save = async () => {
   const now = new Date().toISOString();
-  const accountsStorage = getState().data.accounts;
+  const accountsStorage = getState().referenceData.accounts;
 
   if (accountsStorage === null) {
     throw new Error("Accounts have not been initialized");
@@ -68,8 +68,8 @@ const save = async () => {
     isDeleted: false,
   };
 
-  await saveData({
-    key: DataKey.Accounts,
+  await saveReferenceData({
+    key: ReferenceDataKey.Accounts,
     data: {
       ...accountsStorage,
       accounts: [...accountsStorage.accounts, account],

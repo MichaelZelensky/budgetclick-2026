@@ -1,5 +1,5 @@
 import { toRaw } from "vue";
-import { getState, updateState } from "@/state/state";
+import { getState, updateReferenceDataState, updateChunksState } from "@/state/state";
 import { getManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
@@ -10,17 +10,11 @@ import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
-import { DataKey } from "@/types/data/DataKey.enum";
+import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 
-type DataTypes = {
-  [DataKey.Accounts]: AccountsStorage;
-  [DataKey.Categories]: CategoriesStorage;
-  [DataKey.Contractors]: ContractorsStorage;
-};
-
-type SaveDataInput<K extends DataKey> = {
+type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
-  data: DataTypes[K];
+  data: ReferenceDataTypes[K];
 };
 
 type SaveTransactionDataInput = {
@@ -32,31 +26,23 @@ const encodeData = (data: unknown): Uint8Array => {
   return new TextEncoder().encode(JSON.stringify(data));
 };
 
-const updateManifest = async (key: DataKey, version: number): Promise<void> => {
-  const manifest = getManifest();
-  const entry = manifest.references[key];
-
-  if (entry === undefined) {
-    throw new Error("Manifest reference not found");
-  }
-
+const bumpManifest = <T extends Record<string, unknown>>(
+  manifest: ReturnType<typeof getManifest>,
+  section: "references" | "chunks",
+  key: string,
+  entry: T,
+) => {
   const now = new Date().toISOString();
-
-  const updatedManifest = {
+  return {
     ...manifest,
     version: manifest.version + 1,
     updatedAt: now,
     updatedBy: getState().settings?.clientId ?? "-",
-    references: {
-      ...manifest.references,
-      [key]: {
-        ...entry,
-        version,
-      },
+    [section]: {
+      ...manifest[section],
+      [key]: entry,
     },
   };
-
-  await saveManifest(updatedManifest);
 };
 
 const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage>(data: T): T => {
@@ -76,8 +62,8 @@ const generateObjectKey = (): string => {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 };
 
-export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
-  const plainData = JSON.parse(JSON.stringify(toRaw(data))) as DataTypes[K];
+export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
+  const plainData = JSON.parse(JSON.stringify(toRaw(data))) as ReferenceDataTypes[K];
   const updatedData = updateStorageMetadata(plainData);
   const manifest = getManifest();
   const entry = manifest.references[key];
@@ -87,26 +73,29 @@ export const saveData = async <K extends DataKey>({ key, data }: SaveDataInput<K
   }
 
   switch (key) {
-    case DataKey.Accounts:
+    case ReferenceDataKey.Accounts:
       await dbSaveAccounts(updatedData as AccountsStorage);
       break;
-    case DataKey.Categories:
+    case ReferenceDataKey.Categories:
       await dbSaveCategories(updatedData as CategoriesStorage);
       break;
-    case DataKey.Contractors:
+    case ReferenceDataKey.Contractors:
       await dbSaveContractors(updatedData as ContractorsStorage);
       break;
   }
 
-  updateState(key, updatedData);
+  updateReferenceDataState(key, updatedData);
   await putFile(entry.objectKey, encodeData(updatedData));
-  await updateManifest(key, updatedData.metadata.version);
+  const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
+  await saveManifest(updatedManifest);
 };
 
-export const saveTransactionData = async ({ key, data }: SaveTransactionDataInput): Promise<void> => {
+export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Promise<void> => {
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as ChunkStorage;
   const now = new Date().toISOString();
-  const entry = getManifest().chunks[key];
+  const manifest = getManifest();
+  const entry = manifest.chunks[key];
+  const objectKey = entry?.objectKey ?? generateObjectKey();
   const updatedData = {
     ...plainData,
     metadata: {
@@ -116,26 +105,11 @@ export const saveTransactionData = async ({ key, data }: SaveTransactionDataInpu
       updatedBy: getState().settings?.clientId ?? "-",
     },
   };
-  const objectKey = entry?.objectKey ?? generateObjectKey();
-  const updatedManifest = {
-    ...getManifest(),
-    version: getManifest().version + 1,
-    updatedAt: now,
-    updatedBy: getState().settings?.clientId ?? "-",
-    chunks: {
-      ...getManifest().chunks,
-      [key]: {
-        objectKey,
-        version: updatedData.metadata.version,
-      },
-    },
-  };
 
   await dbSaveChunk(key, updatedData);
-  updateState("chunks", {
-    ...getState().data.chunks,
-    [key]: updatedData,
-  });
+  updateChunksState(key, updatedData);
   await putFile(objectKey, encodeData(updatedData));
+
+  const updatedManifest = bumpManifest(manifest, "chunks", key, { objectKey, version: updatedData.metadata.version });
   await saveManifest(updatedManifest);
 };

@@ -3,13 +3,13 @@ import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import CreateAccount from "@/components/views/accounts/CreateAccount.vue";
 import EditAccount from "@/components/views/accounts/EditAccount.vue";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
 import { initializeState, getState } from "@/state/state";
-import { DataKey } from "@/types/data/DataKey.enum";
+import { ReferenceDataKey } from "@/types/AppState";
 import validateAccount from "@/validators/default/Account.js";
 
 vi.mock("@/data-flow", () => ({
-  saveData: vi.fn(),
+  saveReferenceData: vi.fn(),
 }));
 
 const createTestRouter = () => createRouter({
@@ -116,7 +116,7 @@ describe("accounts CRUD", () => {
       },
     };
 
-    getState().data.accounts = {
+    getState().referenceData.accounts = {
       metadata: {
         schemaVersion: 1,
         version: 1,
@@ -141,11 +141,11 @@ describe("accounts CRUD", () => {
 
     await wrapper.find("button").trigger("click");
 
-    expect(saveData).toHaveBeenCalledOnce();
+    expect(saveReferenceData).toHaveBeenCalledOnce();
 
-    const call = vi.mocked(saveData).mock.calls[0][0];
+    const call = vi.mocked(saveReferenceData).mock.calls[0][0];
 
-    expect(call.key).toBe(DataKey.Accounts);
+    expect(call.key).toBe(ReferenceDataKey.Accounts);
     expect(call.data.accounts).toHaveLength(1);
 
     const account = call.data.accounts[0];
@@ -177,8 +177,8 @@ describe("accounts CRUD", () => {
       isDeleted: false,
     };
 
-    getState().data.accounts = {
-      ...getState().data.accounts!,
+    getState().referenceData.accounts = {
+      ...getState().referenceData.accounts!,
       accounts: [account],
     };
 
@@ -192,11 +192,11 @@ describe("accounts CRUD", () => {
 
     await wrapper.find("button").trigger("click");
 
-    expect(saveData).toHaveBeenCalledOnce();
+    expect(saveReferenceData).toHaveBeenCalledOnce();
 
-    const call = vi.mocked(saveData).mock.calls[0][0];
+    const call = vi.mocked(saveReferenceData).mock.calls[0][0];
 
-    expect(call.key).toBe(DataKey.Accounts);
+    expect(call.key).toBe(ReferenceDataKey.Accounts);
     expect(call.data.accounts).toHaveLength(1);
 
     const updatedAccount = call.data.accounts[0];

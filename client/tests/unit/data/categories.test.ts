@@ -4,12 +4,12 @@ import { defineComponent, h } from "vue";
 
 import CreateCategory from "@/components/views/categories/CreateCategory.vue";
 import EditCategory from "@/components/views/categories/EditCategory.vue";
-import { saveData } from "@/data-flow";
+import { saveReferenceData } from "@/data-flow";
 import { getState } from "@/state/state";
 import validateCategory from "@/validators/default/Category";
 
 vi.mock("@/data-flow", () => ({
-  saveData: vi.fn(),
+  saveReferenceData: vi.fn(),
 }));
 
 const push = vi.fn();
@@ -38,7 +38,7 @@ const categoriesStorage = {
 
 vi.mock("@/state/state", () => ({
   getState: () => ({
-    data: {
+    referenceData: {
       categories: categoriesStorage,
     },
   }),
@@ -82,7 +82,7 @@ const createStubs = () => ({
 describe("categories CRUD", () => {
   beforeEach(() => {
     categoriesStorage.categories = [];
-    vi.mocked(saveData).mockReset();
+    vi.mocked(saveReferenceData).mockReset();
     push.mockReset();
   });
 
@@ -100,9 +100,9 @@ describe("categories CRUD", () => {
 
     await wrapper.get("button").trigger("click");
 
-    expect(saveData).toHaveBeenCalledTimes(1);
+    expect(saveReferenceData).toHaveBeenCalledTimes(1);
 
-    const call = vi.mocked(saveData).mock.calls[0][0];
+    const call = vi.mocked(saveReferenceData).mock.calls[0][0];
 
     expect(call.key).toBe("categories");
 
@@ -145,9 +145,9 @@ describe("categories CRUD", () => {
 
     await wrapper.get("button").trigger("click");
 
-    expect(saveData).toHaveBeenCalledTimes(1);
+    expect(saveReferenceData).toHaveBeenCalledTimes(1);
 
-    const call = vi.mocked(saveData).mock.calls[0][0];
+    const call = vi.mocked(saveReferenceData).mock.calls[0][0];
 
     expect(call.key).toBe("categories");
 

@@ -30,7 +30,7 @@ const route = useRoute();
 const isSetup = computed(() => {
   const state = getState();
   const settings = state.settings;
-  return settings?.storage === "-" || settings?.clientId === "-" || state.manifest === null || state.data.accounts?.accounts.length === 0;
+  return settings?.storage === "-" || settings?.clientId === "-" || state.manifest === null || state.referenceData.accounts?.accounts.length === 0;
 });
 
 const isDashboard = computed(() => route.path === "/dashboard");
