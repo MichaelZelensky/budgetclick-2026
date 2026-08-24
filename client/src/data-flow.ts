@@ -11,6 +11,7 @@ import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
@@ -63,6 +64,7 @@ const generateObjectKey = (): string => {
 };
 
 export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
+  const loadingId = setLoadingOn();
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as ReferenceDataTypes[K];
   const updatedData = updateStorageMetadata(plainData);
   const manifest = getManifest();
@@ -88,9 +90,11 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
   await putFile(entry.objectKey, encodeData(updatedData));
   const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
   await saveManifest(updatedManifest);
+  setLoadingOff(loadingId);
 };
 
 export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Promise<void> => {
+  const loadingId = setLoadingOn();
   const plainData = JSON.parse(JSON.stringify(toRaw(data))) as ChunkStorage;
   const now = new Date().toISOString();
   const manifest = getManifest();
@@ -112,4 +116,5 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
 
   const updatedManifest = bumpManifest(manifest, "chunks", key, { objectKey, version: updatedData.metadata.version });
   await saveManifest(updatedManifest);
+  setLoadingOff(loadingId);
 };
