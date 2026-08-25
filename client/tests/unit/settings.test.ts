@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import Modal from "@/components/ui/modals/Modal.vue";
+import Modal from "@/components/ui/Modal.vue";
 import Settings from "@/components/views/Settings.vue";
 import { saveSettings, loadSettings } from "@/settings";
 import { initializeManifest, initializeNewManifest } from "@/manifest";

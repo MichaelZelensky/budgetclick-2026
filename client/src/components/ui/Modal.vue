@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import LiteButton from "@/components/ui/LiteButton.vue";
 import Overlay from "@/components/ui/overlays/Overlay.vue";
-import ButtonGroup from "../ButtonGroup.vue";
+import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 
 withDefaults(
   defineProps<{

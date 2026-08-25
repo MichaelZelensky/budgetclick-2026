@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import Modal from "@/components/ui/modals/Modal.vue";
+import Modal from "@/components/ui/Modal.vue";
 import { clearError, errorState } from "@/state/error";
 
 const close = () => {

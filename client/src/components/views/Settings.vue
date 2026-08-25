@@ -85,7 +85,7 @@ import InlineAlert from "@/components/ui/InlineAlert.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
-import Modal from "@/components/ui/modals/Modal.vue";
+import Modal from "@/components/ui/Modal.vue";
 import { saveSettings } from "@/settings";
 import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
