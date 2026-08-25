@@ -7,6 +7,7 @@ import { saveSettings, loadSettings } from "@/settings";
 import { initializeManifest, initializeNewManifest } from "@/manifest";
 import { initializeState, getState } from "@/state/state";
 import { initializeSettings } from "@/state/settings";
+import { clearError, errorState } from "@/state/error";
 
 vi.mock("@/settings", () => ({
   loadSettings: vi.fn(),
@@ -110,6 +111,7 @@ describe("settings storage initialization", () => {
     vi.clearAllMocks();
     vi.mocked(initializeManifest).mockResolvedValue(false);
     vi.mocked(initializeNewManifest).mockResolvedValue(undefined);
+    clearError();
   });
 
   it("shows the initialization dialog when the manifest is missing", async () => {
@@ -161,8 +163,8 @@ describe("settings storage initialization", () => {
     await wrapper.findComponent(Modal).vm.$emit("ok");
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find("[data-test='error-modal']").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Storage could not be initialized.");
+    expect(errorState.on).toBe(true);
+    expect(errorState.message).toContain("Storage could not be initialized.");
   });
 
   it("saves settings before checking storage", async () => {

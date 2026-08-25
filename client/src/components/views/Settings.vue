@@ -74,13 +74,6 @@
     >
       Storage manifest file is missing. Initialize new manifest?
     </Modal>
-
-    <ErrorModal
-      data-test="error-modal"
-      :open="showErrorModal"
-      :message="errorModalMessage"
-      @close="showErrorModal = false"
-    />
   </main>
 </template>
 
@@ -93,7 +86,6 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import Modal from "@/components/ui/modals/Modal.vue";
-import ErrorModal from "@/components/ui/modals/ErrorModal.vue";
 import { saveSettings } from "@/settings";
 import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
@@ -102,24 +94,18 @@ import { initializeManifest, initializeNewManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { getSettings, updateSettings } from "@/state/settings";
+import { showError } from "@/state/error";
 
 const router = useRouter();
 const error = ref<string | null>(null);
 const showInitializeModal = ref(false);
 const showManifestModal = ref(false);
-const showErrorModal = ref(false);
-const errorModalMessage = ref("");
 
 const settings = reactive({
   ...getSettings(),
 });
 
 const isStorageInitialized = computed(() => getState().manifest !== null);
-
-const showError = (message: string) => {
-  errorModalMessage.value = message;
-  showErrorModal.value = true;
-};
 
 const save = async () => {
   const value = {

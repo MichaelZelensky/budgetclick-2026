@@ -1,11 +1,15 @@
-import { ref } from "vue";
+import { reactive } from "vue";
 
-export const errorMessage = ref<string | null>(null);
+export const errorState = reactive({
+  on: false,
+  message: "",
+});
 
 export const showError = (message: string): void => {
-  errorMessage.value = message;
+  errorState.message = message;
+  errorState.on = true;
 };
 
 export const clearError = (): void => {
-  errorMessage.value = null;
+  errorState.on = false;
 };
