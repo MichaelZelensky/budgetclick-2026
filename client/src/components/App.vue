@@ -13,11 +13,13 @@
     <Footer />
 
     <SpinnerOverlay />
+    <ErrorOverlay />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
+import ErrorOverlay from "@/components/ui/overlays/ErrorOverlay.vue";
 import Footer from "@/components/layout/Footer.vue";
 import Header from "@/components/layout/Header.vue";
 import Setup from "@/components/Setup.vue";

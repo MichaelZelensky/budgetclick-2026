@@ -38,3 +38,13 @@ export const dbSaveChunk = async (month: string, chunk: ChunkStorage): Promise<v
     transaction.onerror = () => reject(transaction.error ?? new Error("Failed to save chunk"));
   });
 };
+
+export const dbDeleteChunk = async (month: string): Promise<void> => {
+  const database = getDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(objectStoreName, "readwrite");
+    transaction.objectStore(objectStoreName).delete(month);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Failed to delete chunk"));
+  });
+};
