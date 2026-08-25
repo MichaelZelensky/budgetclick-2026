@@ -29,6 +29,7 @@ import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { TransactionDirection } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
+import { generateEntityId } from "@/utils/entity";
 
 const description = ref("");
 const amount = ref("");
@@ -44,16 +45,6 @@ const accountOptions = computed<Option[]>(() =>
     text: account.name,
   })) ?? []
 );
-
-const getTransactionId = (): string => {
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  const id = Array.from(bytes, byte => byte.toString(36).padStart(2, "0"))
-    .join("")
-    .slice(0, 8);
-
-  return `t_${id}`;
-};
 
 const saveRecord = async (): Promise<void> => {
   if (
@@ -87,7 +78,7 @@ const saveRecord = async (): Promise<void> => {
       transactions: [
         ...chunk.transactions,
         {
-          id: getTransactionId(),
+          id: generateEntityId("t"),
           createdAt: now,
           updatedAt: now,
           isDeleted: false,

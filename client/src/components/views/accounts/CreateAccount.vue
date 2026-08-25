@@ -42,6 +42,7 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { saveReferenceData } from "@/data-flow";
 import { getState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
+import { generateEntityId } from "@/utils/entity";
 
 const router = useRouter();
 const name = ref("");
@@ -58,7 +59,7 @@ const save = async () => {
   }
 
   const account = {
-    id: crypto.randomUUID(),
+    id: generateEntityId("a"),
     name: name.value,
     description: description.value,
     currency: currency.value,
