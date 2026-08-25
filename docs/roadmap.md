@@ -59,37 +59,37 @@ Suggested order:
 
 3. **Storage**
 
-   * Storage interfaces
-   * IndexedDB adapter
-   * S3 adapter
-   * Binary read/write
+   * ✅Storage interfaces
+   * ✅IndexedDB adapter
+   * ✅S3 adapter
+   * ✅Binary read/write
 
 4. **Local Database (IndexedDB)**
 
-   * Database initialization
-   * Object stores
-   * Transactions
-   * Version management
+   * ✅Database initialization
+   * ✅Object stores
+   * ✅Transactions
+   * ✅Version management
 
 5. **Migrations**
 
-   * Local migration framework
+   * ✅Local migration framework
    * Storage migration framework
-   * Runner
-   * Version checks
+   * ✅Runner
+   * ✅Version checks
 
 6. **Repositories (`data/`)**
 
-   * AccountRepository
-   * CategoryRepository
-   * TransactionRepository
-   * ContractorRepository
+   * ✅AccountRepository
+   * ✅CategoryRepository
+   * ✅TransactionRepository
+   * ✅ContractorRepository
 
 7. **State**
 
-   * Reactive application state
-   * Current settings
-   * Current database
+   * ✅Reactive application state
+   * ✅Current settings
+   * ✅Current database
    * Sync status
 
 8. **Cache**
@@ -107,9 +107,9 @@ Suggested order:
 
 10. **Views**
 
-    * Setup wizard
+    * ✅Setup wizard
     * Unlock screen
-    * Main application
+    * ✅Main application
 ```
 ## Phase 1 - Development Environment
 
@@ -155,16 +155,16 @@ Scope:
 - ✅Initial setup flow
    1. ✅Provide user guidance
    2. ✅Initialize manifest if the storage is new
-- Local IndexedDB storage
+- ✅Local IndexedDB storage
    1. ✅Set up IndexedDb
    2. ✅Implement Migration (migration scripts + migration engine)
-   3. Implement initial data flow and CRUD for all entities
+   3. ✅Implement initial data flow and CRUD for all entities
 - Encryption layer
 - PBKDF2 key derivation
 - Synchronization engine
-- Bank account management
-- Categories
-- Contractors
+- ✅Bank account management
+- ✅Categories
+- ✅Contractors
 - Records
   - income / expense
   - planned / actual
