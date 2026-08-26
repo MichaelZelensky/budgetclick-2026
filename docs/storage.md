@@ -4,10 +4,10 @@
 
 Storage follows these principles:
 
-- Every object is encrypted.
+- Every user data object is encrypted.
 - Every object is independently versioned.
 - Storage is considered untrusted.
-- Storage contains no plaintext user data.
+- Storage contains no plaintext user data except the salt.
 - Storage objects are independent whenever possible.
 
 # Storage Configuration
@@ -24,7 +24,7 @@ Remote storage uses an S3-compatible object store. The user provides a storage p
 
 Example:
 
-```text
+```
 https://budgetclick-user-example.s3.us-east-1.amazonaws.com/
 ```
 
@@ -54,7 +54,7 @@ Browser clients do not access S3 directly.
 
 Remote storage requests are sent through the storage proxy hosted by `liteed.com`.
 
-```text
+```
 BudgetClick PWA
       |
       | storage path + operation
@@ -111,7 +111,7 @@ aws s3api create-bucket \
 
 The resulting storage path is:
 
-```text
+```
 https://BUCKET_NAME.s3.us-east-1.amazonaws.com/
 ```
 
@@ -184,8 +184,9 @@ This also reduces the damage possible if the storage path is disclosed.
 
 ## 5. Test the Storage Location
 
-1. Save `manifest` JSON file in the bucket
-2. Test the storage:
+1. Save `manifest` encrypted data file in the bucket
+2. Save `salt` in the bucket
+3. Test the storage:
 
   - GET:
 
@@ -212,25 +213,28 @@ curl -i -X POST \
 ```
 bucket/
   manifest
+  salt
 
-  obj/
-    A/
-      A1bC9xY2
-    B/
-      BmQ8zK1a
-    ...
+  A/
+    A1bC9xY2
+  B/
+    BmQ8zK1a
+  ...
 ```
 
-The manifest is the only object with a fixed name.
+The `manifest` and `salt` are the only objects with fixed names.
+
+The manifest is encrypted.
+
+The salt is stored unencrypted and is not secret.
 
 All other objects use a stable, randomly generated 8-character object key.
 
 Objects are stored under a shard determined by the first character of the object key.
 
-
 # Storage Object Lifecycle
 
-Every storage object follows the same lifecycle.
+Every encrypted storage object follows the same lifecycle.
 
 ```
 Storage Object
@@ -262,8 +266,21 @@ Deserialize
 
 The storage layer never operates on decrypted data.
 
+The salt is not encrypted because it is required to initialize encryption.
 
 # Storage Objects
+
+## Salt
+
+The salt is a random value used to derive the encryption key from the user's passphrase.
+
+The salt:
+
+- is generated when encryption is initialized
+- is stored as the fixed-name `salt` object
+- is stored unencrypted
+- is not secret
+- must remain unchanged for the lifetime of the encryption key
 
 ## Manifest
 
@@ -277,8 +294,7 @@ It contains:
 - monthly chunk locations
 - attachment root
 
-The manifest is encrypted like every other storage object.
-
+The manifest is encrypted like every other user data object.
 
 ## Reference Objects
 
@@ -292,7 +308,6 @@ Examples:
 
 Reference objects are synchronized independently from transaction data.
 
-
 ## Monthly Chunks
 
 Monthly chunks are the primary synchronization unit.
@@ -304,17 +319,15 @@ Each chunk contains:
 
 The month is determined by the manifest entry and is not duplicated inside the chunk.
 
-
 ## Attachments
 
 Attachments are stored as independent encrypted objects.
 
 Attachment object keys are referenced directly by transaction records.
 
-
 # Storage Metadata
 
-Every storage object except the manifest contains the same metadata.
+Every storage object except the manifest and salt contains the same metadata.
 
 Metadata includes:
 
@@ -324,7 +337,6 @@ Metadata includes:
 - updatedAt
 - updatedBy
 
-
 # Object Versioning
 
 Every storage object has an independent version.
@@ -332,7 +344,6 @@ Every storage object has an independent version.
 The version is incremented whenever the object changes.
 
 Object versions are used for synchronization and conflict detection.
-
 
 # Object Independence
 
@@ -360,11 +371,16 @@ Therefore:
 - the storage path must not be included in application analytics or logs
 - the storage path must not be sent to third-party services except the configured storage proxy
 
+The salt is not secret and may be publicly readable.
+
 All application data stored in S3 remains encrypted before upload. Public S3 access therefore exposes encrypted application objects rather than plaintext financial data.
+
+An attacker with write access can replace encrypted objects. Object authentication must detect tampering during decryption.
+
+Security:
+
+- storage uses public S3 bucket, an attacker can write anything to it.
 
 # Future Compatibility
 
 New functionality should introduce new storage object types whenever possible rather than extending existing ones.
-
-Security:
-- storage uses public S3 bucket, an attacker can write anything to it.
