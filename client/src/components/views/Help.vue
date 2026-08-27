@@ -1,3 +1,8 @@
+<script setup lang="ts">
+import InlineAlert from '../ui/InlineAlert.vue';
+
+</script>
+
 <template>
   <main>
     <h1>Help</h1>
@@ -111,6 +116,51 @@
       access the bucket according to its public policy.
     </p>
 
+    <h2>Encryption passphrase</h2>
+
+    <p>
+      BudgetClick encrypts all user data before it is uploaded to storage.
+      Your encryption passphrase is used to derive the encryption key.
+    </p>
+
+    <InlineAlert>
+      <p>
+        The passphrase is never persisted or uploaded to storage. BudgetClick
+        cannot recover it for you.
+      </p>
+    </InlineAlert>
+
+    <p>
+      Use the same passphrase on every BudgetClick client that accesses the
+      same storage. If the passphrase is lost and no recovery information is
+      available, the encrypted data cannot be recovered.
+    </p>
+
+    <p>
+      Keep the storage path and passphrase secret. The storage path provides
+      access to the storage, while the passphrase protects the encrypted
+      application data.
+    </p>
+
+    <h3>Recovery information</h3>
+
+    <p>
+      When initializing new storage, BudgetClick recommends printing or
+      securely saving:
+    </p>
+
+    <ul class="tw-list-disc tw-pl-5">
+      <li>Storage path</li>
+      <li>Passphrase</li>
+      <li>Salt</li>
+      <li>Encryption key</li>
+    </ul>
+
+    <p>
+      The salt is not secret and is stored in the storage. The encryption key
+      is sensitive and should be protected like the passphrase.
+    </p>
+
     <h2>Offline use</h2>
 
     <p>
@@ -152,8 +202,10 @@
       PWA.
     </p>
 
-    <h2>Important</h2>
+  <InlineAlert class="tw-mt-4" variant="warning">
 
+    <h2 class="tw-mt-0">Important</h2>
+    
     <p>
       Installing the PWA does not replace your storage. Remote data remains
       in your configured storage bucket, while the application can continue
@@ -161,8 +213,10 @@
     </p>
 
     <p>
-      Keep your Client ID, storage location, and encryption passphrase
-      available. BudgetClick cannot recover them if they are lost.
+      Keep your Client ID, storage location, encryption passphrase, and
+      recovery information available. BudgetClick cannot recover them if
+      they are lost.
     </p>
+  </InlineAlert>
   </main>
 </template>

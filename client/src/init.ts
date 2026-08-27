@@ -2,12 +2,13 @@
 import { loadSettings } from "@/settings";
 import { initializeLogger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
-import { initializeManifest } from "@/manifest";
 import { initializeDatabase } from "@/database";
-import { initializeData } from "@/repository/data";
 import { initializeConfig } from "@/state/config";
 import { initializeSettings } from "@/state/settings";
 import { initializeState } from "@/state/state";
+import { initializeStoredEncryptionKey } from "@/encryption/key";
+import { initializeManifest } from "@/manifest";
+import { initializeData } from "@/repository/data";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -18,8 +19,15 @@ export const initializeApplication = async () => {
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
   await initializeDatabase();
-  await initializeData();
-  if (settings.storage !== "-") {
-    await initializeManifest();
+  if (settings.clientId === "-" || settings.storage === "-") {
+    return;
+  }
+  const encryptionInitialized = await initializeStoredEncryptionKey();
+  if (!encryptionInitialized) {
+    return;
+  }
+  const manifestInitialized = await initializeManifest();
+  if (manifestInitialized) {
+    await initializeData();
   }
 };

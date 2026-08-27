@@ -1,7 +1,8 @@
 import type { Manifest } from "@/types/storage/Manifest";
 import validateManifest from "@/validators/default/Manifest.js";
 import { getState } from "@/state/state";
-import { getFile, putFile } from "@/storage";
+import { getFile, getRawFile, isFileNotFoundError, putFile } from "@/storage";
+import { decryptData } from "@/encryption/encryption";
 
 const manifestKey = "manifest";
 
@@ -61,15 +62,27 @@ export const createManifest = (clientId: string): Manifest => {
   };
 };
 
+export const getRawManifest = (): Promise<ArrayBuffer | null> => {
+  return getRawFile(manifestKey);
+};
+
+export const decryptRemoteManifest = async (body: ArrayBuffer): Promise<Manifest> => {
+  const decrypted = await decryptData(body);
+  return validateManifestData(decodeManifest(decrypted));
+};
+
 export const initializeManifest = async (): Promise<boolean> => {
   try {
     const body = await getFile(manifestKey);
     const manifest = validateManifestData(decodeManifest(body));
     getState().manifest = structuredClone(manifest);
     return true;
-  } catch {
-    getState().manifest = null;
-    return false;
+  } catch (error) {
+    if (isFileNotFoundError(error)) {
+      getState().manifest = null;
+      return false;
+    }
+    throw error;
   }
 };
 

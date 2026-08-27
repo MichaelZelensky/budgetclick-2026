@@ -1,4 +1,5 @@
 ﻿import { createRouter, createWebHashHistory } from "vue-router";
+import { getRequiredSetupRoute } from "@/setup";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -64,8 +65,46 @@ export const router = createRouter({
       component: () => import("@/components/views/Help.vue"),
     },
     {
+      path: "/setup/client-id",
+      component: () => import("@/components/views/setup/ClientId.vue"),
+    },
+    {
+      path: "/setup/storage",
+      component: () => import("@/components/views/setup/Storage.vue"),
+    },
+    {
+      path: "/setup/passphrase-create",
+      component: () => import("@/components/views/setup/PassphraseCreate.vue"),
+    },
+    {
+      path: "/setup/passphrase-unlock",
+      component: () => import("@/components/views/setup/PassphraseUnlock.vue"),
+    },
+    {
+      path: "/setup/account",
+      component: () => import("@/components/views/setup/CreateAccount.vue"),
+    },
+    {
+      path: "/setup/complete",
+      component: () => import("@/components/views/setup/Complete.vue"),
+    },
+    {
       path: "/:pathMatch(.*)*",
       component: () => import("@/components/views/NotFound.vue"),
     },
   ],
+});
+
+router.beforeEach(async to => {
+  if (to.path === "/settings" || to.path === "/help") {
+    return true;
+  }
+  if (to.path.startsWith("/setup/")) {
+    return true;
+  }
+  const requiredRoute = await getRequiredSetupRoute();
+  if (requiredRoute !== null && requiredRoute !== to.path) {
+    return requiredRoute;
+  }
+  return true;
 });

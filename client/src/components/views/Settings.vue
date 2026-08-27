@@ -8,18 +8,11 @@
 
     <label>
       Storage
-      <LiteInputField v-model="settings.storage" />
+      <LiteInputField v-model="settings.storage" disabled />
     </label>
 
     <p v-if="isStorageInitialized" class="tw-text-green-600">
       Storage is initialized.
-    </p>
-
-    <p v-else-if="settings.storage !== '-'">
-      Storage is not initialized.
-      <LiteButton @click="showInitializeModal = true" type="link">
-        Initialize
-      </LiteButton>
     </p>
 
     <label>
@@ -52,27 +45,15 @@
     </ButtonGroup>
 
     <Modal
-      v-if="showInitializeModal"
-      title="Initialize storage"
+      v-if="showClientIdModal"
+      title="Change client ID"
       primary-button-label="Yes"
       secondary-button-label="No"
-      @ok="initializeStorage"
-      @cancel="showInitializeModal = false"
-      @close="showInitializeModal = false"
+      @ok="confirmClientIdChange"
+      @cancel="showClientIdModal = false"
+      @close="showClientIdModal = false"
     >
-      Initialize storage at the configured location?
-    </Modal>
-
-    <Modal
-      v-if="showManifestModal"
-      title="Initialize storage"
-      primary-button-label="Yes"
-      secondary-button-label="No"
-      @ok="initializeNewStorage"
-      @cancel="showManifestModal = false"
-      @close="showManifestModal = false"
-    >
-      Storage manifest file is missing. Initialize new manifest?
+      Changing the Client ID affects synchronization and conflict detection. Continue?
     </Modal>
   </main>
 </template>
@@ -90,16 +71,11 @@ import { saveSettings } from "@/settings";
 import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
-import { initializeManifest, initializeNewManifest } from "@/manifest";
-import { initializeData } from "@/repository/data";
-import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { getSettings, updateSettings } from "@/state/settings";
-import { showError } from "@/state/error";
 
 const router = useRouter();
 const error = ref<string | null>(null);
-const showInitializeModal = ref(false);
-const showManifestModal = ref(false);
+const showClientIdModal = ref(false);
 
 const settings = reactive({
   ...getSettings(),
@@ -107,9 +83,23 @@ const settings = reactive({
 
 const isStorageInitialized = computed(() => getState().manifest !== null);
 
-const save = async () => {
+const save = () => {
+  if (settings.clientId !== getSettings().clientId) {
+    showClientIdModal.value = true;
+    return;
+  }
+  applySettings();
+};
+
+const confirmClientIdChange = () => {
+  showClientIdModal.value = false;
+  applySettings();
+};
+
+const applySettings = () => {
   const value = {
     ...settings,
+    storage: getSettings().storage,
   };
 
   if (!validateSettings(value)) {
@@ -118,63 +108,8 @@ const save = async () => {
   }
 
   error.value = null;
-  const loadingId = setLoadingOn();
-
-  try {
-    updateSettings(value);
-    saveSettings(value);
-
-    if (value.storage !== "-") {
-      const initialized = await initializeManifest();
-
-      if (!initialized) {
-        showManifestModal.value = true;
-      } else {
-        await initializeData();
-      }
-    }
-  } catch {
-    showError("Storage could not be initialized.");
-  } finally {
-    setLoadingOff(loadingId);
-  }
-};
-
-const initializeStorage = async () => {
-  showInitializeModal.value = false;
-  error.value = null;
-  const loadingId = setLoadingOn();
-
-  try {
-    updateSettings(settings);
-    saveSettings(settings);
-
-    const initialized = await initializeManifest();
-
-    if (!initialized) {
-      showManifestModal.value = true;
-    } else {
-      await initializeData();
-    }
-  } catch {
-    showError("Storage could not be initialized.");
-  } finally {
-    setLoadingOff(loadingId);
-  }
-};
-
-const initializeNewStorage = async () => {
-  showManifestModal.value = false;
-  const loadingId = setLoadingOn();
-
-  try {
-    await initializeNewManifest(settings.clientId);
-    await initializeData();
-  } catch {
-    showError("Storage could not be initialized.");
-  } finally {
-    setLoadingOff(loadingId);
-  }
+  updateSettings(value);
+  saveSettings(value);
 };
 
 const back = () => {

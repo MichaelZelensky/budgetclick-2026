@@ -66,6 +66,7 @@ const cancel = () => {
   @apply tw-rounded-md tw-shadow-lg;
   @apply tw-bg-zinc-900;
   @apply tw-p-6 tw-flex tw-flex-col tw-gap-4;
+  max-width: 80vw;
   max-height: 90vh;
   @apply tw-overflow-auto;
   &.sm {

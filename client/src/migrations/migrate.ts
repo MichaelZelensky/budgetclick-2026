@@ -1,8 +1,10 @@
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { migrate as migrateV1 } from "@/migrations/001/migration";
+import { migrate as migrateV2 } from "@/migrations/002/migration";
 
 const migrations = [
   { version: 1, migrate: migrateV1 },
+  { version: 2, migrate: migrateV2 },
 ];
 
 export const migrate = (database: IDBDatabase, oldVersion: number): void => {
@@ -11,8 +13,10 @@ export const migrate = (database: IDBDatabase, oldVersion: number): void => {
     return;
   }
   const loadingId = setLoadingOn();
-  console.log(`Running migration ${pendingMigrations[0].version}`);
-  pendingMigrations.forEach(x => x.migrate(database));
-  console.log(`Migration ${pendingMigrations[pendingMigrations.length - 1].version} completed`);
+  pendingMigrations.forEach(x => {
+    console.log(`Running migration ${x.version}`);
+    x.migrate(database);
+    console.log(`Migration ${x.version} completed`);
+  });
   setLoadingOff(loadingId);
 };

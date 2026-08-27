@@ -14,7 +14,11 @@ h1 {
 }
 
 h2 {
-  @apply tw-text-lg tw-font-semibold tw-mt-4 tw-mb-2 tw-text-zinc-200;
+  @apply tw-text-lg tw-font-semibold tw-mt-6 tw-mb-2 tw-text-zinc-200;
+}
+
+h3 {
+  @apply tw-font-semibold tw-mt-6 tw-mb-2 tw-text-zinc-200;
 }
 
 button {
