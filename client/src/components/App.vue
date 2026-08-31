@@ -23,5 +23,5 @@ import { useRoute } from "vue-router";
 
 const route = useRoute();
 
-const isDashboard = computed(() => route.path === "/dashboard");
+const isDashboard = computed(() => route.path === "/");
 </script>

@@ -1,6 +1,6 @@
 <template>
   <DashboardWidget>
-    <h2>Add / Edit Record</h2>
+    <div class="title">Add / Edit Record</div>
 
     <div class="tw-grid tw-gap-2">
       <LiteInputField v-model="description" placeholder="Description" required />
@@ -99,3 +99,9 @@ const saveRecord = async (): Promise<void> => {
   datetime.value = new Date().toISOString().slice(0, 16);
 };
 </script>
+
+<style lang="scss" scoped>
+.title {
+  @apply tw-font-semibold tw-pb-4;
+}
+</style>
