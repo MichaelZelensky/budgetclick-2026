@@ -1,27 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import Modal from "@/components/ui/Modal.vue";
 import Settings from "@/components/views/Settings.vue";
-import { saveSettings, loadSettings } from "@/settings";
-import { initializeManifest, initializeNewManifest } from "@/manifest";
+import { saveSettings } from "@/settings";
 import { initializeState, getState } from "@/state/state";
 import { initializeSettings } from "@/state/settings";
-import { clearError, errorState } from "@/state/error";
 
 vi.mock("@/settings", () => ({
   loadSettings: vi.fn(),
   saveSettings: vi.fn(),
-}));
-
-vi.mock("@/manifest", () => ({
-  initializeManifest: vi.fn(),
-  initializeNewManifest: vi.fn(),
-}));
-
-vi.mock("@/state/loading", () => ({
-  setLoadingOn: vi.fn(() => "test-loading-id"),
-  setLoadingOff: vi.fn(),
 }));
 
 const createTestRouter = () => createRouter({
@@ -42,11 +29,12 @@ const mountSettings = async () => {
       plugins: [router],
       stubs: {
         LiteInputField: {
-          props: ["modelValue"],
+          props: ["modelValue", "disabled"],
           emits: ["update:modelValue"],
           template: `
             <input
               :value="modelValue"
+              :disabled="disabled"
               @input="$emit('update:modelValue', $event.target.value)"
             />
           `,
@@ -89,94 +77,59 @@ const clickSave = async (wrapper: ReturnType<typeof mount>) => {
   await buttons[0].trigger("click");
 };
 
-describe("settings storage initialization", () => {
-  beforeEach(async () => {
+describe("settings", () => {
+  beforeEach(() => {
     initializeState();
-    vi.mocked(loadSettings).mockResolvedValue({
-      schemaVersion: 1,
-      storage: "-",
-      clientId: "client-123",
-    });
-    const settings = await loadSettings();
-    initializeSettings(settings);
 
-    getState().settings = {
+    const settings = {
       schemaVersion: 1,
-      storage: "-",
+      storage: "test-storage",
       clientId: "client-123",
     };
 
-    getState().manifest = null;
+    initializeSettings(settings);
+    getState().settings = settings;
 
     vi.clearAllMocks();
-    vi.mocked(initializeManifest).mockResolvedValue(false);
-    vi.mocked(initializeNewManifest).mockResolvedValue(undefined);
-    clearError();
   });
 
-  it("shows the initialization dialog when the manifest is missing", async () => {
+  it("saves settings", async () => {
     const wrapper = await mountSettings();
 
-    const inputs = wrapper.findAll("input");
-    await inputs[0].setValue("test-storage");
+    const clientIdInput = wrapper.findAll("input")[1];
+    await clientIdInput.setValue("client-456");
     await clickSave(wrapper);
 
-    expect(initializeManifest).toHaveBeenCalledOnce();
     expect(wrapper.find("[data-test='modal']").exists()).toBe(true);
-    expect(wrapper.text()).toContain(
-      "Storage manifest file is missing. Initialize new manifest?",
-    );
-  });
 
-  it("initializes a new manifest when confirmed", async () => {
-    const wrapper = await mountSettings();
-
-    await wrapper.findAll("input")[0].setValue("test-storage");
-    await clickSave(wrapper);
     await wrapper.find("[data-test='modal-yes']").trigger("click");
 
-    expect(initializeNewManifest).toHaveBeenCalledOnce();
-    expect(initializeNewManifest).toHaveBeenCalledWith("client-123");
+    expect(saveSettings).toHaveBeenCalledWith({
+      schemaVersion: 1,
+      storage: "test-storage",
+      clientId: "client-456",
+    });
+  });
+
+  it("does not show client ID confirmation when unchanged", async () => {
+    const wrapper = await mountSettings();
+
+    await clickSave(wrapper);
+
     expect(wrapper.find("[data-test='modal']").exists()).toBe(false);
-  });
-
-  it("closes the initialization dialog when declined", async () => {
-    const wrapper = await mountSettings();
-
-    await wrapper.findAll("input")[0].setValue("test-storage");
-    await clickSave(wrapper);
-    await wrapper.find("[data-test='modal-no']").trigger("click");
-
-    expect(initializeNewManifest).not.toHaveBeenCalled();
-    expect(wrapper.find("[data-test='modal']").exists()).toBe(false);
-  });
-
-  it("shows an error when new manifest initialization fails", async () => {
-    vi.mocked(initializeNewManifest).mockRejectedValueOnce(
-      new Error("Storage failed"),
-    );
-
-    const wrapper = await mountSettings();
-
-    await wrapper.findAll("input")[0].setValue("test-storage");
-    await clickSave(wrapper);
-    await wrapper.findComponent(Modal).vm.$emit("ok");
-    await wrapper.vm.$nextTick();
-
-    expect(errorState.on).toBe(true);
-    expect(errorState.message).toContain("Storage could not be initialized.");
-  });
-
-  it("saves settings before checking storage", async () => {
-    const wrapper = await mountSettings();
-
-    await wrapper.findAll("input")[0].setValue("test-storage");
-    await clickSave(wrapper);
-
     expect(saveSettings).toHaveBeenCalledWith({
       schemaVersion: 1,
       storage: "test-storage",
       clientId: "client-123",
     });
+  });
+
+  it("keeps storage unchanged", async () => {
+    const wrapper = await mountSettings();
+
+    const storageInput = wrapper.findAll("input")[0];
+
+    expect(storageInput.element.value).toBe("test-storage");
+    expect((storageInput.element as HTMLInputElement).disabled).toBe(true);
   });
 });

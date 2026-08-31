@@ -18,7 +18,9 @@ describe("migrate", () => {
   });
 
   it("runs pending migrations", () => {
-    const database = {} as IDBDatabase;
+    const database = {
+      createObjectStore: vi.fn(),
+    } as unknown as IDBDatabase;
 
     migrate(database, 0);
 
@@ -28,9 +30,11 @@ describe("migrate", () => {
   });
 
   it("does not run migrations when database is up to date", () => {
-    const database = {} as IDBDatabase;
+    const database = {
+      createObjectStore: vi.fn(),
+    } as unknown as IDBDatabase;
 
-    migrate(database, 1);
+    migrate(database, 2);
 
     expect(migrateV1).not.toHaveBeenCalled();
     expect(setLoadingOn).not.toHaveBeenCalled();
@@ -38,7 +42,10 @@ describe("migrate", () => {
   });
 
   it("propagates migration errors", () => {
-    const database = {} as IDBDatabase;
+    const database = {
+      createObjectStore: vi.fn(),
+    } as unknown as IDBDatabase;
+
     vi.mocked(migrateV1).mockImplementation(() => {
       throw new Error("Migration failed");
     });

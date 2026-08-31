@@ -7,6 +7,23 @@ import { getState, initializeState } from "@/state/state";
 
 vi.mock("@/database", () => ({
   initializeDatabase: vi.fn(),
+  getDatabase: vi.fn(() => ({
+    transaction: vi.fn(() => ({
+      objectStore: vi.fn(() => ({
+        get: vi.fn(() => {
+          const request = {
+            result: undefined as unknown,
+            set onsuccess(handler: (() => void) | null) {
+              handler?.();
+            },
+            set onerror(_handler: (() => void) | null) {},
+          };
+
+          return request;
+        }),
+      })),
+    })),
+  })),
 }));
 
 vi.mock("@/repository/data", () => ({
@@ -69,18 +86,13 @@ describe("application initialization", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => structuredClone(config),
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        arrayBuffer: async () => new ArrayBuffer(0),
       });
 
     vi.stubGlobal("fetch", fetchMock);
 
     await initializeApplication();
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(getState().config).toEqual(config);
     expect(getState().manifest).toBeNull();
   });

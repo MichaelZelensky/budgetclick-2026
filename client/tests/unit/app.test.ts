@@ -1,13 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createRouter, createMemoryHistory } from "vue-router";
-import App from "@/components/App.vue";
+import { getRequiredSetupRoute } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 
 describe("application shell initialization", () => {
     beforeEach(() => {
         initializeState();
-
         getState().settings = {
             schemaVersion: 1,
             storage: "test-storage",
@@ -16,35 +13,7 @@ describe("application shell initialization", () => {
     });
 
     it("shows setup when manifest is not initialized", async () => {
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [
-                {
-                    path: "/",
-                    component: { template: "<div>Dashboard</div>" },
-                },
-            ],
-        });
-
-        await router.push("/");
-        await router.isReady();
-
-        const wrapper = mount(App, {
-            global: {
-                plugins: [router],
-                stubs: {
-                    Header: true,
-                    Footer: true,
-                    SpinnerOverlay: true,
-                    Setup: {
-                        template: "<div data-test='setup'>Setup</div>",
-                    },
-                    RouterView: true,
-                },
-            },
-        });
-
-        expect(wrapper.find("[data-test='setup']").exists()).toBe(true);
+        expect(await getRequiredSetupRoute()).toBe("/setup/storage");
     });
 
     it("does not show setup when manifest is initialized", async () => {
@@ -68,34 +37,25 @@ describe("application shell initialization", () => {
                 state: "idle",
             },
         };
-
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [
+        getState().referenceData.accounts = {
+            metadata: {
+                version: 1,
+                updatedAt: new Date().toISOString(),
+                updatedBy: "client-123",
+            },
+            accounts: [
                 {
-                    path: "/",
-                    component: { template: "<div>Dashboard</div>" },
+                    id: "a1",
+                    name: "Test account",
+                    description: "",
+                    currency: "USD",
+                    currentBalance: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    isDeleted: false,
                 },
             ],
-        });
-
-        await router.push("/");
-        await router.isReady();
-
-        const wrapper = mount(App, {
-            global: {
-                plugins: [router],
-                stubs: {
-                    Header: true,
-                    Footer: true,
-                    SpinnerOverlay: true,
-                    Setup: {
-                        template: "<div data-test='setup'>Setup</div>",
-                    },
-                },
-            },
-        });
-
-        expect(wrapper.find("[data-test='setup']").exists()).toBe(false);
+        };
+        expect(await getRequiredSetupRoute()).toBeNull();
     });
 });
