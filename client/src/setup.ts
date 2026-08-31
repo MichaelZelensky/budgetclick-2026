@@ -1,4 +1,5 @@
 import { getState } from "@/state/state";
+import { getSetupState } from "@/state/setup";
 
 export const getRequiredSetupRoute = async (): Promise<string | null> => {
   const state = getState();
@@ -12,7 +13,14 @@ export const getRequiredSetupRoute = async (): Promise<string | null> => {
   if (settings.storage === "-") {
     return "/setup/storage";
   }
+  const setupState = getSetupState();
   if (state.manifest === null) {
+    if (setupState.storageMode === "new") {
+      return "/setup/passphrase-create";
+    }
+    if (setupState.storageMode === "existing") {
+      return "/setup/passphrase-unlock";
+    }
     return "/setup/storage";
   }
   if ((state.referenceData.accounts?.accounts.length ?? 0) === 0) {

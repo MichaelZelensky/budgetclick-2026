@@ -99,10 +99,13 @@ router.beforeEach(async to => {
   if (to.path === "/settings" || to.path === "/help") {
     return true;
   }
-  if (to.path.startsWith("/setup/")) {
-    return true;
-  }
   const requiredRoute = await getRequiredSetupRoute();
+  if (to.path === "/setup/complete") {
+    return requiredRoute === null ? true : requiredRoute;
+  }
+  if (to.path.startsWith("/setup/")) {
+    return requiredRoute === to.path ? true : requiredRoute ?? "/";
+  }
   if (requiredRoute !== null && requiredRoute !== to.path) {
     return requiredRoute;
   }
