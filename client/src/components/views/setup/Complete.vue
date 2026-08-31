@@ -18,7 +18,7 @@
         Dashboard
       </LiteButton>
 
-      <LiteButton @click="help">
+      <LiteButton @click="help" type="link">
         Help
       </LiteButton>
 
@@ -27,26 +27,11 @@
       </LiteButton>
     </ButtonGroup>
 
-    <div class="print-record">
-      <h1>BudgetClick Recovery Information</h1>
-
-      <p>
-        <strong>Passphrase:</strong> {{ passphrase }}
-      </p>
-
-      <p>
-        <strong>Salt:</strong> {{ salt }}
-      </p>
-
-      <p>
-        <strong>Encryption key:</strong> {{ encryptionKey }}
-      </p>
-
-      <p>
-        Keep this information secure. Without your passphrase, encrypted data
-        cannot be recovered.
-      </p>
-    </div>
+    <RecoverySheet
+      :storage="storage"
+      :passphrase="passphrase"
+      :salt="salt"
+    />
   </main>
 </template>
 
@@ -54,13 +39,18 @@
 import { useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
+import RecoverySheet from "@/components/RecoverySheet.vue";
 import SetupProgress from "@/components/SetupProgress.vue";
+import { getSettings } from "@/state/settings";
+import { getSetupState } from "@/state/setup";
 
 const router = useRouter();
+const settings = getSettings();
+const setupState = getSetupState();
 
-const passphrase = "";
-const salt = "";
-const encryptionKey = "";
+const storage = settings.storage;
+const passphrase = setupState.recoveryPassphrase;
+const salt = setupState.recoverySalt;
 
 const dashboard = () => {
   router.push("/");
@@ -74,27 +64,3 @@ const printRecoveryInformation = () => {
   window.print();
 };
 </script>
-
-<style scoped lang="scss">
-.print-record {
-  display: none;
-}
-
-@media print {
-  :global(body *) {
-    visibility: hidden;
-  }
-
-  .print-record,
-  .print-record * {
-    visibility: visible;
-  }
-
-  .print-record {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-}
-</style>

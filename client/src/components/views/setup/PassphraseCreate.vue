@@ -53,19 +53,17 @@
       primary-button-label="OK"
       secondary-button-label="Print"
       @ok="confirmSave"
-      @cancel="showWarning = false"
+      @cancel="printRecoveryInformation"
       @close="showWarning = false"
     >
       This is the point of no return. After you continue, your data will be encrypted with this passphrase. If you lose the passphrase, your data will be permanently lost.
     </Modal>
 
-    <div class="print-record">
-      <h1>BudgetClick Recovery Information</h1>
-      <p><strong>Passphrase:</strong> {{ passphrase }}</p>
-      <p><strong>Salt:</strong> {{ salt }}</p>
-      <p><strong>Encryption key:</strong> {{ encryptionKey }}</p>
-      <p>Keep this information secret. If you lose your passphrase or storage path, your data will be lost.</p>
-    </div>
+    <RecoverySheet
+      :storage="storage"
+      :passphrase="passphrase"
+      :salt="salt"
+    />
   </main>
 </template>
 
@@ -77,6 +75,7 @@ import InlineAlert from "@/components/ui/InlineAlert.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import Modal from "@/components/ui/Modal.vue";
+import RecoverySheet from "@/components/RecoverySheet.vue";
 import SetupProgress from "@/components/SetupProgress.vue";
 import { generateSalt, encodeBytes, saveSalt } from "@/encryption/salt";
 import { exportEncryptionKey, initializeEncryptionKey } from "@/encryption/key";
@@ -91,7 +90,7 @@ const router = useRouter();
 const passphrase = ref("");
 const confirmation = ref("");
 const salt = ref("");
-const encryptionKey = ref("");
+const storage = getSettings().storage;
 const showWarning = ref(false);
 
 const save = () => {
@@ -105,6 +104,7 @@ const save = () => {
     return;
   }
 
+  salt.value = encodeBytes(generateSalt());
   showWarning.value = true;
 };
 
@@ -113,17 +113,28 @@ const confirmSave = async () => {
   const loadingId = setLoadingOn();
 
   try {
-    const generatedSalt = generateSalt();
+    const generatedSalt = Uint8Array.from(
+      atob(salt.value),
+      character => character.charCodeAt(0),
+    );
+
     await initializeEncryptionKey(passphrase.value, generatedSalt);
-    salt.value = encodeBytes(generatedSalt);
-    encryptionKey.value = await exportEncryptionKey();
     await saveSalt(generatedSalt);
     await initializeNewManifest(getSettings().clientId);
     await initializeData();
-    getSetupState().storageMode = null;
-    router.push("/accounts/create");
+
+    const setupState = getSetupState();
+    setupState.storageMode = null;
+    setupState.recoveryPassphrase = passphrase.value;
+    setupState.recoverySalt = salt.value;
+
+    router.push("/setup/account");
   } catch (error) {
-    showError(error instanceof Error ? error.message : "Failed to initialize encryption");
+    showError(
+      error instanceof Error
+        ? error.message
+        : "Failed to initialize encryption",
+    );
   } finally {
     setLoadingOff(loadingId);
   }
@@ -133,27 +144,3 @@ const printRecoveryInformation = () => {
   window.print();
 };
 </script>
-
-<style scoped lang="scss">
-.print-record {
-  display: none;
-}
-
-@media print {
-  :global(body *) {
-    visibility: hidden;
-  }
-
-  .print-record,
-  .print-record * {
-    visibility: visible;
-  }
-
-  .print-record {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-}
-</style>

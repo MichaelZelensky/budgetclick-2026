@@ -1,5 +1,8 @@
 <template>
-  <div class="tw-inline-block">
+  <div 
+    class="tw-inline-block"
+    :class="{ 'tw-p-2': type === 'link' }"
+    >
     <button
       v-if="type !== 'link'"
       :type="type"
