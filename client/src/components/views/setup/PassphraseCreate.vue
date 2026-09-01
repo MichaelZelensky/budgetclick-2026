@@ -42,21 +42,23 @@
         Set passphrase
       </LiteButton>
 
-      <LiteButton @click="printRecoveryInformation" type="link">
-        Print
-      </LiteButton>
     </ButtonGroup>
 
     <Modal
       v-if="showWarning"
       title="Remember your passphrase"
       primary-button-label="OK"
-      secondary-button-label="Print"
       @ok="confirmSave"
-      @cancel="printRecoveryInformation"
       @close="showWarning = false"
     >
-      This is the point of no return. After you continue, your data will be encrypted with this passphrase. If you lose the passphrase, your data will be permanently lost.
+      <InlineAlert variant="warning">
+        <p>
+          <strong>Warning:</strong> This is the point of no return. After you continue, your data will be encrypted with this passphrase. If you lose the passphrase, your data will be permanently lost.
+        </p>
+      </InlineAlert>
+      <LiteButton @click="printRecoveryInformation" type="link">
+        Print recovery sheet
+      </LiteButton>
     </Modal>
 
     <RecoverySheet
@@ -78,7 +80,7 @@ import Modal from "@/components/ui/Modal.vue";
 import RecoverySheet from "@/components/RecoverySheet.vue";
 import SetupProgress from "@/components/SetupProgress.vue";
 import { generateSalt, encodeBytes, saveSalt } from "@/encryption/salt";
-import { exportEncryptionKey, initializeEncryptionKey } from "@/encryption/key";
+import { initializeEncryptionKey } from "@/encryption/key";
 import { initializeNewManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { getSettings } from "@/state/settings";

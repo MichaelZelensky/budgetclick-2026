@@ -16,6 +16,7 @@
       v-else
       :href="href"
       :target="external ? '_blank' : '_self'"
+      class="tw-cursor-pointer"
       :class="{ 'tw-pointer-events-none tw-opacity-75': disabled }"
       @click="onClick"
     >
