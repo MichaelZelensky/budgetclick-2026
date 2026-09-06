@@ -159,20 +159,20 @@ Scope:
    1. ✅Set up IndexedDb
    2. ✅Implement Migration (migration scripts + migration engine)
    3. ✅Implement initial data flow and CRUD for all entities
-- Encryption layer
-   - Define encryption contract
-   - Update setup flow:
+- ✅Encryption layer
+   - ✅Define encryption contract
+   - ✅Update setup flow:
        passphrase → encryption key → encrypted manifest
-   - Implement PBKDF2 key derivation
-   - Generate and persist storage salt
-   - Persist derived encryption key locally
-   - Implement `client/src/encryption/`
-   - Integrate encryption into storage transport:
+   - ✅Implement PBKDF2 key derivation
+   - ✅Generate and persist storage salt
+   - ✅Persist derived encryption key locally
+   - ✅Implement `client/src/encryption/`
+   - ✅Integrate encryption into storage transport:
        encrypt before PUT
        decrypt after GET
-   - Remove `EncryptedObject` type
-   - Encrypt manifest and all storage objects
-   - Add encryption tests
+   - ✅Remove `EncryptedObject` type
+   - ✅Encrypt manifest and all storage objects
+   - ✅Add encryption tests
 - Synchronization engine
 - ✅Bank account management
 - ✅Categories
