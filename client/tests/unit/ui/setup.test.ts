@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import ClientId from "@/components/views/setup/ClientId.vue";
 import Storage from "@/components/views/setup/Storage.vue";
 import PassphraseCreate from "@/components/views/setup/PassphraseCreate.vue";
@@ -7,11 +7,33 @@ import PassphraseUnlock from "@/components/views/setup/PassphraseUnlock.vue";
 import CreateAccount from "@/components/views/setup/CreateAccount.vue";
 import Complete from "@/components/views/setup/Complete.vue";
 
-const push = vi.fn();
+const mocks = vi.hoisted(() => ({
+  push: vi.fn(),
+  initializeEncryptionKey: vi.fn(),
+  decryptRemoteManifest: vi.fn(),
+  importRemoteData: vi.fn(),
+}));
+
+const setupState = {
+  storageMode: null,
+  remoteSalt: null,
+  remoteManifest: null,
+  recoveryPassphrase: null,
+  recoverySalt: null,
+};
+
+const state = {
+  manifest: null,
+  referenceData: {
+    accounts: {
+      accounts: [],
+    },
+  },
+};
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({
-    push,
+    push: mocks.push,
   }),
 }));
 
@@ -35,15 +57,16 @@ vi.mock("@/encryption/salt", () => ({
   generateSalt: vi.fn(() => new Uint8Array([1, 2, 3])),
   encodeBytes: vi.fn(() => "AQID"),
   saveSalt: vi.fn(),
+  loadSalt: vi.fn(),
 }));
 
 vi.mock("@/encryption/key", () => ({
-  initializeEncryptionKey: vi.fn(),
+  initializeEncryptionKey: mocks.initializeEncryptionKey,
 }));
 
 vi.mock("@/manifest", () => ({
   initializeNewManifest: vi.fn(),
-  decryptRemoteManifest: vi.fn(),
+  decryptRemoteManifest: mocks.decryptRemoteManifest,
   getRawManifest: vi.fn(),
 }));
 
@@ -52,13 +75,7 @@ vi.mock("@/repository/data", () => ({
 }));
 
 vi.mock("@/state/setup", () => ({
-  getSetupState: () => ({
-    storageMode: null,
-    remoteSalt: null,
-    remoteManifest: null,
-    recoveryPassphrase: null,
-    recoverySalt: null,
-  }),
+  getSetupState: () => setupState,
 }));
 
 vi.mock("@/state/loading", () => ({
@@ -67,14 +84,11 @@ vi.mock("@/state/loading", () => ({
 }));
 
 vi.mock("@/state/state", () => ({
-  getState: () => ({
-    manifest: null,
-    referenceData: {
-      accounts: {
-        accounts: [],
-      },
-    },
-  }),
+  getState: () => state,
+}));
+
+vi.mock("@/sync", () => ({
+  importRemoteData: mocks.importRemoteData,
 }));
 
 vi.mock("@/data-flow", () => ({
@@ -96,7 +110,19 @@ const findInput = (
 
 describe("setup UI", () => {
   beforeEach(() => {
-    push.mockReset();
+    mocks.push.mockReset();
+    mocks.initializeEncryptionKey.mockReset();
+    mocks.decryptRemoteManifest.mockReset();
+    mocks.importRemoteData.mockReset();
+
+    setupState.storageMode = null;
+    setupState.remoteSalt = null;
+    setupState.remoteManifest = null;
+    setupState.recoveryPassphrase = null;
+    setupState.recoverySalt = null;
+
+    state.manifest = null;
+    state.referenceData.accounts.accounts = [];
   });
 
   describe("ClientId", () => {
@@ -108,7 +134,7 @@ describe("setup UI", () => {
       await wrapper.find("button").trigger("click");
 
       expect(showError).toHaveBeenCalledWith("Client ID is required");
-      expect(push).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
     });
 
     it("continues to storage with a valid client ID", async () => {
@@ -117,7 +143,7 @@ describe("setup UI", () => {
       await findInput(wrapper).setValue("client-123");
       await wrapper.find("button").trigger("click");
 
-      expect(push).toHaveBeenCalledWith("/setup/storage");
+      expect(mocks.push).toHaveBeenCalledWith("/setup/storage");
     });
   });
 
@@ -128,7 +154,7 @@ describe("setup UI", () => {
       await wrapper.find("button").trigger("click");
 
       expect(wrapper.text()).toContain("Storage path is required");
-      expect(push).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
     });
   });
 
@@ -198,6 +224,7 @@ describe("setup UI", () => {
 
       await findInput(wrapper, 0).setValue("secret");
       await findInput(wrapper, 1).setValue("secret");
+
       await wrapper.find("button").trigger("click");
 
       const okButton = wrapper
@@ -209,7 +236,7 @@ describe("setup UI", () => {
       await okButton!.trigger("click");
       await wrapper.vm.$nextTick();
 
-      expect(push).toHaveBeenCalledWith("/setup/account");
+      expect(mocks.push).toHaveBeenCalledWith("/setup/account");
     });
   });
 
@@ -220,6 +247,73 @@ describe("setup UI", () => {
       await wrapper.find("button").trigger("click");
 
       expect(wrapper.text()).toContain("Passphrase is required");
+    });
+
+    it("requires checked storage data", async () => {
+      const wrapper = mount(PassphraseUnlock);
+
+      await findInput(wrapper).setValue("secret");
+      await wrapper.find("button").trigger("click");
+
+      expect(wrapper.text()).toContain("Storage has not been checked");
+      expect(mocks.initializeEncryptionKey).not.toHaveBeenCalled();
+      expect(mocks.importRemoteData).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
+    });
+
+    it("imports remote data and continues to the dashboard", async () => {
+      const remoteSalt = new Uint8Array([1, 2, 3]);
+      const remoteManifest = new ArrayBuffer(8);
+      const manifest = {
+        schemaVersion: 1,
+        version: 1,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+        updatedBy: "client-123",
+        references: {
+          accounts: {
+            objectKey: "accounts",
+            version: 1,
+          },
+          categories: {
+            objectKey: "categories",
+            version: 1,
+          },
+          contractors: {
+            objectKey: "contractors",
+            version: 1,
+          },
+        },
+        chunks: {},
+        attachments: {
+          root: "attachments",
+        },
+        migration: {
+          version: 1,
+          state: "idle",
+        },
+      };
+
+      setupState.remoteSalt = remoteSalt;
+      setupState.remoteManifest = remoteManifest;
+      mocks.initializeEncryptionKey.mockResolvedValue(undefined);
+      mocks.decryptRemoteManifest.mockResolvedValue(manifest);
+      mocks.importRemoteData.mockResolvedValue(undefined);
+
+      const wrapper = mount(PassphraseUnlock);
+
+      await findInput(wrapper).setValue("secret");
+      await wrapper.find("button").trigger("click");
+      await flushPromises();
+
+      expect(mocks.initializeEncryptionKey).toHaveBeenCalledWith(
+        "secret",
+        remoteSalt,
+      );
+      expect(mocks.decryptRemoteManifest).toHaveBeenCalledWith(remoteManifest);
+      expect(mocks.importRemoteData).toHaveBeenCalledWith(manifest);
+      expect(state.manifest).toStrictEqual(manifest);
+      expect(mocks.push).toHaveBeenCalledWith("/");
     });
   });
 
@@ -234,7 +328,7 @@ describe("setup UI", () => {
 
       await wrapper.find("button").trigger("click");
 
-      expect(push).toHaveBeenCalledWith("/setup/complete");
+      expect(mocks.push).toHaveBeenCalledWith("/setup/complete");
     });
   });
 
@@ -255,12 +349,12 @@ describe("setup UI", () => {
       expect(wrapper.text()).toContain("Print recovery sheet");
 
       await buttons[0].trigger("click");
-      expect(push).toHaveBeenCalledWith("/");
+      expect(mocks.push).toHaveBeenCalledWith("/");
 
       await links
         .find(link => link.text() === "Help")!
         .trigger("click");
-      expect(push).toHaveBeenCalledWith("/help");
+      expect(mocks.push).toHaveBeenCalledWith("/help");
 
       await links
         .find(link => link.text() === "Print recovery sheet")!

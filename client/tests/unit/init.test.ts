@@ -8,6 +8,7 @@ import { initializeDatabase } from "@/database";
 import { initializeStoredEncryptionKey } from "@/encryption/key";
 import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
+import { synchronizeRemoteData } from "@/sync";
 
 vi.mock("@/database", () => ({
   initializeDatabase: vi.fn(),
@@ -25,10 +26,15 @@ vi.mock("@/repository/data", () => ({
   initializeData: vi.fn(),
 }));
 
+vi.mock("@/sync", () => ({
+  synchronizeRemoteData: vi.fn(),
+}));
+
 const mockedInitializeDatabase = vi.mocked(initializeDatabase);
 const mockedInitializeStoredEncryptionKey = vi.mocked(initializeStoredEncryptionKey);
 const mockedInitializeManifest = vi.mocked(initializeManifest);
 const mockedInitializeData = vi.mocked(initializeData);
+const mockedSynchronizeRemoteData = vi.mocked(synchronizeRemoteData);
 
 describe("application initialization", () => {
   beforeEach(() => {
@@ -39,6 +45,7 @@ describe("application initialization", () => {
     mockedInitializeStoredEncryptionKey.mockReset();
     mockedInitializeManifest.mockReset();
     mockedInitializeData.mockReset();
+    mockedSynchronizeRemoteData.mockReset();
 
     mockedInitializeStoredEncryptionKey.mockResolvedValue(true);
     mockedInitializeManifest.mockResolvedValue(false);
@@ -86,6 +93,7 @@ describe("application initialization", () => {
     expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
+    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
     expect(getState().manifest).toBeNull();
   });
 
@@ -104,6 +112,7 @@ describe("application initialization", () => {
     expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
+    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
   });
 
   it("does not initialize manifest when encryption key is unavailable", async () => {
@@ -123,6 +132,7 @@ describe("application initialization", () => {
     expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
+    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
   });
 
   it("initializes encryption before loading the manifest", async () => {
@@ -149,7 +159,7 @@ describe("application initialization", () => {
     );
   });
 
-  it("initializes data when manifest is initialized", async () => {
+  it("initializes data and synchronizes remote data when manifest is initialized", async () => {
     mockedInitializeManifest.mockResolvedValue(true);
 
     localStorage.setItem(
@@ -166,9 +176,31 @@ describe("application initialization", () => {
     expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
     expect(mockedInitializeManifest).toHaveBeenCalledOnce();
     expect(mockedInitializeData).toHaveBeenCalledOnce();
+    expect(mockedSynchronizeRemoteData).toHaveBeenCalledOnce();
   });
 
-  it("does not initialize data when manifest is not initialized", async () => {
+  it("synchronizes remote data after local data is initialized", async () => {
+    mockedInitializeManifest.mockResolvedValue(true);
+
+    localStorage.setItem(
+      "budgetclick.settings",
+      JSON.stringify({
+        schemaVersion: 1,
+        storage: "test-storage",
+        clientId: "client-123",
+      }),
+    );
+
+    await initializeApplication();
+
+    expect(
+      mockedInitializeData.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      mockedSynchronizeRemoteData.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does not initialize data or synchronize when manifest is not initialized", async () => {
     mockedInitializeManifest.mockResolvedValue(false);
 
     localStorage.setItem(
@@ -184,5 +216,6 @@ describe("application initialization", () => {
 
     expect(mockedInitializeManifest).toHaveBeenCalledOnce();
     expect(mockedInitializeData).not.toHaveBeenCalled();
+    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
   });
 });
