@@ -9,6 +9,7 @@ import { initializeState } from "@/state/state";
 import { initializeStoredEncryptionKey } from "@/encryption/key";
 import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
+import { synchronizeRemoteData } from "@/sync";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -29,5 +30,6 @@ export const initializeApplication = async () => {
   const manifestInitialized = await initializeManifest();
   if (manifestInitialized) {
     await initializeData();
+    await synchronizeRemoteData();
   }
 };

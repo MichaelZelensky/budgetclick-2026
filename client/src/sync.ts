@@ -1,7 +1,8 @@
-import { dbSaveAccounts } from "@/repository/account";
-import { dbSaveCategories } from "@/repository/category";
-import { dbSaveContractors } from "@/repository/contractor";
-import { dbSaveChunk } from "@/repository/transaction";
+import { dbGetAccounts, dbSaveAccounts } from "@/repository/account";
+import { dbGetCategories, dbSaveCategories } from "@/repository/category";
+import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
+import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
+import { getManifest } from "@/manifest";
 import { getFile } from "@/storage";
 import { updateChunksState, updateReferenceDataState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
@@ -125,4 +126,73 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   updateReferenceDataState(ReferenceDataKey.Accounts, accounts);
   updateReferenceDataState(ReferenceDataKey.Categories, categories);
   updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
+};
+
+const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
+  const [accounts, categories, contractors] = await Promise.all([
+    dbGetAccounts(),
+    dbGetCategories(),
+    dbGetContractors(),
+  ]);
+  if (manifest.references.accounts.version > (accounts?.metadata.version ?? 0)) {
+    const remoteAccounts = await loadRemoteObject<AccountsStorage>(
+      manifest.references.accounts,
+      validateAccountsStorage,
+      "accounts",
+    );
+    if (remoteAccounts !== null) {
+      await dbSaveAccounts(remoteAccounts);
+      updateReferenceDataState(ReferenceDataKey.Accounts, remoteAccounts);
+    }
+  }
+  if (manifest.references.categories.version > (categories?.metadata.version ?? 0)) {
+    const remoteCategories = await loadRemoteObject<CategoriesStorage>(
+      manifest.references.categories,
+      validateCategoriesStorage,
+      "categories",
+    );
+    if (remoteCategories !== null) {
+      await dbSaveCategories(remoteCategories);
+      updateReferenceDataState(ReferenceDataKey.Categories, remoteCategories);
+    }
+  }
+  if (manifest.references.contractors.version > (contractors?.metadata.version ?? 0)) {
+    const remoteContractors = await loadRemoteObject<ContractorsStorage>(
+      manifest.references.contractors,
+      validateContractorsStorage,
+      "contractors",
+    );
+    if (remoteContractors !== null) {
+      await dbSaveContractors(remoteContractors);
+      updateReferenceDataState(ReferenceDataKey.Contractors, remoteContractors);
+    }
+  }
+};
+
+const synchronizeChunks = async (manifest: Manifest): Promise<void> => {
+  const chunks = await dbGetChunks();
+  for (const [month, entry] of Object.entries(manifest.chunks)) {
+    const localChunk = chunks[month];
+    if (entry.version <= (localChunk?.metadata.version ?? 0)) {
+      continue;
+    }
+    const remoteChunk = await loadRemoteObject<ChunkStorage>(
+      entry,
+      validateChunkStorage,
+      "transaction chunk",
+    );
+    if (remoteChunk === null) {
+      continue;
+    }
+    await dbSaveChunk(month, remoteChunk);
+    updateChunksState(month, remoteChunk);
+  }
+};
+
+export const synchronizeRemoteData = async (): Promise<void> => {
+  const manifest = getManifest();
+  await Promise.all([
+    synchronizeReferenceData(manifest),
+    synchronizeChunks(manifest),
+  ]);
 };
