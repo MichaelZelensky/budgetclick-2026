@@ -8,7 +8,7 @@ Synchronization follows these principles:
 - Remote storage is the shared source of truth.
 - Synchronization occurs at object level.
 - Local IndexedDB contains the working copy of remote data.
-- Remote objects are identified by the manifest.
+- Remote objects are identified by the remote manifest.
 - Object versions determine whether local data must be updated.
 - A newer remote object replaces the corresponding local object.
 - Synchronization does not modify unrelated objects.
@@ -41,7 +41,9 @@ Start application
       ↓
 Load remote manifest
       ↓
-Compare local and remote versions
+Load local objects from IndexedDB
+      ↓
+Compare remote and local versions
       ↓
 Download newer remote objects
       ↓
@@ -88,35 +90,33 @@ The manifest identifies all available transaction chunks. Only the data required
 
 # Initial Transaction Data
 
-The initial transaction view displays up to 100 records.
+The initial setup import loads enough transaction data to provide an initial transaction view.
 
-The application selects records relative to the current date.
+The MVP selection rules are:
 
-The selection rules are:
+1. Load transaction chunks from the current month and future months in chronological order.
+2. Continue loading chunks until at least 100 transactions have been loaded.
+3. If current and future months contain no transactions, load past months from newest to oldest.
+4. Continue loading past chunks until at least 20 transactions have been loaded.
+5. If fewer applicable transactions exist, load all available applicable chunks.
 
-1. If records exist on or before the current date, display the latest 100 available records.
-2. If no records exist on or before the current date, display the earliest 100 future records.
-3. If fewer than 100 applicable records exist, display all available records.
+The application stores complete monthly chunks. It does not trim individual transactions from a downloaded chunk.
 
 For example:
 
 ```text
-Historical records + current date
-
-... records → records → TODAY
-                    ↑
-               latest 100
+Current month → future month → future month → ...
+       ↓
+load chunks until 100 transactions
 ```
 
-If all available records are in the future:
+If there are no current or future transactions:
 
 ```text
-TODAY → record → record → record → ...
-         ↑
-     first 100
+Previous month → previous month → previous month → ...
+       ↓
+load chunks until 20 transactions
 ```
-
-The application does not need to download all transaction chunks to display the initial 100 records.
 
 Transaction chunks not required for the initial view remain available remotely and can be loaded when required.
 
@@ -134,7 +134,7 @@ Reference objects are identified by their manifest entries.
 
 Transactions are stored in monthly chunks.
 
-The manifest identifies the object key and version for each chunk.
+The remote manifest identifies the object key and version for each chunk.
 
 Only transaction chunks required by the current application view need to be downloaded.
 
@@ -142,12 +142,19 @@ Additional chunks may be downloaded when the user navigates to other periods or 
 
 # Synchronization Flow
 
-Synchronization compares the local state with the remote manifest.
+Synchronization uses the remote manifest to determine the latest version of each remote object.
+
+The local manifest is not persisted as a separate IndexedDB object.
+
+The synchronization flow is:
 
 ```text
 Download remote manifest
       ↓
-Compare object versions
+Load local objects from IndexedDB
+      ↓
+Compare remote manifest entry versions
+with local object metadata versions
       ↓
 Find newer remote objects
       ↓
@@ -157,6 +164,9 @@ Decrypt
       ↓
 Validate
       ↓
+Verify object version
+matches manifest entry
+      ↓
 Save to IndexedDB
       ↓
 Update application state
@@ -164,9 +174,13 @@ Update application state
 Synchronization complete
 ```
 
+A local object that does not exist is treated as version `0`.
+
 Objects that have the same version locally and remotely do not need to be downloaded again.
 
 If the remote version is newer, the remote object replaces the local object.
+
+The synchronization engine does not download an object when its remote manifest version is equal to or older than the local object version.
 
 # Local Changes
 
@@ -215,7 +229,7 @@ Whenever an object changes:
 version = version + 1
 ```
 
-The manifest stores the latest remote version for every object.
+The remote manifest stores the latest remote version for every synchronized object.
 
 Version comparison determines whether a remote object needs to be downloaded.
 
@@ -234,6 +248,8 @@ Remote version: 4
 → Replace local object
 ```
 
+A missing local object is treated as version `0`.
+
 # Remote Data as Source of Truth
 
 Remote storage is the shared source of truth between clients.
@@ -243,6 +259,18 @@ When a client starts or synchronizes, the remote manifest is used to determine w
 If a remote object has a newer version, the local copy is replaced by the remote version.
 
 The synchronization engine does not attempt to merge two different versions of an object in the MVP.
+
+# Remote Manifest
+
+The remote manifest is loaded and decrypted during application startup.
+
+The decrypted manifest is stored in application state for the duration of the application session.
+
+The manifest is not stored as a separate local IndexedDB object.
+
+For normal synchronization, each manifest entry is compared directly with the corresponding local IndexedDB object's metadata version.
+
+The manifest therefore acts as the authoritative index of remote object keys and remote versions.
 
 # Conflict Handling
 
@@ -289,10 +317,13 @@ Typical failures include:
 - invalid remote data
 - decryption failure
 - validation failure
+- remote object version mismatch
 
 A failed remote update must not replace valid local data.
 
-The existing local object remains available when a remote object cannot be successfully downloaded, decrypted, or validated.
+The existing local object remains available when a remote object cannot be successfully downloaded, decrypted, validated, or verified against its manifest version.
+
+A downloaded object is only saved after its contents have been successfully validated and its metadata version matches the version specified by the remote manifest.
 
 # Future Improvements
 
