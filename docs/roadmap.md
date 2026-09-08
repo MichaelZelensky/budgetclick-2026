@@ -52,10 +52,10 @@ Suggested order:
 
 2. **Encryption**
 
-   * Key derivation
-   * AES-GCM encrypt/decrypt
-   * Serialization helpers
-   * Tests
+   * ✅Key derivation
+   * ✅AES-GCM encrypt/decrypt
+   * ✅Serialization helpers
+   * ✅Tests
 
 3. **Storage**
 
@@ -74,7 +74,7 @@ Suggested order:
 5. **Migrations**
 
    * ✅Local migration framework
-   * Storage migration framework
+   * ✅Storage migration framework
    * ✅Runner
    * ✅Version checks
 
@@ -108,7 +108,6 @@ Suggested order:
 10. **Views**
 
     * ✅Setup wizard
-    * Unlock screen
     * ✅Main application
 ```
 ## Phase 1 - Development Environment
@@ -174,12 +173,35 @@ Scope:
    - ✅Encrypt manifest and all storage objects
    - ✅Add encryption tests
 - Synchronization engine
+   - Update contract / docs/sync.md
+   - Import existing remote data during setup
+       - manifest
+       - reference data
+       - transaction data required for the initial 100 records
+   - Define initial transaction loading strategy
+       - prefer records on or before today
+       - show the latest 100 available records
+       - if no such records exist, show the earliest 100 future records
+   - Synchronize remote changes to local data
+       - compare manifest versions
+       - download newer objects
+       - update IndexedDB
+       - update application state
+   - Accept newer remote objects
+       - replace local object when remote version is newer
+   - Synchronization tests
 - ✅Bank account management
 - ✅Categories
 - ✅Contractors
-- Records
-  - income / expense
-  - planned / actual
+- Refine the transaction explorer views
+  - transaction widget:
+   - income / expense
+   - planned / actual
+  - list of transactions
+   - infinite scrolling ("load more" button)
+   - date selection
+   - filter widget
+   - balance after transaction
 - Monthly statistics
 - Basic offline workflow
 

@@ -5,116 +5,192 @@
 Synchronization follows these principles:
 
 - Offline-first.
-- Local database is always writable.
 - Remote storage is the shared source of truth.
 - Synchronization occurs at object level.
-- Synchronization never blocks user interaction.
-- Automatic merge whenever possible.
+- Local IndexedDB contains the working copy of remote data.
+- Remote objects are identified by the manifest.
+- Object versions determine whether local data must be updated.
+- A newer remote object replaces the corresponding local object.
+- Synchronization does not modify unrelated objects.
 - Manual conflict resolution is a future feature.
 
-# Local Workflow
+# Synchronization Model
 
-Every user action is applied immediately.
+BudgetClick uses remote storage to synchronize data between clients.
 
-```
-User Action
+For example:
 
-↓
+```text
+Client A
 
-Update Local Database
-
-↓
-
-Update Current Balance
-
-↓
-
-Mark Object Dirty
-
-↓
-
-Continue Working
+User changes data
+      ↓
+Save to IndexedDB
+      ↓
+Save encrypted object to remote storage
+      ↓
+Update manifest
 ```
 
-The application never waits for synchronization.
+Another client can then obtain the changes:
 
-# Synchronization Flow
+```text
+Client B
 
-```
-Detect Dirty Objects
-
-↓
-
-For Each Dirty Object
-
-↓
-
-Download Manifest
-
-↓
-
-Compare Object Version
-
-↓
-
-Download Remote Object (if needed)
-
-↓
-
-Merge
-
-↓
-
-Serialize
-
-↓
-
-Encrypt
-
-↓
-
-Upload Object
-
-↓
-
-Update Manifest
-
-↓
-
-Next Dirty Object
-
-↓
-
-Synchronization Complete
+Start application
+      ↓
+Load remote manifest
+      ↓
+Compare local and remote versions
+      ↓
+Download newer remote objects
+      ↓
+Decrypt and validate
+      ↓
+Update IndexedDB
+      ↓
+Update application state
 ```
 
-# Dirty Objects
+Synchronization therefore allows multiple clients to share the same remote data.
 
-A dirty object is any object that has been modified locally but has not yet been synchronized.
+# Initial Import
 
-Examples:
+When setup uses existing storage, the application imports the remote data required to initialize the local database.
 
-- monthly chunk
+The import process is:
+
+```text
+Configure existing storage
+      ↓
+Load salt
+      ↓
+Derive encryption key
+      ↓
+Download manifest
+      ↓
+Decrypt and validate manifest
+      ↓
+Download reference data
+      ↓
+Download transaction data required for the initial view
+      ↓
+Decrypt and validate objects
+      ↓
+Save objects to IndexedDB
+      ↓
+Initialize application state
+```
+
+The initial import does not download all historical transaction data.
+
+The manifest identifies all available transaction chunks. Only the data required for the initial transaction view is loaded.
+
+# Initial Transaction Data
+
+The initial transaction view displays up to 100 records.
+
+The application selects records relative to the current date.
+
+The selection rules are:
+
+1. If records exist on or before the current date, display the latest 100 available records.
+2. If no records exist on or before the current date, display the earliest 100 future records.
+3. If fewer than 100 applicable records exist, display all available records.
+
+For example:
+
+```text
+Historical records + current date
+
+... records → records → TODAY
+                    ↑
+               latest 100
+```
+
+If all available records are in the future:
+
+```text
+TODAY → record → record → record → ...
+         ↑
+     first 100
+```
+
+The application does not need to download all transaction chunks to display the initial 100 records.
+
+Transaction chunks not required for the initial view remain available remotely and can be loaded when required.
+
+# Reference Data
+
+The following reference objects are imported during initial setup:
+
 - accounts
 - categories
 - contractors
 
-Dirty state exists only locally.
+Reference objects are identified by their manifest entries.
 
-It is never synchronized.
+# Transaction Chunks
 
-# Manifest
+Transactions are stored in monthly chunks.
 
-The manifest represents the current state of remote storage.
+The manifest identifies the object key and version for each chunk.
 
-The synchronization engine downloads the manifest before synchronizing each dirty object.
+Only transaction chunks required by the current application view need to be downloaded.
 
-The manifest is used to determine:
+Additional chunks may be downloaded when the user navigates to other periods or when synchronization requires them.
 
-- object locations
-- object versions
+# Synchronization Flow
 
-The manifest itself is encrypted.
+Synchronization compares the local state with the remote manifest.
+
+```text
+Download remote manifest
+      ↓
+Compare object versions
+      ↓
+Find newer remote objects
+      ↓
+Download required objects
+      ↓
+Decrypt
+      ↓
+Validate
+      ↓
+Save to IndexedDB
+      ↓
+Update application state
+      ↓
+Synchronization complete
+```
+
+Objects that have the same version locally and remotely do not need to be downloaded again.
+
+If the remote version is newer, the remote object replaces the local object.
+
+# Local Changes
+
+Local changes are already persisted through the normal application data flow.
+
+For example:
+
+```text
+User action
+      ↓
+Update IndexedDB
+      ↓
+Update application state
+      ↓
+Encrypt object
+      ↓
+Upload object
+      ↓
+Update remote manifest
+```
+
+The synchronization engine does not implement a separate local-to-remote save mechanism.
+
+Its primary responsibility is obtaining remote changes and applying them to the local database.
 
 # Object Keys
 
@@ -135,85 +211,60 @@ Every synchronized object contains a version.
 
 Whenever an object changes:
 
-```
+```text
 version = version + 1
 ```
 
-The manifest stores the latest synchronized version for every object.
+The manifest stores the latest remote version for every object.
 
-Version comparison determines whether synchronization or merging is required.
+Version comparison determines whether a remote object needs to be downloaded.
 
-# Optimistic Concurrency
+For example:
 
-Synchronization assumes conflicts are uncommon.
+```text
+Local version:  3
+Remote version: 3
+→ No update required
+```
 
-Before synchronizing a dirty object:
+```text
+Local version:  3
+Remote version: 4
+→ Download remote object
+→ Replace local object
+```
 
-1. Download the latest manifest.
-2. Compare the remote object version with the local base version.
-3. If the versions match, upload the local object.
-4. If the remote version is newer, download the remote object and merge.
-5. Upload the merged object.
-6. Update the manifest.
+# Remote Data as Source of Truth
 
-If another client updates the manifest before it can be uploaded, synchronization of the current object is repeated using the latest manifest.
+Remote storage is the shared source of truth between clients.
 
-Objects are synchronized independently.
+When a client starts or synchronizes, the remote manifest is used to determine whether local data is outdated.
 
-A conflict affecting one object does not prevent synchronization of other objects.
+If a remote object has a newer version, the local copy is replaced by the remote version.
 
-TODO:
-- race condition: client A uploads new chunk, client B uploads the same chunk, client A uploads manifest, but the chunk is already overwritten. Maybe we need a sync lock with expiration period?
+The synchronization engine does not attempt to merge two different versions of an object in the MVP.
 
-# Merge Strategy
+# Conflict Handling
 
-Automatic merge is the default behavior.
+The MVP does not provide manual conflict resolution.
 
-Whenever possible:
+The synchronization implementation assumes that normal client synchronization produces a newer remote version that can be accepted by another client.
 
-- independent record additions are merged
-- independent record updates are merged
-- independent deletions are merged
-
-The merge algorithm operates on entities, not encrypted objects.
-
-# Conflict Detection
-
-A conflict exists when the same entity has been modified differently on multiple clients.
-
-Examples:
-
-- both clients modify the same record
-- one client deletes while another modifies
-- both clients modify the same category
-
-Conflicts are detected during synchronization.
-
-# Conflict Resolution
-
-MVP behavior:
-
-Attempt automatic merge.
-
-If automatic merge is not possible:
-
-- keep local object
-- mark synchronization as conflicted
-- notify the user
-
-Future versions will provide manual conflict resolution.
+If stronger conflict detection is required in the future, it will be introduced as a separate synchronization feature.
 
 # Synchronization Triggers
 
-Synchronization may occur:
+MVP synchronization occurs:
 
-- manually
-- application startup
-- application shutdown
+- during application startup
+- during existing-storage setup
+
+Future versions may add:
+
+- manual synchronization
 - network reconnect
 - scheduled synchronization
-
-Trigger strategy is implementation-specific.
+- background synchronization
 
 # Client Identifier
 
@@ -221,8 +272,8 @@ Each installation has a persistent `clientId`.
 
 The client identifier is used for:
 
+- identifying the client that made the latest change
 - synchronization diagnostics
-- conflict detection
 - future conflict resolution
 
 The client identifier is not synchronized as user identity.
@@ -234,18 +285,25 @@ Synchronization failures must never corrupt local data.
 Typical failures include:
 
 - network interruption
-- authentication failure
 - storage unavailable
-- object conflict
+- invalid remote data
 - decryption failure
+- validation failure
 
-Synchronization resumes safely after the failure is resolved.
+A failed remote update must not replace valid local data.
+
+The existing local object remains available when a remote object cannot be successfully downloaded, decrypted, or validated.
 
 # Future Improvements
 
 Future versions may introduce:
 
 - manual conflict resolution
+- true optimistic concurrency
 - background synchronization
+- network reconnect synchronization
+- synchronization queues
+- retry handling
 - incremental synchronization
 - synchronization diagnostics
+- more advanced merge strategies
