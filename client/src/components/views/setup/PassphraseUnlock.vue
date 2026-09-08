@@ -40,10 +40,10 @@ import SetupProgress from "@/components/SetupProgress.vue";
 import { initializeEncryptionKey } from "@/encryption/key";
 import { saveSalt } from "@/encryption/salt";
 import { decryptRemoteManifest } from "@/manifest";
-import { initializeData } from "@/repository/data";
 import { getState } from "@/state/state";
 import { getSetupState } from "@/state/setup";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { importRemoteData } from "@/sync";
 
 const router = useRouter();
 const passphrase = ref("");
@@ -68,10 +68,10 @@ const unlock = async () => {
   try {
     await initializeEncryptionKey(passphrase.value, setupState.remoteSalt);
     const manifest = await decryptRemoteManifest(setupState.remoteManifest);
+    await importRemoteData(manifest);
     getState().manifest = structuredClone(manifest);
     await saveSalt(setupState.remoteSalt);
-    await initializeData();
-    router.push("/accounts/create");
+    router.push("/");
   } catch {
     error.value = "Incorrect passphrase";
   } finally {
