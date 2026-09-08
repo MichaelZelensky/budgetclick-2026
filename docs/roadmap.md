@@ -172,24 +172,13 @@ Scope:
    - ✅Remove `EncryptedObject` type
    - ✅Encrypt manifest and all storage objects
    - ✅Add encryption tests
-- Synchronization engine
-   - Update contract / docs/sync.md
-   - Import existing remote data during setup
-       - manifest
-       - reference data
-       - transaction data required for the initial 100 records
-   - Define initial transaction loading strategy
-       - prefer records on or before today
-       - show the latest 100 available records
-       - if no such records exist, show the earliest 100 future records
-   - Synchronize remote changes to local data
-       - compare manifest versions
-       - download newer objects
-       - update IndexedDB
-       - update application state
-   - Accept newer remote objects
-       - replace local object when remote version is newer
-   - Synchronization tests
+- ✅Synchronization engine
+   - ✅Update contract / docs/sync.md
+   - ✅Import existing remote data during setup
+   - ✅Define initial transaction loading strategy
+   - ✅Synchronize remote changes to local data
+   - ✅Accept newer remote objects
+   - ✅Synchronization tests
 - ✅Bank account management
 - ✅Categories
 - ✅Contractors
@@ -197,6 +186,7 @@ Scope:
   - transaction widget:
    - income / expense
    - planned / actual
+   - edit a record
   - list of transactions
    - infinite scrolling ("load more" button)
    - date selection
@@ -208,8 +198,6 @@ Scope:
 Included:
 
 - Automatic synchronization
-- Automatic merge
-- Optimistic concurrency
 
 Excluded:
 
