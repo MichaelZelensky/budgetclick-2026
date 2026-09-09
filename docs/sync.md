@@ -1,340 +1,94 @@
-# BudgetClick 2026 - Synchronization Specification
+# BudgetClick 2026 — Synchronization Specification (Condensed)
 
-# Design Principles
+## Principles
 
-Synchronization follows these principles:
-
-- Offline-first.
+- Offline-first; local IndexedDB holds the working copy of remote data.
 - Remote storage is the shared source of truth.
-- Synchronization occurs at object level.
-- Local IndexedDB contains the working copy of remote data.
-- Remote objects are identified by the remote manifest.
-- Object versions determine whether local data must be updated.
-- A newer remote object replaces the corresponding local object.
-- Synchronization does not modify unrelated objects.
-- Manual conflict resolution is a future feature.
+- Sync happens at the object level; a newer remote object replaces its local counterpart and unrelated objects are untouched.
+- No merging: the MVP always accepts the remote version wholesale (manual conflict resolution is a future feature).
 
-# Synchronization Model
+## Object Model
 
-BudgetClick uses remote storage to synchronize data between clients.
+Every synchronized object has:
 
-For example:
+- **Object key** — stable, randomly generated at creation, never changes, stored in the manifest, obfuscates storage names. Objects are overwritten in place by key.
+- **Version** — an integer incremented (`version += 1`) on every change. A missing local object is treated as version `0`.
 
-```text
-Client A
+**Remote manifest**: downloaded and decrypted at startup, kept in application state for the session (not persisted as its own IndexedDB record). It is the authoritative index of object keys + latest remote versions, and is compared directly against each local object's stored version.
 
-User changes data
-      ↓
-Save to IndexedDB
-      ↓
-Save encrypted object to remote storage
-      ↓
-Update manifest
+```
+Local version 3, Remote version 3 → no download needed
+Local version 3, Remote version 4 → download, decrypt, validate, replace local
 ```
 
-Another client can then obtain the changes:
+## Synchronization Flow
 
-```text
-Client B
+Runs on **app startup** and during **existing-storage setup** (future: manual trigger, reconnect, scheduled/background sync).
 
-Start application
+```
+Download + decrypt remote manifest
       ↓
-Load remote manifest
+Load local object versions from IndexedDB
       ↓
-Load local objects from IndexedDB
+For each object: compare remote vs. local version
       ↓
-Compare remote and local versions
+Skip if remote ≤ local
       ↓
-Download newer remote objects
+Download → decrypt → validate → verify version matches manifest
       ↓
-Decrypt and validate
-      ↓
-Update IndexedDB
-      ↓
-Update application state
+Save to IndexedDB → update application state
 ```
 
-Synchronization therefore allows multiple clients to share the same remote data.
+**Local → remote** is handled entirely by normal app writes (save to IndexedDB → update state → encrypt → upload → update manifest). The sync engine only pulls remote changes; it has no separate push path.
 
-# Initial Import
+## Initial Setup / Import
 
-When setup uses existing storage, the application imports the remote data required to initialize the local database.
-
-The import process is:
-
-```text
-Configure existing storage
+```
+Configure existing storage → load salt → derive encryption key
       ↓
-Load salt
+Download + decrypt + validate manifest
       ↓
-Derive encryption key
+Download reference data (accounts, categories, contractors)
       ↓
-Download manifest
+Download transaction chunks needed for the initial view (see selection rules)
       ↓
-Decrypt and validate manifest
-      ↓
-Download reference data
-      ↓
-Download transaction data required for the initial view
-      ↓
-Decrypt and validate objects
-      ↓
-Save objects to IndexedDB
-      ↓
-Initialize application state
+Decrypt, validate, save to IndexedDB → initialize application state
 ```
 
-The initial import does not download all historical transaction data.
+Not all historical data is fetched — only what's needed for the first view; remaining chunks stay remote until requested.
 
-The manifest identifies all available transaction chunks. Only the data required for the initial transaction view is loaded.
+### Transaction Chunk Selection (MVP)
 
-# Initial Transaction Data
+Transactions are stored in full monthly chunks (never trimmed individually):
 
-The initial setup import loads enough transaction data to provide an initial transaction view.
+1. Load current + future months, chronologically, until ≥100 transactions are loaded.
+2. If current/future months are empty, load past months newest→oldest until ≥20 transactions are loaded.
+3. If fewer transactions exist than the target, load all available applicable chunks.
 
-The MVP selection rules are:
+Additional chunks load on-demand when the user navigates or sync requires them.
 
-1. Load transaction chunks from the current month and future months in chronological order.
-2. Continue loading chunks until at least 100 transactions have been loaded.
-3. If current and future months contain no transactions, load past months from newest to oldest.
-4. Continue loading past chunks until at least 20 transactions have been loaded.
-5. If fewer applicable transactions exist, load all available applicable chunks.
+## Conflict Handling
 
-The application stores complete monthly chunks. It does not trim individual transactions from a downloaded chunk.
+No manual resolution in the MVP — a newer remote version is simply accepted. Stronger conflict detection is deferred to a future feature.
 
-For example:
+## Error Handling
 
-```text
-Current month → future month → future month → ...
-       ↓
-load chunks until 100 transactions
-```
+Sync failures must never corrupt local data:
 
-If there are no current or future transactions:
+- Covers network interruption, storage unavailable, invalid data, decryption/validation failure, or version mismatch.
+- On any failure, the existing local object is kept as-is.
+- A downloaded object is saved **only** after it passes validation and its version matches the manifest entry.
 
-```text
-Previous month → previous month → previous month → ...
-       ↓
-load chunks until 20 transactions
-```
+## Client Identifier
 
-Transaction chunks not required for the initial view remain available remotely and can be loaded when required.
+Each install has a persistent `clientId`, used for attributing the latest change, diagnostics, and future conflict resolution. It is not synced as user identity.
 
-# Reference Data
+## Future Work
 
-The following reference objects are imported during initial setup:
-
-- accounts
-- categories
-- contractors
-
-Reference objects are identified by their manifest entries.
-
-# Transaction Chunks
-
-Transactions are stored in monthly chunks.
-
-The remote manifest identifies the object key and version for each chunk.
-
-Only transaction chunks required by the current application view need to be downloaded.
-
-Additional chunks may be downloaded when the user navigates to other periods or when synchronization requires them.
-
-# Synchronization Flow
-
-Synchronization uses the remote manifest to determine the latest version of each remote object.
-
-The local manifest is not persisted as a separate IndexedDB object.
-
-The synchronization flow is:
-
-```text
-Download remote manifest
-      ↓
-Load local objects from IndexedDB
-      ↓
-Compare remote manifest entry versions
-with local object metadata versions
-      ↓
-Find newer remote objects
-      ↓
-Download required objects
-      ↓
-Decrypt
-      ↓
-Validate
-      ↓
-Verify object version
-matches manifest entry
-      ↓
-Save to IndexedDB
-      ↓
-Update application state
-      ↓
-Synchronization complete
-```
-
-A local object that does not exist is treated as version `0`.
-
-Objects that have the same version locally and remotely do not need to be downloaded again.
-
-If the remote version is newer, the remote object replaces the local object.
-
-The synchronization engine does not download an object when its remote manifest version is equal to or older than the local object version.
-
-# Local Changes
-
-Local changes are already persisted through the normal application data flow.
-
-For example:
-
-```text
-User action
-      ↓
-Update IndexedDB
-      ↓
-Update application state
-      ↓
-Encrypt object
-      ↓
-Upload object
-      ↓
-Update remote manifest
-```
-
-The synchronization engine does not implement a separate local-to-remote save mechanism.
-
-Its primary responsibility is obtaining remote changes and applying them to the local database.
-
-# Object Keys
-
-Every synchronized object has a stable, randomly generated storage object key.
-
-The object key:
-
-- is generated when the object is created
-- never changes
-- is stored in the manifest
-- obfuscates storage object names
-
-Objects are overwritten in place using their stable object key.
-
-# Object Version
-
-Every synchronized object contains a version.
-
-Whenever an object changes:
-
-```text
-version = version + 1
-```
-
-The remote manifest stores the latest remote version for every synchronized object.
-
-Version comparison determines whether a remote object needs to be downloaded.
-
-For example:
-
-```text
-Local version:  3
-Remote version: 3
-→ No update required
-```
-
-```text
-Local version:  3
-Remote version: 4
-→ Download remote object
-→ Replace local object
-```
-
-A missing local object is treated as version `0`.
-
-# Remote Data as Source of Truth
-
-Remote storage is the shared source of truth between clients.
-
-When a client starts or synchronizes, the remote manifest is used to determine whether local data is outdated.
-
-If a remote object has a newer version, the local copy is replaced by the remote version.
-
-The synchronization engine does not attempt to merge two different versions of an object in the MVP.
-
-# Remote Manifest
-
-The remote manifest is loaded and decrypted during application startup.
-
-The decrypted manifest is stored in application state for the duration of the application session.
-
-The manifest is not stored as a separate local IndexedDB object.
-
-For normal synchronization, each manifest entry is compared directly with the corresponding local IndexedDB object's metadata version.
-
-The manifest therefore acts as the authoritative index of remote object keys and remote versions.
-
-# Conflict Handling
-
-The MVP does not provide manual conflict resolution.
-
-The synchronization implementation assumes that normal client synchronization produces a newer remote version that can be accepted by another client.
-
-If stronger conflict detection is required in the future, it will be introduced as a separate synchronization feature.
-
-# Synchronization Triggers
-
-MVP synchronization occurs:
-
-- during application startup
-- during existing-storage setup
-
-Future versions may add:
-
-- manual synchronization
-- network reconnect
-- scheduled synchronization
-- background synchronization
-
-# Client Identifier
-
-Each installation has a persistent `clientId`.
-
-The client identifier is used for:
-
-- identifying the client that made the latest change
-- synchronization diagnostics
-- future conflict resolution
-
-The client identifier is not synchronized as user identity.
-
-# Error Handling
-
-Synchronization failures must never corrupt local data.
-
-Typical failures include:
-
-- network interruption
-- storage unavailable
-- invalid remote data
-- decryption failure
-- validation failure
-- remote object version mismatch
-
-A failed remote update must not replace valid local data.
-
-The existing local object remains available when a remote object cannot be successfully downloaded, decrypted, validated, or verified against its manifest version.
-
-A downloaded object is only saved after its contents have been successfully validated and its metadata version matches the version specified by the remote manifest.
-
-# Future Improvements
-
-Future versions may introduce:
-
-- manual conflict resolution
+- Manual conflict resolution
 - true optimistic concurrency
-- background synchronization
-- network reconnect synchronization
-- synchronization queues
-- retry handling
-- incremental synchronization
-- synchronization diagnostics
-- more advanced merge strategies
+- background/reconnect/scheduled sync
+- sync queues & retries
+- incremental sync
+- sync diagnostics
+- advanced merge strategies.
