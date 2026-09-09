@@ -26,7 +26,7 @@
 
     <div class="tw-h-full tw-overflow-hidden md:tw-hidden">
       <LiteTabs default-selected="Records">
-        <Tab label="Records">
+        <Tab label="Records" padding="none">
           <Spreadsheet />
         </Tab>
 

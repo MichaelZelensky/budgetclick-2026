@@ -3,7 +3,7 @@
     :data="transactions"
     :columns="columns"
     :options="{ sortable: false, filterable: true }"
-    class="tw-pt-2 tw-px-2"
+    class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
   >
     <template #actual="{ item }">
       <span v-if="item.actual" class="tw-text-green-500">✓</span>
