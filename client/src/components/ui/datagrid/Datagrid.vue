@@ -130,6 +130,7 @@
               v-for="column in columns"
               :key="column.key"
               :style="{ width: resolvedWidth(column.key), minWidth: resolvedMinWidth(column.key) }"
+              :class="{ 'boolean-column': column.type === DatagridColumnType.BOOLEAN }"
             >
               <slot :name="column.key" :item="item" v-if="$slots[column.key]"></slot>
               <span v-else-if="column.type === DatagridColumnType.BOOLEAN && item[column.key]" class="tw-text-green-500">Yes</span>
@@ -193,6 +194,7 @@ import { isDefined } from '@/utils/defined';
 import { useRouter, useRoute } from 'vue-router';
 import Funnel from "@/components/icons/Funnel.vue";
 import FunnelFill from "@/components/icons/FunnelFill.vue";
+import { DatagridColumnType } from '@/components/ui/datagrid/Datagrid.types';
 
 type DatagridCell =
   | string
@@ -206,11 +208,6 @@ type DatagridCell =
   | boolean[];
 
 type DatagridRow = Record<string, DatagridCell>;
-
-enum DatagridColumnType {
-  TEXT = 'text',
-  BOOLEAN = 'boolean',
-}
 
 type DatagridColumn<TRow extends DatagridRow = DatagridRow> = {
   key: keyof TRow & string;
@@ -673,7 +670,10 @@ td { @apply tw-px-4 tw-py-2 tw-align-top tw-text-zinc-400; }
 
 .th-inner { @apply tw-px-4 tw-py-2 tw-relative; }
 
-th, td { @apply tw-overflow-hidden tw-whitespace-nowrap tw-text-ellipsis; }
+th, td { @apply tw-overflow-hidden; }
+th:not(.boolean-column), td:not(.boolean-column) {
+  @apply tw-whitespace-nowrap tw-text-ellipsis;
+}
 
 thead tr { @apply tw-bg-zinc-700; }
 

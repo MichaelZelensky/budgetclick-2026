@@ -27,10 +27,10 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-
-import Datagrid from "@/components/ui/Datagrid.vue";
+import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import { getState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
+import { DatagridColumnType } from "@/components/ui/datagrid/Datagrid.types";
 
 const emit = defineEmits<{
   selectionChange: [transaction: Transaction | null];
@@ -70,7 +70,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
 });
 
 const columns = [
-  { key: "actual", label: "", filterable: true },
+  { key: "actual", label: "", filterable: false, type: DatagridColumnType.BOOLEAN },
   { key: "date", label: "Date", filterable: true },
   { key: "amount", label: "Amount", filterable: true },
   { key: "account", label: "Account", filterable: true },
