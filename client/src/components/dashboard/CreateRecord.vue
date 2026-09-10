@@ -1,6 +1,6 @@
 <template>
   <DashboardWidget>
-    <div class="title">Add / Edit Record</div>
+    <div class="title">Add Record</div>
 
     <div class="tw-grid tw-gap-2">
       <LiteInputField v-model="description" placeholder="Description" required />
@@ -35,7 +35,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
-import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";

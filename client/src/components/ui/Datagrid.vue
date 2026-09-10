@@ -4,8 +4,7 @@
       <table>
         <thead>
           <tr>
-            <th
-              v-if="selectRowCheckbox"
+            <th v-if="selectRowCheckbox && !singleRowSelection"
               :style="{ width: selectColumnWidthPx, minWidth: selectColumnWidthPx }"
             >
               <div class="th-inner tw-flex tw-items-center tw-justify-center">
@@ -63,8 +62,7 @@
 
           <!-- Filter row -->
           <tr v-if="options.filterable && anyFilterVisible">
-            <th
-              v-if="selectRowCheckbox"
+            <th v-if="selectRowCheckbox && !singleRowSelection"
               :style="{ width: selectColumnWidthPx, minWidth: selectColumnWidthPx }"
             >
               <div class="th-inner tw-px-4 tw-py-1">
@@ -111,9 +109,11 @@
         </thead>
 
         <tbody>
-          <tr v-for="item in paginatedData" :key="String(item.id)">
-            <td
-              v-if="selectRowCheckbox"
+          <tr v-for="item in paginatedData" :key="String(item.id)" 
+            @click="setRowSelection(item.id, !selectedRowIdSet.has(String(item.id)))"
+            :class="{ selected: selectedRowIdSet.has(String(item.id)) }"
+          >
+            <td v-if="selectRowCheckbox && !singleRowSelection"
               :style="{ width: selectColumnWidthPx, minWidth: selectColumnWidthPx }"
               class="select-cell"
             >
@@ -242,7 +242,8 @@ type BulkActionPayload = {
 type RowId = DatagridRow['id'];
 
 const emit = defineEmits<{
-  (e: 'bulkAction', payload: BulkActionPayload): void;
+  bulkAction: [action: DatagridBulkAction, items: DatagridRow[]];
+  selectionChange: [ids: string[]];
 }>();
 
 const props = defineProps<{
@@ -251,6 +252,7 @@ const props = defineProps<{
   options: DatagridOptions;
   rowsPerPageOptions?: number[];
   selectRowCheckbox?: boolean;
+  singleRowSelection?: boolean;
   bulkActions?: DatagridBulkAction[];
 }>();
 
@@ -405,6 +407,7 @@ const filteredData = computed<DatagridRow[]>(() => {
       const ax = toComparable(avScalar!);
       const bx = toComparable(bvScalar!);
       if (ax === bx) return 0;
+
       return (ax! > bx! ? 1 : -1) * dir;
     });
   }
@@ -541,11 +544,17 @@ watch([headerCheckboxIsIndeterminate, paginatedRowIdKey], () => {
 
 const rowIsSelected = (id: RowId): boolean => selectedRowIdSet.value.has(id);
 
-const setRowSelection = (id: RowId, checked: boolean) => {
-  const next = checked
-    ? new Set<RowId>([...selectedRowIdSet.value, id])
-    : new Set<RowId>([...selectedRowIdSet.value].filter(x => x !== id));
+const setRowSelection = (id: string, checked: boolean): void => {
+  const next = props.singleRowSelection
+    ? selectedRowIdSet.value.has(id)
+      ? new Set<string>()
+      : new Set<string>([id])
+    : checked
+      ? new Set<string>([...selectedRowIdSet.value, id])
+      : new Set<string>([...selectedRowIdSet.value].filter(x => x !== id));
+
   selectedRowIdSet.value = next;
+  emit("selectionChange", [...next]);
 };
 
 const toggleAllRowsOnPage = (checked: boolean) => {
@@ -675,14 +684,18 @@ thead th { @apply tw-text-zinc-200 tw-font-normal; }
 }
 
 tbody tr {
-  @apply even:tw-bg-zinc-800 odd:tw-bg-zinc-800;
+  @apply even:tw-bg-zinc-800 odd:tw-bg-zinc-900;
 }
 
-tbody tr:hover { @apply tw-bg-zinc-900; }
+tbody tr:hover { @apply tw-bg-zinc-700; }
 
 tbody tr:hover td { @apply tw-text-zinc-300; }
 
 tbody tr:not(:last-child) td { @apply tw-border-b tw-border-zinc-700; }
+
+tbody tr.selected td {
+  @apply tw-bg-sky-900/40;
+}
 
 .bottom-controls {
   @apply tw-flex tw-justify-end tw-items-center tw-mt-3 tw-space-x-4;

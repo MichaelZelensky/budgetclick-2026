@@ -5,7 +5,7 @@
         class="tw-min-w-0 tw-overflow-auto"
         :style="{ width: `${leftWidth}%` }"
       >
-        <Spreadsheet />
+        <Spreadsheet @selection-change="selectedTransaction = $event" />
       </div>
 
       <div
@@ -18,7 +18,12 @@
         :style="{ width: `${100 - leftWidth}%` }"
       >
         <div class="tw-grid tw-auto-rows-[240px] tw-grid-cols-[repeat(auto-fit,minmax(280px,1fr))] tw-gap-4">
-          <RecordEditor />
+          <EditRecord
+            v-if="selectedTransaction"
+            :transaction="selectedTransaction"
+          />
+          <CreateRecord v-else />
+
           <Statistics />
         </div>
       </div>
@@ -27,12 +32,17 @@
     <div class="tw-h-full tw-overflow-hidden md:tw-hidden">
       <LiteTabs default-selected="Records">
         <Tab label="Records" padding="none">
-          <Spreadsheet />
+          <Spreadsheet @selection-change="selectedTransaction = $event" />
         </Tab>
 
         <Tab label="Actions">
           <div class="tw-grid tw-gap-4">
-            <RecordEditor />
+            <EditRecord
+              v-if="selectedTransaction"
+              :transaction="selectedTransaction"
+            />
+            <CreateRecord v-else />
+
             <Statistics />
           </div>
         </Tab>
@@ -44,13 +54,16 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
 
-import RecordEditor from "@/components/dashboard/RecordEditor.vue";
+import CreateRecord from "@/components/dashboard/CreateRecord.vue";
+import EditRecord from "@/components/dashboard/EditRecord.vue";
 import Spreadsheet from "@/components/dashboard/Spreadsheet.vue";
 import Statistics from "@/components/dashboard/Statistics.vue";
 import LiteTabs from "@/components/ui/tabs/LiteTabs.vue";
 import Tab from "@/components/ui/tabs/Tab.vue";
+import type { Transaction } from "@/types/data/Transaction";
 
 const leftWidth = ref(65);
+const selectedTransaction = ref<Transaction | null>(null);
 
 const resize = (event: MouseEvent) => {
   const width = (event.clientX / window.innerWidth) * 100;

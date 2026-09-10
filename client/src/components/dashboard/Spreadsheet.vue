@@ -3,6 +3,8 @@
     :data="transactions"
     :columns="columns"
     :options="{ sortable: false, filterable: true }"
+    :single-row-selection="true"
+    @selection-change="onSelectionChange"
     class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
   >
     <template #actual="{ item }">
@@ -21,6 +23,11 @@ import { computed } from "vue";
 
 import Datagrid from "@/components/ui/Datagrid.vue";
 import { getState } from "@/state/state";
+import type { Transaction } from "@/types/data/Transaction";
+
+const emit = defineEmits<{
+  selectionChange: [transaction: Transaction | null];
+}>();
 
 type SpreadsheetRow = {
   id: string;
@@ -51,7 +58,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         amount: transaction.amount,
         currency: account?.currency ?? "",
         description: transaction.description,
-        accountName: account?.name ?? ""
+        accountName: account?.name ?? "",
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -63,6 +70,18 @@ const columns = [
   { key: "amount", label: "Amount", filterable: true },
   { key: "currency", label: "Currency", filterable: true },
   { key: "description", label: "Description", filterable: true },
-  { key: "accountName", label: "Account", filterable: true }
+  { key: "accountName", label: "Account", filterable: true },
 ];
+
+const onSelectionChange = (ids: string[]): void => {
+  const selectedId = ids[0];
+
+  const transaction = selectedId
+    ? Object.values(state.chunks)
+        .flatMap(chunk => chunk.transactions)
+        .find(item => item.id === selectedId) ?? null
+    : null;
+
+  emit("selectionChange", transaction);
+};
 </script>
