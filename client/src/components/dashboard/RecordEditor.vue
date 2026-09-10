@@ -4,15 +4,30 @@
 
     <div class="tw-grid tw-gap-2">
       <LiteInputField v-model="description" placeholder="Description" required />
-      <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
-      <LiteSelect v-model="accountId" :options="accountOptions" title="Account" />
+
+      <div class="tw-grid tw-grid-cols-2 tw-gap-2">
+        <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
+        <LiteSelect v-model="accountId" :options="accountOptions" title="Account" />
+      </div>
+
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
-      <ButtonGroup>
-        <LiteButton @click="saveRecord">
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteToggle v-model="isActual">
+          Actual
+        </LiteToggle>
+
+        <LiteToggle
+          :model-value="direction === 'in'"
+          @update:model-value="setIncome"
+        >
+          Income
+        </LiteToggle>
+
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
         </LiteButton>
-      </ButtonGroup>
+      </div>
     </div>
   </DashboardWidget>
 </template>
@@ -24,6 +39,7 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
+import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { saveChunkData } from "@/data-flow";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
@@ -38,6 +54,7 @@ const accountId = ref<string | undefined>(
 );
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
+const isActual = ref(true);
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -45,6 +62,10 @@ const accountOptions = computed<Option[]>(() =>
     text: account.name,
   })) ?? []
 );
+
+const setIncome = (value: boolean): void => {
+  direction.value = value ? "in" : "out";
+};
 
 const saveRecord = async (): Promise<void> => {
   if (
@@ -88,7 +109,7 @@ const saveRecord = async (): Promise<void> => {
           description: description.value.trim(),
           datetime: transactionDatetime.toISOString(),
           attachmentIds: [],
-          isActual: true,
+          isActual: isActual.value,
         },
       ],
     },
@@ -97,6 +118,8 @@ const saveRecord = async (): Promise<void> => {
   description.value = "";
   amount.value = "";
   datetime.value = new Date().toISOString().slice(0, 16);
+  direction.value = "out";
+  isActual.value = true;
 };
 </script>
 
