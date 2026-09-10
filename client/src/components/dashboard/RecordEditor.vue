@@ -125,6 +125,6 @@ const saveRecord = async (): Promise<void> => {
 
 <style lang="scss" scoped>
 .title {
-  @apply tw-font-semibold tw-pb-4;
+  @apply tw-font-semibold tw-pb-2;
 }
 </style>
