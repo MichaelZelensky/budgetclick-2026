@@ -53,7 +53,8 @@ select {
   @apply tw-transition-all;
   @apply tw-border;
   @apply tw-bg-zinc-700 tw-border-zinc-600;
-  @apply tw-p-1 tw-rounded-sm;
+  @apply tw-px-1 tw-py-0 tw-rounded-sm;
+  @apply tw-h-[30px];
   &::-ms-reveal, &::-ms-clear {
     @apply tw-hidden;
   }
