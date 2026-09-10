@@ -2,7 +2,13 @@
   <Datagrid
     :data="transactions"
     :columns="columns"
-    :options="{ sortable: false, filterable: true }"
+    :options="{
+      sortable: false,
+      filterable: true,
+      fixedColumnWidths: {
+        actual: 40
+      }
+    }"
     :single-row-selection="true"
     @selection-change="onSelectionChange"
     class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
@@ -10,6 +16,7 @@
     <template #actual="{ item }">
       <span v-if="item.actual" class="tw-text-green-500">✓</span>
     </template>
+
     <template #amount="{ item }">
       <span :class="item.direction === 'in' ? 'tw-text-green-700' : ''">
         {{ item.amount }}
@@ -35,9 +42,8 @@ type SpreadsheetRow = {
   direction: "in" | "out";
   date: string;
   amount: number;
-  currency: string;
+  account: string;
   description: string;
-  accountName: string;
 };
 
 const state = getState();
@@ -56,9 +62,8 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         direction: transaction.direction,
         date: transaction.datetime.substring(0, 10),
         amount: transaction.amount,
-        currency: account?.currency ?? "",
-        description: transaction.description,
-        accountName: account?.name ?? "",
+        account: `${account?.name ?? ""} (${account?.currency ?? ""})`,
+        description: transaction.description
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -68,9 +73,8 @@ const columns = [
   { key: "actual", label: "", filterable: true },
   { key: "date", label: "Date", filterable: true },
   { key: "amount", label: "Amount", filterable: true },
-  { key: "currency", label: "Currency", filterable: true },
-  { key: "description", label: "Description", filterable: true },
-  { key: "accountName", label: "Account", filterable: true },
+  { key: "account", label: "Account", filterable: true },
+  { key: "description", label: "Description", filterable: true }
 ];
 
 const onSelectionChange = (ids: string[]): void => {
