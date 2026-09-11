@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import Datagrid from "@/components/ui/Datagrid.vue";
+import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
 

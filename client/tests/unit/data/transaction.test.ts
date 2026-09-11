@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import RecordEditor from "@/components/dashboard/RecordEditor.vue";
+import RecordEditor from "@/components/dashboard/CreateRecord.vue";
 import { saveChunkData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
 
