@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import RecordEditor from "@/components/dashboard/CreateRecord.vue";
+import CreateRecord from "@/components/dashboard/CreateRecord.vue";
+import EditRecord from "@/components/dashboard/EditRecord.vue";
 import { saveChunkData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
+import type { Transaction } from "@/types/data/Transaction";
 
 vi.mock("@/data-flow", () => ({
   saveChunkData: vi.fn(),
@@ -14,8 +16,26 @@ const createInputStub = () => ({
   template: `
     <input
       :value="modelValue"
-      @input="$emit('update:modelValue', type === 'number' ? Number($event.target.value) : $event.target.value)"
+      @input="$emit(
+        'update:modelValue',
+        type === 'number' ? Number($event.target.value) : $event.target.value
+      )"
     />
+  `,
+});
+
+const createToggleStub = () => ({
+  props: ["modelValue"],
+  emits: ["update:modelValue"],
+  template: `
+    <label>
+      <span><slot /></span>
+      <input
+        type="checkbox"
+        :checked="modelValue"
+        @change="$emit('update:modelValue', $event.target.checked)"
+      />
+    </label>
   `,
 });
 
@@ -26,6 +46,7 @@ const createGlobalStubs = () => ({
     emits: ["update:modelValue"],
     template: "<div />",
   },
+  LiteToggle: createToggleStub(),
   LiteButton: {
     emits: ["click"],
     template: `
@@ -42,11 +63,26 @@ const createGlobalStubs = () => ({
   },
 });
 
-const mountRecordEditor = () => mount(RecordEditor, {
+const mountCreateRecord = () => mount(CreateRecord, {
   global: {
     stubs: createGlobalStubs(),
   },
 });
+
+const mountEditRecord = (transaction: Transaction) => mount(EditRecord, {
+  props: {
+    transaction,
+  },
+  global: {
+    stubs: createGlobalStubs(),
+  },
+});
+
+const findToggle = (wrapper: ReturnType<typeof mountCreateRecord>, label: string) =>
+  wrapper
+    .findAll("label")
+    .find(toggle => toggle.text() === label)
+    ?.find("input");
 
 const account = {
   id: "account-1",
@@ -84,7 +120,7 @@ describe("transactions CRUD", () => {
   });
 
   it("creates a new chunk when saving the first transaction for a month", async () => {
-    const wrapper = mountRecordEditor();
+    const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
     await inputs[0].setValue("Groceries");
@@ -117,7 +153,45 @@ describe("transactions CRUD", () => {
     expect(transaction.id).toEqual(expect.any(String));
     expect(transaction.createdAt).toEqual(expect.any(String));
     expect(transaction.updatedAt).toBe(transaction.createdAt);
-    expect(transaction.datetime).toBe(new Date("2026-08-25T10:30").toISOString());
+    expect(transaction.datetime).toBe(
+      new Date("2026-08-25T10:30").toISOString(),
+    );
+  });
+
+  it("creates a transaction with the selected actual and income values", async () => {
+    const wrapper = mountCreateRecord();
+    const inputs = wrapper.findAll("input");
+
+    await inputs[0].setValue("Salary");
+    await inputs[1].setValue("2500");
+    await inputs[2].setValue("2026-08-25T10:30");
+
+    const actualToggle = findToggle(wrapper, "Actual");
+
+    expect(actualToggle).toBeDefined();
+    expect((actualToggle?.element as HTMLInputElement).checked).toBe(true);
+
+    await actualToggle?.setValue(false);
+
+    const incomeToggle = findToggle(wrapper, "Income");
+
+    expect(incomeToggle).toBeDefined();
+    expect((incomeToggle?.element as HTMLInputElement).checked).toBe(false);
+
+    await incomeToggle?.setValue(true);
+
+    await wrapper.find("button").trigger("click");
+
+    const call = vi.mocked(saveChunkData).mock.calls[0][0];
+    const transaction = call.data.transactions[0];
+
+    expect(transaction).toMatchObject({
+      direction: "in",
+      amount: 2500,
+      accountId: account.id,
+      description: "Salary",
+      isActual: false,
+    });
   });
 
   it("appends to an existing chunk for the same month", async () => {
@@ -126,7 +200,7 @@ describe("transactions CRUD", () => {
       createdAt: "2026-08-01T00:00:00.000Z",
       updatedAt: "2026-08-01T00:00:00.000Z",
       isDeleted: false,
-      direction: "in",
+      direction: "in" as const,
       amount: 100,
       accountId: account.id,
       description: "Salary",
@@ -146,7 +220,7 @@ describe("transactions CRUD", () => {
       transactions: [existingTransaction],
     };
 
-    const wrapper = mountRecordEditor();
+    const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
     await inputs[0].setValue("Coffee");
@@ -169,7 +243,7 @@ describe("transactions CRUD", () => {
   });
 
   it("resets the form after saving", async () => {
-    const wrapper = mountRecordEditor();
+    const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
     await inputs[0].setValue("Coffee");
@@ -180,6 +254,85 @@ describe("transactions CRUD", () => {
 
     expect(inputs[0].element.value).toBe("");
     expect(inputs[1].element.value).toBe("");
-    expect(inputs[2].element.value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(inputs[2].element.value).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
+    );
+  });
+
+  it("updates an existing transaction", async () => {
+    const transaction: Transaction = {
+      id: "transaction-1",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+      isDeleted: false,
+      direction: "out",
+      amount: 50,
+      accountId: account.id,
+      description: "Old description",
+      datetime: "2026-08-01T10:00:00.000Z",
+      attachmentIds: ["attachment-1"],
+      isActual: true,
+    };
+
+    getState().chunks["2026-08"] = {
+      metadata: {
+        schemaVersion: 1,
+        version: 3,
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+        updatedBy: "client-123",
+      },
+      transactions: [transaction],
+    };
+
+    const wrapper = mountEditRecord(transaction);
+    const inputs = wrapper.findAll("input");
+
+    await inputs[0].setValue("Updated description");
+    await inputs[1].setValue("75");
+    await inputs[2].setValue("2026-08-15T12:30");
+
+    const actualToggle = findToggle(wrapper, "Actual");
+
+    expect(actualToggle).toBeDefined();
+    await actualToggle?.setValue(false);
+
+    const incomeToggle = findToggle(wrapper, "Income");
+
+    expect(incomeToggle).toBeDefined();
+    await incomeToggle?.setValue(true);
+
+    await wrapper.find("button").trigger("click");
+
+    expect(saveChunkData).toHaveBeenCalledOnce();
+
+    const call = vi.mocked(saveChunkData).mock.calls[0][0];
+
+    expect(call.key).toBe("2026-08");
+    expect(call.data.metadata).toEqual({
+      schemaVersion: 1,
+      version: 3,
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+      updatedBy: "client-123",
+    });
+
+    expect(call.data.transactions).toHaveLength(1);
+    expect(call.data.transactions[0]).toMatchObject({
+      id: "transaction-1",
+      createdAt: transaction.createdAt,
+      isDeleted: false,
+      direction: "in",
+      amount: 75,
+      accountId: account.id,
+      description: "Updated description",
+      datetime: new Date("2026-08-15T12:30").toISOString(),
+      attachmentIds: ["attachment-1"],
+      isActual: false,
+    });
+
+    expect(call.data.transactions[0].updatedAt).not.toBe(
+      transaction.updatedAt,
+    );
   });
 });
