@@ -110,8 +110,8 @@
 
         <tbody>
           <tr v-for="item in paginatedData" :key="String(item.id)" 
-            @click="setRowSelection(item.id, !selectedRowIdSet.has(String(item.id)))"
-            :class="{ selected: selectedRowIdSet.has(String(item.id)) }"
+            @click="setRowSelection(item.id as string, !selectedRowIdSet.has(item.id as string))"
+            :class="{ selected: selectedRowIdSet.has(item.id as string) }"
           >
             <td v-if="selectRowCheckbox && !singleRowSelection"
               :style="{ width: selectColumnWidthPx, minWidth: selectColumnWidthPx }"
@@ -120,8 +120,8 @@
               <div class="tw-flex tw-items-center tw-justify-center">
                 <input
                   type="checkbox"
-                  :checked="rowIsSelected(item.id)"
-                  @change="setRowSelection(item.id, ($event.target as HTMLInputElement).checked)"
+                  :checked="rowIsSelected(item.id as string)"
+                  @change="setRowSelection(item.id as string, ($event.target as HTMLInputElement).checked)"
                 />
               </div>
             </td>
@@ -236,10 +236,10 @@ type BulkActionPayload = {
   selectedItems: DatagridRow[];
 };
 
-type RowId = DatagridRow['id'];
+type RowId = string; // DatagridRow['id'];
 
 const emit = defineEmits<{
-  bulkAction: [action: DatagridBulkAction, items: DatagridRow[]];
+  bulkAction: [payload: BulkActionPayload];
   selectionChange: [ids: string[]];
 }>();
 
@@ -512,7 +512,7 @@ const selectedRowIdSet = ref<Set<RowId>>(new Set<RowId>());
 const selectedBulkActionKey = ref<string>('');
 const refSelectAllCheckbox = ref<HTMLInputElement | null>(null);
 
-const paginatedRowIds = computed<RowId[]>(() => paginatedData.value.map(x => x.id));
+const paginatedRowIds = computed<RowId[]>(() => paginatedData.value.map(x => x.id as string));
 const paginatedRowIdKey = computed(() => paginatedRowIds.value.join('|'));
 
 const selectedCountOnPage = computed(() =>
@@ -541,14 +541,14 @@ watch([headerCheckboxIsIndeterminate, paginatedRowIdKey], () => {
 
 const rowIsSelected = (id: RowId): boolean => selectedRowIdSet.value.has(id);
 
-const setRowSelection = (id: string, checked: boolean): void => {
+const setRowSelection = (id: RowId, checked: boolean): void => {
   const next = props.singleRowSelection
     ? selectedRowIdSet.value.has(id)
-      ? new Set<string>()
-      : new Set<string>([id])
+      ? new Set<RowId>()
+      : new Set<RowId>([id])
     : checked
-      ? new Set<string>([...selectedRowIdSet.value, id])
-      : new Set<string>([...selectedRowIdSet.value].filter(x => x !== id));
+      ? new Set<RowId>([...selectedRowIdSet.value, id])
+      : new Set<RowId>([...selectedRowIdSet.value].filter(x => x !== id));
 
   selectedRowIdSet.value = next;
   emit("selectionChange", [...next]);
@@ -559,7 +559,7 @@ const toggleAllRowsOnPage = (checked: boolean) => {
 };
 
 const selectedItemsOnPage = computed(() =>
-  paginatedData.value.filter(x => selectedRowIdSet.value.has(x.id))
+  paginatedData.value.filter(x => selectedRowIdSet.value.has(x.id as string))
 );
 
 const bulkActionSelectOptions = computed(() => {
