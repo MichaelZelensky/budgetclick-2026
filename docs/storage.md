@@ -2,210 +2,73 @@
 
 ## Design Principles
 
-Storage follows these principles:
-
-- Every user data object is encrypted.
-- Every object is independently versioned.
-- Storage is considered untrusted.
-- Storage contains no plaintext user data except the salt.
-- Storage objects are independent whenever possible.
+Every user data object is encrypted and independently versioned. Storage is untrusted and holds no plaintext except the salt. Objects remain independent whenever possible.
 
 # Storage Configuration
 
-BudgetClick supports local and remote storage. The storage type is controlled by enviroment variables. The storage path is stored in the user settings.
-
-## Local Storage
-
-Local storage is used during development and for offline operation. No remote storage is required.
+BudgetClick supports local storage (dev/offline) and remote S3-compatible storage, selected by environment variable; the storage path lives in user settings.
 
 ## S3 Storage
 
-Remote storage uses an S3-compatible object store. The user provides a storage path in the application settings.
-
-Example:
-
-```
-https://budgetclick-user-example.s3.us-east-1.amazonaws.com/
-```
-
-The storage path identifies the user's S3 bucket and acts as the access capability.
-
-The storage path is:
-
-- configured entirely by the user
-- not controlled by BudgetClick
-- not stored by BudgetClick on a server
-- sent with each remote storage request
-- treated as sensitive configuration
-
-The user is responsible for creating and configuring the S3 bucket.
-
-The configured storage location must allow:
-
-- reading objects
-- writing objects
-- listing objects
-
-BudgetClick does not use AWS credentials.
+The user provides a storage path, e.g. `https://budgetclick-user-example.s3.us-east-1.amazonaws.com/`. This path is the access capability: fully user-configured, never stored or controlled by BudgetClick, sent with every request, and treated as sensitive. The user is responsible for creating/configuring a bucket that allows read, write, and list. BudgetClick uses no AWS credentials.
 
 ## Remote Storage Proxy
 
-Browser clients do not access S3 directly.
-
-Remote storage requests are sent through the storage proxy hosted by `liteed.com`.
+Browsers don't talk to S3 directly; requests go through a proxy hosted at `liteed.com`:
 
 ```
-BudgetClick PWA
-      |
-      | storage path + operation
-      v
-Storage Proxy
-      |
-      | S3 request
-      v
-User's S3 Bucket
+BudgetClick PWA → (storage path + operation) → Storage Proxy → User's S3 Bucket
 ```
 
-The proxy:
+The proxy validates and parses the user-provided path as a supported S3 location before making the S3 request — it must never act as an arbitrary URL proxy — and it doesn't own, store, or become the source of truth for the data. Its purpose is avoiding browser-to-S3 CORS issues and isolating S3 protocol details from the PWA.
 
-- receives the user-provided storage path with each request
-- accepts only supported S3-compatible storage paths
-- performs the requested storage operation
-- does not own or manage the user's storage
-- does not store the user's storage configuration
-- does not become the source of truth for application data
+# S3 Setup (AWS example)
 
-The proxy must never operate as an arbitrary URL proxy. User-provided paths must be parsed and validated as supported S3 storage locations before an S3 request is made.
-
-The proxy exists primarily to avoid browser-to-S3 CORS requirements and to isolate S3 protocol details from the PWA.
-
-# S3 Setup
-
-The following example uses AWS S3.
-
-The user creates a bucket that is dedicated to BudgetClick. The bucket URL itself acts as the storage capability.
-
-## 1. Create the Bucket
-
-Choose a unique bucket name.
-
-Example:
-
+**1. Create the bucket**
 ```bash
 AWS_REGION=us-east-1
 BUCKET_NAME=budgetclick-user-example
 
-aws s3api create-bucket \
-  --bucket "$BUCKET_NAME" \
-  --region "$AWS_REGION"
-```
-
-For regions other than `us-east-1`, specify the location constraint:
-
-```bash
-aws s3api create-bucket \
-  --bucket "$BUCKET_NAME" \
-  --region "$AWS_REGION" \
+aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION"
+# other regions:
+aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION" \
   --create-bucket-configuration LocationConstraint="$AWS_REGION"
 ```
+Resulting path: `https://BUCKET_NAME.s3.us-east-1.amazonaws.com/`
 
-The resulting storage path is:
-
-```
-https://BUCKET_NAME.s3.us-east-1.amazonaws.com/
-```
-
-## 2. Disable Public Access Blocking
-
-Because the bucket intentionally uses public anonymous access, S3 Block Public Access must allow the bucket policy.
-
-For this bucket:
-
+**2. Disable public access blocking** (bucket relies on public policy access; ACLs stay disabled)
 ```bash
-aws s3api put-public-access-block \
-  --bucket "$BUCKET_NAME" \
+aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
   --public-access-block-configuration \
   BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=false,RestrictPublicBuckets=false
 ```
 
-ACLs remain disabled. Public access is granted exclusively through the bucket policy.
-
-## 3. Configure the Bucket Policy
-
-The bucket policy grants anonymous access to the entire dedicated BudgetClick bucket.
-
+**3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket` only:
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Sid": "BudgetClickPublicReadWrite",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject"
-      ],
-      "Resource": "arn:aws:s3:::BUCKET_NAME/*"
-    },
-    {
-      "Sid": "BudgetClickPublicList",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:ListBucket",
-      "Resource": "arn:aws:s3:::BUCKET_NAME"
-    }
+    { "Sid": "BudgetClickPublicReadWrite", "Effect": "Allow", "Principal": "*",
+      "Action": ["s3:GetObject", "s3:PutObject"], "Resource": "arn:aws:s3:::BUCKET_NAME/*" },
+    { "Sid": "BudgetClickPublicList", "Effect": "Allow", "Principal": "*",
+      "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::BUCKET_NAME" }
   ]
 }
 ```
+No delete, bucket configuration, or IAM access is granted.
 
-Replace `BUCKET_NAME` with the actual bucket name.
+**4. No delete permission** — `s3:DeleteObject` is intentionally omitted; deletion is represented by application-level tombstones, limiting damage if the path leaks.
 
-The policy grants:
-
-- anonymous `GetObject`
-- anonymous `PutObject`
-- anonymous `ListBucket`
-
-It does not grant:
-
-- bucket deletion
-- object deletion
-- bucket configuration changes
-- IAM access
-
-## 4. Do Not Grant Delete Permission
-
-The MVP should not grant `s3:DeleteObject`.
-
-Object deletion is not required for the initial storage contract. Logical deletion is represented by application-level tombstones.
-
-This also reduces the damage possible if the storage path is disclosed.
-
-## 5. Test the Storage Location
-
-1. Save `manifest` encrypted data file in the bucket
-2. Save `salt` in the bucket
-3. Test the storage:
-
-  - GET:
-
+**5. Test**
 ```
-curl -i \
-  "https://liteed.com/budgetclick-storage/get" \
+curl -i "https://liteed.com/budgetclick-storage/get" \
   -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/" \
   -H "X-Storage-Key: manifest"
-```
 
-  - POST:
-
-```
-curl -i -X POST \
-  "https://liteed.com/budgetclick-storage/put" \
+curl -i -X POST "https://liteed.com/budgetclick-storage/put" \
   -H "Content-Type: application/octet-stream" \
   -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: test.txt" \
-  --data-binary 'hello111'
+  -H "X-Storage-Key: test.txt" --data-binary 'hello111'
 ```
 
 # Storage Layout
@@ -214,7 +77,6 @@ curl -i -X POST \
 bucket/
   manifest
   salt
-
   A/
     A1bC9xY2
   B/
@@ -222,165 +84,38 @@ bucket/
   ...
 ```
 
-The `manifest` and `salt` are the only objects with fixed names.
+`manifest` and `salt` are the only fixed-name objects (manifest encrypted, salt plaintext). All other objects use a random 8-character key, sharded by its first character.
 
-The manifest is encrypted.
-
-The salt is stored unencrypted and is not secret.
-
-All other objects use a stable, randomly generated 8-character object key.
-
-Objects are stored under a shard determined by the first character of the object key.
-
-# Storage Object Lifecycle
-
-Every encrypted storage object follows the same lifecycle.
+# Object Lifecycle
 
 ```
-Storage Object
-
-↓
-
-Serialize
-
-↓
-
-Encrypt
-
-↓
-
-Upload
-
-↓
-
-Download
-
-↓
-
-Decrypt
-
-↓
-
-Deserialize
+Serialize → Encrypt → Upload → Download → Decrypt → Deserialize
 ```
 
-The storage layer never operates on decrypted data.
-
-The salt is not encrypted because it is required to initialize encryption.
+The storage layer only ever handles encrypted data. The salt is unencrypted because it's needed to initialize encryption.
 
 # Storage Objects
 
-## Salt
+- **Salt:** random value for key derivation; fixed name `salt`; unencrypted, not secret; must not change for the life of the key.
+- **Manifest:** entry point into storage — schema version, manifest version, reference/chunk object locations, attachment root. Encrypted like all other objects.
+- **Reference objects:** relatively static data (accounts, categories, contractors), synced independently of transactions.
+- **Monthly chunks:** primary sync unit; each holds metadata + transaction records. The month comes from the manifest entry, not duplicated in the chunk.
+- **Attachments:** independent encrypted objects, referenced directly by transaction records via their object key.
 
-The salt is a random value used to derive the encryption key from the user's passphrase.
+# Metadata & Versioning
 
-The salt:
-
-- is generated when encryption is initialized
-- is stored as the fixed-name `salt` object
-- is stored unencrypted
-- is not secret
-- must remain unchanged for the lifetime of the encryption key
-
-## Manifest
-
-The manifest is the entry point into storage.
-
-It contains:
-
-- schema version
-- manifest version
-- reference object locations
-- monthly chunk locations
-- attachment root
-
-The manifest is encrypted like every other user data object.
-
-## Reference Objects
-
-Reference objects store relatively static data.
-
-Examples:
-
-- accounts
-- categories
-- contractors
-
-Reference objects are synchronized independently from transaction data.
-
-## Monthly Chunks
-
-Monthly chunks are the primary synchronization unit.
-
-Each chunk contains:
-
-- metadata
-- transaction records
-
-The month is determined by the manifest entry and is not duplicated inside the chunk.
-
-## Attachments
-
-Attachments are stored as independent encrypted objects.
-
-Attachment object keys are referenced directly by transaction records.
-
-# Storage Metadata
-
-Every storage object except the manifest and salt contains the same metadata.
-
-Metadata includes:
-
-- schemaVersion
-- version
-- createdAt
-- updatedAt
-- updatedBy
-
-# Object Versioning
-
-Every storage object has an independent version.
-
-The version is incremented whenever the object changes.
-
-Object versions are used for synchronization and conflict detection.
+Every object except manifest and salt carries `schemaVersion`, `version`, `createdAt`, `updatedAt`, `updatedBy`. Version increments on every change and drives sync/conflict detection.
 
 # Object Independence
 
-Storage objects should remain independent.
-
-Changing one object should not require rewriting unrelated objects.
-
-Examples:
-
-- changing categories does not rewrite monthly chunks
-- changing a chunk does not rewrite reference objects
-- uploading an attachment does not modify other attachments
+Changing one object shouldn't require rewriting unrelated ones — e.g. editing categories doesn't rewrite chunks, editing a chunk doesn't rewrite reference objects, uploading an attachment doesn't touch others.
 
 # Security Considerations
 
-The storage path is a bearer credential.
+The storage path is a bearer credential — anyone holding it can access the bucket per its public policy. Accordingly: dedicate the bucket to BudgetClick, don't treat the name as secret but avoid publishing the full path unnecessarily, and never send it to analytics, logs, or third parties other than the configured proxy.
 
-Anyone possessing the storage path can access the bucket according to its public policy.
-
-Therefore:
-
-- the bucket should be dedicated to BudgetClick
-- the bucket name should not be treated as secret
-- the complete storage path should not be published unnecessarily
-- the storage path must not be included in application analytics or logs
-- the storage path must not be sent to third-party services except the configured storage proxy
-
-The salt is not secret and may be publicly readable.
-
-All application data stored in S3 remains encrypted before upload. Public S3 access therefore exposes encrypted application objects rather than plaintext financial data.
-
-An attacker with write access can replace encrypted objects. Object authentication must detect tampering during decryption.
-
-Security:
-
-- storage uses public S3 bucket, an attacker can write anything to it.
+The salt may be public. All stored application data is encrypted, so public S3 access exposes only encrypted objects, not plaintext finances. An attacker with write access can overwrite objects — object authentication must detect this tampering on decryption.
 
 # Future Compatibility
 
-New functionality should introduce new storage object types whenever possible rather than extending existing ones.
+New functionality should introduce new storage object types rather than extending existing ones.

@@ -2,72 +2,21 @@
 
 # Design Principles
 
-The data model follows these principles:
-
-- Keep entities small and focused.
-- Keep financial events independent from financial objects.
-- Avoid premature abstraction.
-- Design for future compatibility.
-- Prefer new entities over extending existing ones.
-- Define persisted schemas only in `client/types/`.
+Small, focused entities; financial events kept independent from financial objects; avoid premature abstraction; prefer new entities over extending existing ones; persisted schemas live only in `client/types/`.
 
 # Schema Versioning
 
-Every persisted object contains a schema version.
-
-Schema versions are used by both local and remote migrations.
-
-# Entity Types
-
-Persisted entity schemas are defined in:
-
-```
-client/types/
-```
+Every persisted object carries a schema version, used by local and remote migrations.
 
 # Relationships
 
-Transaction
-
-- belongs to one Account
-- belongs to one Category
-- optionally belongs to one Contractor
-- may reference multiple Attachments
-
-Account
-
-- owns many Transactions
-
-Category
-
-- referenced by many Transactions
-
-Contractor
-
-- referenced by many Transactions
+- **Transaction:** belongs to one Account and one Category, optionally one Contractor, may reference multiple Attachments.
+- **Account:** owns many Transactions.
+- **Category / Contractor:** referenced by many Transactions.
 
 # Identifier Strategy
 
-Identifier format:
-
-```
-<type>_<8 character id>
-```
-
-Examples:
-
-```
-t_Ak39LmP2
-a_Qw82NdXa
-c_Fd91LpRt
-k_Xy82LmQa
-```
-
-Rules:
-
-- Separate namespace per entity.
-- Random generation.
-- Local collision detection.
+Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local collision detection, one namespace per entity.
 
 ## Type Prefixes
 
@@ -80,58 +29,16 @@ Rules:
 | Attachment | `f_` | `f_Mn73BxKe` |
 | Recurrence *(future)* | `r_` | `r_Cv62NdQa` |
 
-Rules:
-
-- Prefixes are globally unique.
-- Prefixes never change once assigned.
-- Every persisted entity type has its own namespace.
-- Future entity types must receive a unique prefix.
+Prefixes are globally unique, permanent, and every future entity type gets its own.
 
 # Lifecycle
 
-Entity lifecycle:
-
-```
-Create
-
-↓
-
-Update
-
-↓
-
-Delete (Tombstone)
-
-↓
-
-Physical removal (future)
-```
-
-The MVP uses soft deletion.
-
-Deleted entities remain available for synchronization until all clients have processed the deletion.
+`Create → Update → Delete (Tombstone) → Physical removal (future)`. MVP uses soft deletion; tombstones remain until all clients have processed the deletion.
 
 # Future Compatibility
 
-The schema should support future entities without redesigning existing ones.
-
-Expected future entities include:
-
-- Assets
-- Liabilities
-- Investments
-- Exchange Rates
-- Bank Connections
-- Secrets
-- Recurrences
-
-Future functionality should be introduced through new entities whenever possible.
+Schema must support new entities without redesigning existing ones: assets, liabilities, investments, exchange rates, bank connections, secrets, recurrences — introduced as new entities whenever possible.
 
 # Open Decisions
 
-The following topics remain intentionally open:
-
-- Attachment metadata
-- Asset model
-- Investment model
-- Bank integration model
+Attachment metadata, asset model, investment model, bank integration model.

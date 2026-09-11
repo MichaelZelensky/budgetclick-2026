@@ -1,8 +1,6 @@
 # BudgetClick Storage Lambdas
 
-AWS Lambda functions used as the storage proxy between the BudgetClick PWA and user-owned S3 storage.
-
-The Lambda does not own or authenticate against user storage. User S3 storage is configured by the user and must allow the required public operations.
+AWS Lambda functions proxying between the BudgetClick PWA and user-owned S3 storage. The Lambda doesn't own or authenticate user storage — the user's S3 bucket must allow the required public operations.
 
 ## Files
 
@@ -12,127 +10,42 @@ server/
   get.ts
 ```
 
-Each Lambda exports:
+Handlers: `put.handler`, `get.handler`.
 
-```text
-handler
-```
+## Local Development
 
-AWS Lambda handler names:
-
-```text
-put.handler
-get.handler
-```
-
-## Local development
-
-The Lambdas do not require a local server.
-
-Local development uses the local storage implementation. The Lambda functions only need to be built when testing or deploying the AWS integration.
+No local server needed — local dev uses the local storage implementation. Lambdas are only built for testing/deploying the AWS integration.
 
 ## Build
 
-Run the VS Code task:
+Run the VS Code task `[Dev] Build Server Lambdas` (runs `build-server` from root `package.json`). Output: `server/dist/`, uploaded to AWS Lambda manually.
 
-```text
-[Dev] Build Server Lambdas
-```
+## AWS Lambda Setup
 
-This runs the `build-server` script from the root `package.json`.
+Create `budgetclick-storage-put` and `budgetclick-storage-get` on a current Node.js runtime, handlers `put.handler`/`get.handler`, using the matching compiled file from `server/dist/`. No AWS credentials are needed to access user storage.
 
-Compiled files are written to:
+## User S3 Storage
 
-```text
-server/dist/
-```
-
-The generated JavaScript files are uploaded to AWS Lambda manually.
-
-## AWS Lambda setup
-
-Create three Lambda functions:
-
-```text
-budgetclick-storage-put
-budgetclick-storage-get
-```
-
-Use a current Node.js Lambda runtime.
-
-Set the handlers to:
-
-```text
-put.handler
-get.handler
-```
-
-Upload the corresponding compiled JavaScript file from `server/dist/`.
-
-The Lambda does not need AWS credentials to access user storage.
-
-## User S3 storage
-
-Each user supplies a public S3 storage path through BudgetClick settings.
-
-The bucket must allow public:
-
-* `GET`
-* `PUT`
-
-The storage path identifies the user's bucket. There is no BudgetClick-controlled prefix.
-
-The Lambda receives the storage path with every request and operates on that location.
-
-The Lambda must not assume a fixed bucket, account, or storage prefix.
+Each user supplies a public S3 path via BudgetClick settings; the bucket must allow public `GET`/`PUT`. There's no BudgetClick-controlled prefix — the Lambda receives the storage path with every request and must not assume a fixed bucket, account, or prefix.
 
 ## API
 
-### PUT
-
-Request:
-
+**PUT**
 ```json
-{
-  "storagePath": "https://example-bucket.s3.us-east-1.amazonaws.com/",
-  "key": "manifest",
-  "body": "...",
-  "contentType": "application/octet-stream"
-}
+{ "storagePath": "https://example-bucket.s3.us-east-1.amazonaws.com/", "key": "manifest", "body": "...", "contentType": "application/octet-stream" }
 ```
 
-### GET
-
-Request:
-
+**GET**
 ```json
-{
-  "storagePath": "https://example-bucket.s3.us-east-1.amazonaws.com/",
-  "key": "manifest"
-}
+{ "storagePath": "https://example-bucket.s3.us-east-1.amazonaws.com/", "key": "manifest" }
 ```
 
-The response body is base64 encoded.
+Response body is base64-encoded.
 
 ## Deployment
 
-Deployment is currently manual:
-
-1. Run `[Dev] Build Server Lambdas`.
-2. Open AWS Lambda.
-3. Open the corresponding Lambda function.
-4. Upload the compiled JavaScript.
-5. Update/publish the function.
-6. Test it with a user S3 bucket.
-
-Deployment automation can be added once the storage API is stable.
+Manual: build → open the Lambda in AWS Console → upload compiled JS → publish → test against a user S3 bucket. Automation can be added once the storage API is stable.
 
 ## Security
 
-The storage path is user-controlled.
-
-The Lambda must validate the requested storage location and object key before performing any operation.
-
-User storage is considered untrusted.
-
-BudgetClick data is encrypted before it is stored remotely.
+The storage path is user-controlled and untrusted; the Lambda must validate the requested location and key before any operation. BudgetClick data is encrypted before it's stored remotely.

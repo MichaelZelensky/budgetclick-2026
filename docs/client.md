@@ -2,31 +2,7 @@
 
 # Design Principles
 
-- Modular.
-- Feature-oriented.
-- Offline-first.
-- Vue.js application.
-- Shared business logic.
-- Clear layer boundaries.
-
-# Directory Structure
-
-```text
-client/
-  cache/
-  components/
-  data/
-  encryption/
-  migrations/
-  server/
-  settings/
-  state/
-  storage/
-  sync/
-  tests/
-  types/
-  views/
-```
+Modular, feature-oriented, offline-first Vue.js application with shared business logic and clear layer boundaries.
 
 # Module Responsibilities
 
@@ -49,18 +25,13 @@ client/
 # Layered Architecture
 
 ```text
-Views
-    │
-Components
-    │
-State
-    │
-Data
-    │
-+-------------+-------------+
-│             │             │
-Cache      Storage       Sync
-                │
-          Encryption
-                │
-     IndexedDB / S3
+Views → Components → State → Data
+                                │
+                 ┌──────────────┼──────────────┐
+                 ▼              ▼              ▼
+              Cache          Storage          Sync
+                                │
+                           Encryption
+                                │
+                        IndexedDB / S3
+```
