@@ -184,13 +184,12 @@ Scope:
 - ✅Contractors
 - Refine the transaction explorer views
   - transaction widget:
-   - income / expense
-   - planned / actual
-   - edit a record
+   - ✅income / expense
+   - ✅planned / actual
+   - ✅edit a record
   - list of transactions
    - infinite scrolling ("load more" button)
    - date selection
-   - filter widget
    - balance after transaction
 - Monthly statistics
 - Basic offline workflow
@@ -216,6 +215,26 @@ Expected outcome:
 
 Goal:
 
+Improve productivity features.
+
+Activities:
+
+- Recurrence engine
+- Planned transaction improvements
+- Search
+- Filtering (widget)
+- Reporting improvements
+- attachments
+- import / export
+
+Expected outcome:
+
+- More automated personal finance management.
+
+## Phase 4 - Iteration 2
+
+Goal:
+
 Improve usability and reliability.
 
 Activities:
@@ -233,24 +252,6 @@ Activities:
 Expected outcome:
 
 - Stable daily-use version.
-
-## Phase 4 - Iteration 2
-
-Goal:
-
-Improve productivity features.
-
-Activities:
-
-- Recurrence engine
-- Planned transaction improvements
-- Better search
-- Better filtering
-- Reporting improvements
-
-Expected outcome:
-
-- More automated personal finance management.
 
 ## Phase 5 - Iteration 3
 
