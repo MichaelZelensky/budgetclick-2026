@@ -35,3 +35,13 @@ Views → Components → State → Data
                                 │
                         IndexedDB / S3
 ```
+
+## Derived Data
+
+Derived data is calculated from primary transaction and reference data and is persisted separately when useful:
+
+- Statistics are generated and rebuilt on demand.
+- Account balances are maintained as derived monthly ending balances.
+- Search and filtering operate on cached transaction chunks. Historical chunks are downloaded when required.
+
+Derived data does not replace the underlying transaction data and can be regenerated.

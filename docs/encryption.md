@@ -10,7 +10,7 @@ The storage provider can read, copy, delete, replace objects and see sizes/times
 
 # Encryption Scope
 
-Encrypted: manifest, reference data, monthly chunks, statistics, attachments. Nothing is stored unencrypted except the salt.
+Encrypted: manifest, reference data, monthly chunks, statistics, balances, attachments. Nothing is stored unencrypted except the salt.
 
 # Key Derivation
 

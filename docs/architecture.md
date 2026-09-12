@@ -19,6 +19,16 @@ IndexedDB   S3 Storage
 (local)     (sync source)
 ```
 
+## Derived Data
+
+BudgetClick maintains derived data separately from primary financial data:
+
+- Statistics: aggregated financial statistics generated on demand and persisted as a versioned storage object.
+- Balances: per-account ending balances by month, persisted as a versioned storage object.
+- Search/filter: performed against locally cached transaction chunks. If required historical chunks are not cached, they are downloaded and then reused locally.
+
+Derived data can be regenerated from transaction data and is not authoritative financial data.
+
 # Technology Stack
 
 - **Frontend:** Vue.js, TypeScript, PWA, browser APIs only.
@@ -39,7 +49,7 @@ Independent version numbers: schema, manifest, storage, migration, encryption.
 
 # Local Database
 
-Holds decrypted working data, sync queue, change log, indexes, and cached statistics.
+Holds decrypted working data, derived data, sync state, and cached transaction chunks.
 
 # Testing Strategy
 
@@ -64,4 +74,4 @@ Design must not block: asset tracking, net worth, banking/third-party integratio
 
 # Future Improvements
 
-Private storage mode, better conflict resolution, version history, backup snapshots, multi-user support, storage version history, key rotation.
+Private storage mode, better conflict resolution, version history, backup snapshots, multi-user support, storage version history, key rotation, search indexes for large transaction histories.

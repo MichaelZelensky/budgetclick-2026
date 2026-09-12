@@ -14,6 +14,41 @@ Every persisted object carries a schema version, used by local and remote migrat
 - **Account:** owns many Transactions.
 - **Category / Contractor:** referenced by many Transactions.
 
+# Derived Data
+
+Derived data is stored separately from primary entities and can be regenerated from transactions and reference data.
+
+## Statistics
+
+Statistics contain aggregated financial values:
+
+- total income
+- total outcome
+- ending total balance
+- the same values by account
+
+Statistics are generated on demand. Initial generation downloads the transaction chunks required to calculate the complete result. After a transaction changes, statistics are recalculated from the affected point forward rather than downloading all chunks again.
+
+Statistics are not authoritative financial data.
+
+## Account Balances
+
+Account balances are derived from the account starting balance and transaction history.
+
+Balances are stored separately by month and account as ending balances. A balance entry represents the account's ending balance after the transactions in that month.
+
+When a transaction changes, the affected month's balance is recalculated and the resulting balance delta is propagated through subsequent monthly balance entries. Future transaction chunks do not need to be downloaded because their existing ending balances provide the values needed for propagation.
+
+The account's starting balance remains part of the Account data. Monthly balances are derived checkpoints.
+
+## Search and Filtering
+
+Search and filtering initially operate directly on transaction chunks.
+
+If the required historical chunks are not cached locally, all transaction chunks are downloaded and cached before performing a historical search or filter. No separate search index is maintained in the MVP.
+
+A search index may be introduced later if transaction history becomes large enough to make full historical downloads impractical.
+
 # Identifier Strategy
 
 Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local collision detection, one namespace per entity.
