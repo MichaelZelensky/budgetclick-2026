@@ -1,6 +1,3 @@
-/**
- * Represents a month in the format 'YYYY-MM'
- */
 export type Month = string;
 
 export type Manifest = {
@@ -11,13 +8,14 @@ export type Manifest = {
   updatedBy: string;
   references: ManifestReferences;
   chunks: Record<Month, ManifestEntry>;
+  statistics: ManifestEntry;
   attachments: ManifestAttachments;
   migration: {
     version: number;
     state: "idle" | "running";
     startedAt?: string;
     startedBy?: string;
-  }
+  };
 };
 
 export type ManifestEntry = {

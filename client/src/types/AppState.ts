@@ -5,6 +5,7 @@ import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
+import { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 
 export type AppState = {
   config: Readonly<Config> | null;
@@ -16,6 +17,7 @@ export type AppState = {
     contractors: ContractorsStorage | null;
   };
   chunks: Record<string, ChunkStorage>;
+  statistics: StatisticsStorage | null;
 };
 
 export enum ReferenceDataKey {

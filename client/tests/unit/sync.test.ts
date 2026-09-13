@@ -1,10 +1,9 @@
-// client/tests/unit/sync.test.ts
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dbGetAccounts, dbSaveAccounts } from "@/repository/account";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
+import { dbGetStatistics, dbSaveStatistics } from "@/repository/statistics";
 import { getManifest } from "@/manifest";
 import { getFile } from "@/storage";
 import { getState, initializeState } from "@/state/state";
@@ -31,6 +30,11 @@ vi.mock("@/repository/transaction", () => ({
   dbSaveChunk: vi.fn(),
 }));
 
+vi.mock("@/repository/statistics", () => ({
+  dbGetStatistics: vi.fn(),
+  dbSaveStatistics: vi.fn(),
+}));
+
 vi.mock("@/manifest", () => ({
   getManifest: vi.fn(),
 }));
@@ -55,6 +59,10 @@ vi.mock("@/validators/default/ChunkStorage.js", () => ({
   default: vi.fn(() => true),
 }));
 
+vi.mock("@/validators/default/StatisticsStorage.js", () => ({
+  default: vi.fn(() => true),
+}));
+
 const mockedDbGetAccounts = vi.mocked(dbGetAccounts);
 const mockedDbSaveAccounts = vi.mocked(dbSaveAccounts);
 const mockedDbGetCategories = vi.mocked(dbGetCategories);
@@ -63,6 +71,8 @@ const mockedDbGetContractors = vi.mocked(dbGetContractors);
 const mockedDbSaveContractors = vi.mocked(dbSaveContractors);
 const mockedDbGetChunks = vi.mocked(dbGetChunks);
 const mockedDbSaveChunk = vi.mocked(dbSaveChunk);
+const mockedDbGetStatistics = vi.mocked(dbGetStatistics);
+const mockedDbSaveStatistics = vi.mocked(dbSaveStatistics);
 const mockedGetManifest = vi.mocked(getManifest);
 const mockedGetFile = vi.mocked(getFile);
 
@@ -96,6 +106,10 @@ const createManifest = (): Manifest => ({
       objectKey: "chunk-2026-09",
       version: 2,
     },
+  },
+  statistics: {
+    objectKey: "statistics-key",
+    version: 2,
   },
   attachments: {
     root: "attachments",
@@ -150,6 +164,17 @@ const createChunk = (version: number, transactions = [{}]) => ({
   transactions,
 });
 
+const createStatistics = (version: number) => ({
+  metadata: {
+    schemaVersion: 1,
+    version,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    updatedBy: "client-123",
+  },
+  statistics: {},
+});
+
 const encode = (value: unknown): ArrayBuffer => {
   return new TextEncoder().encode(JSON.stringify(value)).buffer;
 };
@@ -165,12 +190,15 @@ describe("sync", () => {
     mockedDbSaveContractors.mockReset();
     mockedDbGetChunks.mockReset();
     mockedDbSaveChunk.mockReset();
+    mockedDbGetStatistics.mockReset();
+    mockedDbSaveStatistics.mockReset();
     mockedGetManifest.mockReset();
     mockedGetFile.mockReset();
     mockedDbSaveAccounts.mockResolvedValue();
     mockedDbSaveCategories.mockResolvedValue();
     mockedDbSaveContractors.mockResolvedValue();
     mockedDbSaveChunk.mockResolvedValue();
+    mockedDbSaveStatistics.mockResolvedValue();
   });
 
   describe("importRemoteData", () => {
@@ -218,6 +246,7 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const chunk = createChunk(2);
+      const statistics = createStatistics(2);
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(createAccounts(1));
@@ -226,12 +255,14 @@ describe("sync", () => {
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(1),
       });
+      mockedDbGetStatistics.mockResolvedValue(createStatistics(1));
       mockedGetFile.mockImplementation(async key => {
         const values: Record<string, ArrayBuffer> = {
           "accounts-key": encode(accounts),
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "chunk-2026-09": encode(chunk),
+          "statistics-key": encode(statistics),
         };
         return values[key];
       });
@@ -243,11 +274,13 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
-      expect(mockedGetFile).toHaveBeenCalledTimes(4);
+      expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
+      expect(mockedGetFile).toHaveBeenCalledTimes(5);
       expect(getState().referenceData.accounts).toStrictEqual(accounts);
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
       expect(getState().chunks["2026-09"]).toStrictEqual(chunk);
+      expect(getState().statistics).toStrictEqual(statistics);
     });
 
     it("does not download objects when local versions are current", async () => {
@@ -260,6 +293,7 @@ describe("sync", () => {
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(2),
       });
+      mockedDbGetStatistics.mockResolvedValue(createStatistics(2));
 
       await synchronizeRemoteData();
 
@@ -268,6 +302,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).not.toHaveBeenCalled();
       expect(mockedDbSaveContractors).not.toHaveBeenCalled();
       expect(mockedDbSaveChunk).not.toHaveBeenCalled();
+      expect(mockedDbSaveStatistics).not.toHaveBeenCalled();
     });
 
     it("downloads remote objects when local objects are missing", async () => {
@@ -276,18 +311,21 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const chunk = createChunk(2);
+      const statistics = createStatistics(2);
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(null);
       mockedDbGetCategories.mockResolvedValue(null);
       mockedDbGetContractors.mockResolvedValue(null);
       mockedDbGetChunks.mockResolvedValue({});
+      mockedDbGetStatistics.mockResolvedValue(null);
       mockedGetFile.mockImplementation(async key => {
         const values: Record<string, ArrayBuffer> = {
           "accounts-key": encode(accounts),
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "chunk-2026-09": encode(chunk),
+          "statistics-key": encode(statistics),
         };
         return values[key];
       });
@@ -298,6 +336,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
+      expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
     });
 
     it("rejects a remote object when its metadata version does not match the manifest", async () => {
@@ -310,6 +349,7 @@ describe("sync", () => {
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(2),
       });
+      mockedDbGetStatistics.mockResolvedValue(createStatistics(2));
       mockedGetFile.mockResolvedValue(encode(createAccounts(1)));
 
       await expect(synchronizeRemoteData()).rejects.toThrow(

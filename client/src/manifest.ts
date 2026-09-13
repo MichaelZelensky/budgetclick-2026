@@ -24,7 +24,7 @@ const encodeManifest = (manifest: Manifest): Uint8Array => {
   return new TextEncoder().encode(JSON.stringify(manifest));
 };
 
-const generateObjectKey = (): string => {
+export const generateObjectKey = (): string => {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 };
 
@@ -52,6 +52,10 @@ export const createManifest = (clientId: string): Manifest => {
       },
     },
     chunks: {},
+    statistics: { 
+      objectKey: generateObjectKey(), 
+      version: 0
+    },
     attachments: {
       root: generateObjectKey(),
     },

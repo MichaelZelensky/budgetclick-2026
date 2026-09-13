@@ -24,6 +24,7 @@ describe("state", () => {
         contractors: null,
       },
       chunks: {},
+      statistics: null,
     });
   });
 
@@ -123,6 +124,7 @@ describe("state", () => {
         contractors: null,
       },
       chunks: {},
+      statistics: null,
     });
   });
 });

@@ -4,7 +4,7 @@ import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
 import { getManifest } from "@/manifest";
 import { getFile } from "@/storage";
-import { updateChunksState, updateReferenceDataState } from "@/state/state";
+import { updateChunksState, updateReferenceDataState, updateState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
@@ -15,6 +15,9 @@ import validateAccountsStorage from "@/validators/default/AccountsStorage.js";
 import validateCategoriesStorage from "@/validators/default/CategoriesStorage.js";
 import validateContractorsStorage from "@/validators/default/ContractorsStorage.js";
 import validateChunkStorage from "@/validators/default/ChunkStorage.js";
+import validateStatisticsStorage from "@/validators/default/StatisticsStorage.js";
+import { dbGetStatistics, dbSaveStatistics } from "@/repository/statistics";
+import { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 
 const decodeData = (body: ArrayBuffer): unknown => {
   return JSON.parse(new TextDecoder().decode(body));
@@ -189,10 +192,57 @@ const synchronizeChunks = async (manifest: Manifest): Promise<void> => {
   }
 };
 
+export const loadAllChunks = async (
+  manifest: Manifest,
+): Promise<Record<string, ChunkStorage>> => {
+  const localChunks = await dbGetChunks();
+  const chunks: Record<string, ChunkStorage> = {};
+  for (const [month, entry] of Object.entries(manifest.chunks)) {
+    if (entry.version === 0) {
+      continue;
+    }
+    const localChunk = localChunks[month];
+    if (localChunk?.metadata.version === entry.version) {
+      chunks[month] = localChunk;
+      continue;
+    }
+    const remoteChunk = await loadRemoteObject<ChunkStorage>(
+      entry,
+      validateChunkStorage,
+      "transaction chunk",
+    );
+    if (remoteChunk === null) {
+      continue;
+    }
+    await dbSaveChunk(month, remoteChunk);
+    updateChunksState(month, remoteChunk);
+    chunks[month] = remoteChunk;
+  }
+  return chunks;
+};
+
 export const synchronizeRemoteData = async (): Promise<void> => {
   const manifest = getManifest();
   await Promise.all([
     synchronizeReferenceData(manifest),
     synchronizeChunks(manifest),
+    synchronizeStatistics(manifest),
   ]);
+};
+
+const synchronizeStatistics = async (manifest: Manifest): Promise<void> => {
+  const localStatistics = await dbGetStatistics();
+  if (manifest.statistics.version <= (localStatistics?.metadata.version ?? 0)) {
+    return;
+  }
+  const remoteStatistics = await loadRemoteObject<StatisticsStorage>(
+    manifest.statistics,
+    validateStatisticsStorage,
+    "statistics",
+  );
+  if (remoteStatistics === null) {
+    return;
+  }
+  await dbSaveStatistics(remoteStatistics);
+  updateState("statistics", remoteStatistics);
 };

@@ -8,6 +8,10 @@ vi.mock("@/state/loading", () => ({
   setLoadingOff: vi.fn(),
 }));
 
+vi.mock("@/migrations/003/migration", () => ({
+  migrate: vi.fn(),
+}));
+
 describe("database", () => {
   beforeEach(() => {
     vi.clearAllMocks();

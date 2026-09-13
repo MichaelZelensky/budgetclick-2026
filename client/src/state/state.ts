@@ -13,6 +13,7 @@ const state = reactive<AppState>({
     contractors: null,
   },
   chunks: {},
+  statistics: null,
 });
 
 export const initializeState = (): void => {
