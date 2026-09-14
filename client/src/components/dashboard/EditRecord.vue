@@ -29,6 +29,14 @@
         </LiteButton>
       </div>
     </div>
+    <Modal
+      v-if="showMonthChangeModal"
+      title="Cannot Change Month"
+      @close="showMonthChangeModal = false"
+      @ok="showMonthChangeModal = false"
+    >
+      Changing the transaction month is not supported.
+    </Modal>
   </DashboardWidget>
 </template>
 
@@ -44,6 +52,7 @@ import { updateStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
+import Modal from "@/components/ui/Modal.vue";
 
 const props = defineProps<{
   transaction: Transaction;
@@ -55,6 +64,7 @@ const accountId = ref<string | undefined>();
 const datetime = ref("");
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
+const showMonthChangeModal = ref(false);
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -106,7 +116,8 @@ const saveRecord = async (): Promise<void> => {
   const updatedMonth = transactionDatetime.toISOString().slice(0, 7);
 
   if (updatedMonth !== month) {
-    throw new Error("Changing the transaction month is not supported");
+    showMonthChangeModal.value = true;
+    return;
   }
 
   const chunk = getState().chunks[month];
