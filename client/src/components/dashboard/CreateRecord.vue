@@ -40,9 +40,10 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { saveChunkData } from "@/data-flow";
+import { updateStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
-import type { TransactionDirection } from "@/types/data/Transaction";
+import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
 
@@ -80,6 +81,19 @@ const saveRecord = async (): Promise<void> => {
   const transactionDatetime = new Date(datetime.value);
   const month = transactionDatetime.toISOString().slice(0, 7);
   const existingChunk = getState().chunks[month];
+  const transaction: Transaction = {
+    id: generateEntityId("t"),
+    createdAt: now,
+    updatedAt: now,
+    isDeleted: false,
+    direction: direction.value,
+    amount: Number(amount.value),
+    accountId: accountId.value,
+    description: description.value.trim(),
+    datetime: transactionDatetime.toISOString(),
+    attachmentIds: [],
+    isActual: isActual.value,
+  };
   const chunk: ChunkStorage = existingChunk ?? {
     metadata: {
       schemaVersion: 1,
@@ -95,24 +109,16 @@ const saveRecord = async (): Promise<void> => {
     key: month,
     data: {
       ...chunk,
-      transactions: [
-        ...chunk.transactions,
-        {
-          id: generateEntityId("t"),
-          createdAt: now,
-          updatedAt: now,
-          isDeleted: false,
-          direction: direction.value,
-          amount: Number(amount.value),
-          accountId: accountId.value,
-          description: description.value.trim(),
-          datetime: transactionDatetime.toISOString(),
-          attachmentIds: [],
-          isActual: isActual.value,
-        },
-      ],
+      transactions: [...chunk.transactions, transaction],
     },
   });
+
+  await updateStatistics(
+    month,
+    transaction.accountId,
+    transaction.direction === "in" ? transaction.amount : 0,
+    transaction.direction === "out" ? transaction.amount : 0,
+  );
 
   description.value = "";
   amount.value = "";

@@ -57,6 +57,117 @@ const calculateMonthlyStatistics = (
   return statistics;
 };
 
+export const updateStatistics = async (
+  month: string,
+  accountId: string,
+  incomeDelta: number,
+  outcomeDelta: number,
+): Promise<void> => {
+  const currentStatistics = getState().statistics;
+  if (currentStatistics === null) {
+    return;
+  }
+
+  const loadingId = setLoadingOn();
+
+  try {
+    const balanceDelta = incomeDelta - outcomeDelta;
+    const statistics = Object.fromEntries(
+      Object.entries(currentStatistics.statistics).map(([statisticsMonth, monthlyStatistics]) => {
+        if (statisticsMonth < month) {
+          return [statisticsMonth, monthlyStatistics];
+        }
+
+        const isCurrentMonth = statisticsMonth === month;
+        const accountStatistics = monthlyStatistics.accounts[accountId];
+
+        if (accountStatistics === undefined) {
+          return [statisticsMonth, monthlyStatistics];
+        }
+
+        return [
+          statisticsMonth,
+          {
+            income: monthlyStatistics.income + (isCurrentMonth ? incomeDelta : 0),
+            outcome: monthlyStatistics.outcome + (isCurrentMonth ? outcomeDelta : 0),
+            balance: monthlyStatistics.balance + balanceDelta,
+            accounts: {
+              ...monthlyStatistics.accounts,
+              [accountId]: {
+                income: accountStatistics.income + (isCurrentMonth ? incomeDelta : 0),
+                outcome: accountStatistics.outcome + (isCurrentMonth ? outcomeDelta : 0),
+                balance: accountStatistics.balance + balanceDelta,
+              },
+            },
+          },
+        ];
+      }),
+    );
+
+    const now = new Date().toISOString();
+    const updatedStatistics: StatisticsStorage = {
+      metadata: {
+        ...currentStatistics.metadata,
+        version: currentStatistics.metadata.version + 1,
+        updatedAt: now,
+        updatedBy: getState().settings?.clientId ?? "-",
+      },
+      statistics,
+    };
+
+    const statisticsData = JSON.parse(JSON.stringify(updatedStatistics)) as StatisticsStorage;
+    const manifest = getManifest();
+
+    await dbSaveStatistics(statisticsData);
+    updateState("statistics", statisticsData);
+    await putFile(manifest.statistics.objectKey, encodeData(statisticsData));
+    await saveManifest({
+      ...manifest,
+      version: manifest.version + 1,
+      updatedAt: now,
+      updatedBy: getState().settings?.clientId ?? "-",
+      statistics: {
+        ...manifest.statistics,
+        version: statisticsData.metadata.version,
+      },
+    });
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+export const updateStatisticsForTransaction = async (
+  previousTransaction: {
+    accountId: string;
+    direction: "in" | "out";
+    amount: number;
+    datetime: string;
+  } | null,
+  transaction: {
+    accountId: string;
+    direction: "in" | "out";
+    amount: number;
+    datetime: string;
+  },
+): Promise<void> => {
+  const month = transaction.datetime.slice(0, 7);
+
+  let incomeDelta = transaction.direction === "in" ? transaction.amount : 0;
+  let outcomeDelta = transaction.direction === "out" ? transaction.amount : 0;
+
+  if (previousTransaction !== null) {
+    incomeDelta -= previousTransaction.direction === "in" ? previousTransaction.amount : 0;
+    outcomeDelta -= previousTransaction.direction === "out" ? previousTransaction.amount : 0;
+  }
+
+  await updateStatistics(
+    month,
+    transaction.accountId,
+    incomeDelta,
+    outcomeDelta,
+  );
+};
+
 export const rebuildStatistics = async (): Promise<void> => {
   const loadingId = setLoadingOn();
   const manifest = getManifest();

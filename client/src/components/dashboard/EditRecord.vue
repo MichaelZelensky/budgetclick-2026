@@ -34,14 +34,13 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
-import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { saveChunkData } from "@/data-flow";
+import { updateStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -138,6 +137,15 @@ const saveRecord = async (): Promise<void> => {
       ),
     },
   });
+
+  await updateStatistics(
+    month,
+    props.transaction.accountId,
+    (updatedTransaction.direction === "in" ? updatedTransaction.amount : 0) -
+      (props.transaction.direction === "in" ? props.transaction.amount : 0),
+    (updatedTransaction.direction === "out" ? updatedTransaction.amount : 0) -
+      (props.transaction.direction === "out" ? props.transaction.amount : 0),
+  );
 };
 </script>
 
