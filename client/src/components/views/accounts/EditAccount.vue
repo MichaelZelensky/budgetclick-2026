@@ -14,7 +14,7 @@
 
     <label>
       Currency
-      <LiteInputField v-model="currency" />
+      <LiteInputField v-model="currency" disabled />
     </label>
 
     <label>
@@ -71,7 +71,6 @@ const save = async () => {
         ...account,
         name: name.value,
         description: description.value,
-        currency: currency.value,
         currentBalance: currentBalance.value,
         updatedAt: new Date().toISOString(),
       } : x),

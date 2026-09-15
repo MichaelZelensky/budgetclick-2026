@@ -16,6 +16,10 @@
       Categories
     </RouterLink>
 
+    <RouterLink to="/rates" @click="close">
+      Rates
+    </RouterLink>
+
     <RouterLink to="/settings" @click="close">
       Settings
     </RouterLink>

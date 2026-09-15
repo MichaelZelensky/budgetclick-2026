@@ -50,6 +50,10 @@ export const createManifest = (clientId: string): Manifest => {
         objectKey: generateObjectKey(),
         version: 0,
       },
+      rates: {
+        objectKey: generateObjectKey(),
+        version: 0,
+      },
     },
     chunks: {},
     statistics: { 

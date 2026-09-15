@@ -1,0 +1,12 @@
+export type CurrencyRate = {
+  from: string;
+  to: string;
+  /**
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  date: string;
+  /**
+   * @exclusiveMinimum 0
+   */
+  rate: number;
+};

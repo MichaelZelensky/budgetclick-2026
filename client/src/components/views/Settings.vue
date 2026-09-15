@@ -34,6 +34,11 @@
       or use the existing Client ID. This is used to identify your client instance if you reinstall the application.
     </p>
 
+    <label>
+      Default currency
+      <LiteSelect v-model="settings.defaultCurrency" :options="currencyOptions" />
+    </label>
+
     <ButtonGroup>
       <LiteButton @click="save">
         Save
@@ -65,6 +70,7 @@ import { useRouter } from "vue-router";
 import InlineAlert from "@/components/ui/InlineAlert.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
+import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import Modal from "@/components/ui/Modal.vue";
 import { saveSettings } from "@/settings";
@@ -82,6 +88,14 @@ const settings = reactive({
 });
 
 const isStorageInitialized = computed(() => getState().manifest !== null);
+
+const currencyOptions = computed(() => {
+  const currencies = [...new Set(getState().referenceData.accounts?.accounts.map(x => x.currency) ?? [])];
+  return currencies.map(x => ({
+    value: x,
+    text: x,
+  }));
+});
 
 const save = () => {
   if (settings.clientId !== getSettings().clientId) {

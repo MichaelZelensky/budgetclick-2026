@@ -5,10 +5,12 @@ import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
+import { dbSaveRates } from "@/repository/rates";
 import { dbSaveChunk, dbDeleteChunk } from "@/repository/transaction";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
+import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
@@ -51,7 +53,7 @@ const bumpManifest = <T extends Record<string, unknown>>(
   };
 };
 
-const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage>(data: T): T => {
+const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage | CurrencyRatesStorage>(data: T): T => {
   const now = new Date().toISOString();
   return {
     ...data,
@@ -76,12 +78,14 @@ const referenceDataGetters: { [K in ReferenceDataKey]: () => ReferenceDataTypes[
   [ReferenceDataKey.Accounts]: () => getState().referenceData.accounts,
   [ReferenceDataKey.Categories]: () => getState().referenceData.categories,
   [ReferenceDataKey.Contractors]: () => getState().referenceData.contractors,
+  [ReferenceDataKey.Rates]: () => getState().referenceData.rates,
 };
 
 const referenceDataSavers: { [K in ReferenceDataKey]: (data: ReferenceDataTypes[K]) => Promise<void> } = {
   [ReferenceDataKey.Accounts]: dbSaveAccounts,
   [ReferenceDataKey.Categories]: dbSaveCategories,
   [ReferenceDataKey.Contractors]: dbSaveContractors,
+  [ReferenceDataKey.Rates]: dbSaveRates,
 };
 
 export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {

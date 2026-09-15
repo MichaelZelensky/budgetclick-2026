@@ -1,5 +1,4 @@
 import { reactive } from "vue";
-
 import type { AppState, ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { ChunkStorage } from "@/types/storage/ChunkStorage";
 
@@ -11,6 +10,7 @@ const state = reactive<AppState>({
     accounts: null,
     categories: null,
     contractors: null,
+    rates: null,
   },
   chunks: {},
   statistics: null,
@@ -23,6 +23,7 @@ export const initializeState = (): void => {
   state.referenceData.accounts = null;
   state.referenceData.categories = null;
   state.referenceData.contractors = null;
+  state.referenceData.rates = null;
   state.chunks = {};
 };
 

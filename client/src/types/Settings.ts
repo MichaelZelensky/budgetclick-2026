@@ -18,4 +18,10 @@ export type Settings = {
    * @pattern ^.+$
    */
   clientId: string;
+
+  /**
+   * Default currency used for total statistics.
+   * @pattern ^.+$
+   */
+  defaultCurrency: string;
 };

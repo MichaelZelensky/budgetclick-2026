@@ -27,6 +27,7 @@ export type ManifestReferences = {
   accounts: ManifestEntry;
   categories: ManifestEntry;
   contractors: ManifestEntry;
+  rates: ManifestEntry;
 };
 
 export type ManifestAttachments = {

@@ -44,9 +44,11 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import SetupProgress from "@/components/SetupProgress.vue";
 import { saveReferenceData } from "@/data-flow";
+import { getSettings, updateSettings } from "@/state/settings";
 import { getState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
 import { generateEntityId } from "@/utils/entity";
+import { saveSettings } from "@/settings";
 
 const router = useRouter();
 
@@ -81,6 +83,13 @@ const save = async () => {
       accounts: [...accountsStorage.accounts, account],
     },
   });
+
+  const settings = {
+    ...getSettings(),
+    defaultCurrency: currency.value,
+  };
+  updateSettings(settings);
+  saveSettings(settings);
 
   router.push("/setup/complete");
 };

@@ -57,6 +57,22 @@ export const router = createRouter({
       component: () => import("@/components/views/contractors/EditContractor.vue"),
     },
     {
+      path: "/rates",
+      component: () => import("@/components/views/rates/ListRates.vue"),
+    },
+    {
+      path: "/rates/create",
+      component: () => import("@/components/views/rates/CreateRate.vue"),
+    },
+    {
+      path: "/rates/:id",
+      component: () => import("@/components/views/rates/ViewRate.vue"),
+    },
+    {
+      path: "/rates/:id/edit",
+      component: () => import("@/components/views/rates/EditRate.vue"),
+    },
+    {
       path: "/settings",
       component: () => import("@/components/views/Settings.vue"),
     },
