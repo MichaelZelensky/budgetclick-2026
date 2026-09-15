@@ -136,38 +136,6 @@ export const updateStatistics = async (
   }
 };
 
-export const updateStatisticsForTransaction = async (
-  previousTransaction: {
-    accountId: string;
-    direction: "in" | "out";
-    amount: number;
-    datetime: string;
-  } | null,
-  transaction: {
-    accountId: string;
-    direction: "in" | "out";
-    amount: number;
-    datetime: string;
-  },
-): Promise<void> => {
-  const month = transaction.datetime.slice(0, 7);
-
-  let incomeDelta = transaction.direction === "in" ? transaction.amount : 0;
-  let outcomeDelta = transaction.direction === "out" ? transaction.amount : 0;
-
-  if (previousTransaction !== null) {
-    incomeDelta -= previousTransaction.direction === "in" ? previousTransaction.amount : 0;
-    outcomeDelta -= previousTransaction.direction === "out" ? previousTransaction.amount : 0;
-  }
-
-  await updateStatistics(
-    month,
-    transaction.accountId,
-    incomeDelta,
-    outcomeDelta,
-  );
-};
-
 export const rebuildStatistics = async (): Promise<void> => {
   const loadingId = setLoadingOn();
   const manifest = getManifest();
