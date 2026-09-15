@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
   initializeEncryptionKey: vi.fn(),
   decryptRemoteManifest: vi.fn(),
   importRemoteData: vi.fn(),
+  saveInitialStorageObjects: vi.fn(),
+  updateSettings: vi.fn(),
+  saveSettings: vi.fn(),
 }));
 
 const setupState = {
@@ -39,14 +42,16 @@ vi.mock("vue-router", () => ({
 
 vi.mock("@/state/settings", () => ({
   getSettings: () => ({
-    clientId: "-",
-    storage: "-",
+    schemaVersion: 2,
+    clientId: "client-123",
+    storage: "test-storage",
+    defaultCurrency: "-",
   }),
-  updateSettings: vi.fn(),
+  updateSettings: mocks.updateSettings,
 }));
 
 vi.mock("@/settings", () => ({
-  saveSettings: vi.fn(),
+  saveSettings: mocks.saveSettings,
 }));
 
 vi.mock("@/state/error", () => ({
@@ -83,6 +88,10 @@ vi.mock("@/state/loading", () => ({
   setLoadingOff: vi.fn(),
 }));
 
+vi.mock("@/setup", () => ({
+  saveInitialStorageObjects: mocks.saveInitialStorageObjects,
+}));
+
 vi.mock("@/state/state", () => ({
   getState: () => state,
 }));
@@ -114,6 +123,9 @@ describe("setup UI", () => {
     mocks.initializeEncryptionKey.mockReset();
     mocks.decryptRemoteManifest.mockReset();
     mocks.importRemoteData.mockReset();
+    mocks.saveInitialStorageObjects.mockReset();
+    mocks.updateSettings.mockReset();
+    mocks.saveSettings.mockReset();
 
     setupState.storageMode = null;
     setupState.remoteSalt = null;
@@ -122,19 +134,27 @@ describe("setup UI", () => {
     setupState.recoverySalt = null;
 
     state.manifest = null;
-    state.referenceData.accounts.accounts = [];
+    state.referenceData.accounts.accounts = [
+      {
+        id: "a-1",
+        name: "Cash",
+        description: "",
+        currency: "USD",
+        currentBalance: 100,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+        isDeleted: false,
+      },
+    ];
   });
 
   describe("ClientId", () => {
-    it("requires client ID", async () => {
-      const { showError } = await import("@/state/error");
-
+    it("continues to storage without entering a client ID", async () => {
       const wrapper = mount(ClientId);
 
       await wrapper.find("button").trigger("click");
 
-      expect(showError).toHaveBeenCalledWith("Client ID is required");
-      expect(mocks.push).not.toHaveBeenCalled();
+      expect(mocks.push).toHaveBeenCalledWith("/setup/storage");
     });
 
     it("continues to storage with a valid client ID", async () => {
@@ -148,13 +168,12 @@ describe("setup UI", () => {
   });
 
   describe("Storage", () => {
-    it("requires storage", async () => {
+    it("continues to passphrase unlock", async () => {
       const wrapper = mount(Storage);
 
       await wrapper.find("button").trigger("click");
 
-      expect(wrapper.text()).toContain("Storage path is required");
-      expect(mocks.push).not.toHaveBeenCalled();
+      expect(mocks.push).toHaveBeenCalledWith("/setup/passphrase-unlock");
     });
   });
 
@@ -220,6 +239,8 @@ describe("setup UI", () => {
     });
 
     it("continues to account setup after confirmation", async () => {
+      mocks.saveInitialStorageObjects.mockResolvedValue(undefined);
+
       const wrapper = mount(PassphraseCreate);
 
       await findInput(wrapper, 0).setValue("secret");
@@ -234,8 +255,9 @@ describe("setup UI", () => {
       expect(okButton).toBeDefined();
 
       await okButton!.trigger("click");
-      await wrapper.vm.$nextTick();
+      await flushPromises();
 
+      expect(mocks.saveInitialStorageObjects).toHaveBeenCalledOnce();
       expect(mocks.push).toHaveBeenCalledWith("/setup/account");
     });
   });
@@ -261,7 +283,7 @@ describe("setup UI", () => {
       expect(mocks.push).not.toHaveBeenCalled();
     });
 
-    it("imports remote data and continues to the dashboard", async () => {
+    it("imports remote data, initializes default currency, and completes setup", async () => {
       const remoteSalt = new Uint8Array([1, 2, 3]);
       const remoteManifest = new ArrayBuffer(8);
       const manifest = {
@@ -313,7 +335,17 @@ describe("setup UI", () => {
       expect(mocks.decryptRemoteManifest).toHaveBeenCalledWith(remoteManifest);
       expect(mocks.importRemoteData).toHaveBeenCalledWith(manifest);
       expect(state.manifest).toStrictEqual(manifest);
-      expect(mocks.push).toHaveBeenCalledWith("/");
+      expect(mocks.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultCurrency: "USD",
+        }),
+      );
+      expect(mocks.saveSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultCurrency: "USD",
+        }),
+      );
+      expect(mocks.push).toHaveBeenCalledWith("/setup/complete");
     });
   });
 

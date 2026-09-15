@@ -187,7 +187,7 @@ describe("accounts CRUD", () => {
 
     await inputs[0].setValue("Bank");
     await inputs[1].setValue("Bank account");
-    await inputs[2].setValue("EUR");
+    await inputs[2].setValue("USD");
     await inputs[3].setValue("2500");
 
     await wrapper.find("button").trigger("click");
@@ -207,7 +207,7 @@ describe("accounts CRUD", () => {
       id: account.id,
       name: "Bank",
       description: "Bank account",
-      currency: "EUR",
+      currency: "USD",
       currentBalance: 2500,
       createdAt: account.createdAt,
       isDeleted: false,

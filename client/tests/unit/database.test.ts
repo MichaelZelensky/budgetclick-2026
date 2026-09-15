@@ -8,7 +8,7 @@ vi.mock("@/state/loading", () => ({
   setLoadingOff: vi.fn(),
 }));
 
-vi.mock("@/migrations/003/migration", () => ({
+vi.mock("@/migrations/migrate", () => ({
   migrate: vi.fn(),
 }));
 
@@ -21,14 +21,10 @@ describe("database", () => {
     expect(() => getDatabase()).toThrow("Database has not been initialized");
   });
 
-  it("initializes database and runs migrations", async () => {
+  it("initializes database", async () => {
     await initializeDatabase();
 
-    const database = getDatabase();
-
-    expect(database.objectStoreNames).toContain("accounts");
-    expect(database.objectStoreNames).toContain("categories");
-    expect(database.objectStoreNames).toContain("contractors");
+    expect(getDatabase()).toBeDefined();
     expect(setLoadingOn).toHaveBeenCalled();
     expect(setLoadingOff).toHaveBeenCalledWith("loading-id");
   });

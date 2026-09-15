@@ -22,6 +22,7 @@ describe("state", () => {
         accounts: null,
         categories: null,
         contractors: null,
+        rates: null,
       },
       chunks: {},
       statistics: null,
@@ -53,6 +54,23 @@ describe("state", () => {
     updateReferenceDataState("accounts", accounts);
 
     expect(getState().referenceData.accounts).toStrictEqual(accounts);
+  });
+
+  it("updates rates reference data state", () => {
+    const rates = {
+      metadata: {
+        schemaVersion: 1,
+        version: 1,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        updatedBy: "test",
+      },
+      rates: [],
+    };
+
+    updateReferenceDataState("rates", rates);
+
+    expect(getState().referenceData.rates).toStrictEqual(rates);
   });
 
   it("allows reference data state to be cleared", () => {
@@ -122,6 +140,7 @@ describe("state", () => {
         accounts: null,
         categories: null,
         contractors: null,
+        rates: null,
       },
       chunks: {},
       statistics: null,

@@ -21,6 +21,7 @@ const createTestRouter = () => createRouter({
 
 const mountSettings = async () => {
   const router = createTestRouter();
+
   await router.push("/settings");
   await router.isReady();
 
@@ -37,6 +38,24 @@ const mountSettings = async () => {
               :disabled="disabled"
               @input="$emit('update:modelValue', $event.target.value)"
             />
+          `,
+        },
+        LiteSelect: {
+          props: ["modelValue", "options"],
+          emits: ["update:modelValue"],
+          template: `
+            <select
+              :value="modelValue"
+              @change="$emit('update:modelValue', $event.target.value)"
+            >
+              <option
+                v-for="option in options"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.text }}
+              </option>
+            </select>
           `,
         },
         LiteButton: {
@@ -82,13 +101,29 @@ describe("settings", () => {
     initializeState();
 
     const settings = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       storage: "test-storage",
       clientId: "client-123",
+      defaultCurrency: "USD",
     };
 
     initializeSettings(settings);
     getState().settings = settings;
+
+    getState().referenceData.accounts = {
+      accounts: [
+        {
+          id: "account-123",
+          name: "Cash",
+          description: "Cash account",
+          currency: "USD",
+          currentBalance: 1000,
+          createdAt: "2026-08-23T00:00:00.000Z",
+          updatedAt: "2026-08-23T00:00:00.000Z",
+          isDeleted: false,
+        },
+      ],
+    };
 
     vi.clearAllMocks();
   });
@@ -105,9 +140,10 @@ describe("settings", () => {
     await wrapper.find("[data-test='modal-yes']").trigger("click");
 
     expect(saveSettings).toHaveBeenCalledWith({
-      schemaVersion: 1,
+      schemaVersion: 2,
       storage: "test-storage",
       clientId: "client-456",
+      defaultCurrency: "USD",
     });
   });
 
@@ -118,9 +154,10 @@ describe("settings", () => {
 
     expect(wrapper.find("[data-test='modal']").exists()).toBe(false);
     expect(saveSettings).toHaveBeenCalledWith({
-      schemaVersion: 1,
+      schemaVersion: 2,
       storage: "test-storage",
       clientId: "client-123",
+      defaultCurrency: "USD",
     });
   });
 
