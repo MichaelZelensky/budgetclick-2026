@@ -1,6 +1,7 @@
 import { dbGetAccounts, dbSaveAccounts } from "@/repository/account";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
+import { dbGetRates, dbSaveRates } from "@/repository/rates";
 import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
 import { getManifest } from "@/manifest";
 import { getFile } from "@/storage";
@@ -9,11 +10,13 @@ import { ReferenceDataKey } from "@/types/AppState";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
+import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { Manifest, ManifestEntry } from "@/types/storage/Manifest";
 import validateAccountsStorage from "@/validators/default/AccountsStorage.js";
 import validateCategoriesStorage from "@/validators/default/CategoriesStorage.js";
 import validateContractorsStorage from "@/validators/default/ContractorsStorage.js";
+import validateCurrencyRatesStorage from "@/validators/default/CurrencyRatesStorage.js";
 import validateChunkStorage from "@/validators/default/ChunkStorage.js";
 import validateStatisticsStorage from "@/validators/default/StatisticsStorage.js";
 import { dbGetStatistics, dbSaveStatistics } from "@/repository/statistics";
@@ -95,7 +98,7 @@ const loadInitialTransactionChunks = async (
 };
 
 export const importRemoteData = async (manifest: Manifest): Promise<void> => {
-  const [accounts, categories, contractors, chunks] = await Promise.all([
+  const [accounts, categories, contractors, rates, chunks] = await Promise.all([
     loadRemoteObject<AccountsStorage>(
       manifest.references.accounts,
       validateAccountsStorage,
@@ -111,6 +114,11 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
       validateContractorsStorage,
       "contractors",
     ),
+    loadRemoteObject<CurrencyRatesStorage>(
+      manifest.references.rates,
+      validateCurrencyRatesStorage,
+      "currency rates",
+    ),
     loadInitialTransactionChunks(manifest),
   ]);
   if (accounts !== null) {
@@ -122,6 +130,9 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   if (contractors !== null) {
     await dbSaveContractors(contractors);
   }
+  if (rates !== null) {
+    await dbSaveRates(rates);
+  }
   for (const [month, chunk] of Object.entries(chunks)) {
     await dbSaveChunk(month, chunk);
     updateChunksState(month, chunk);
@@ -129,13 +140,15 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   updateReferenceDataState(ReferenceDataKey.Accounts, accounts);
   updateReferenceDataState(ReferenceDataKey.Categories, categories);
   updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
+  updateReferenceDataState(ReferenceDataKey.Rates, rates);
 };
 
 const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
-  const [accounts, categories, contractors] = await Promise.all([
+  const [accounts, categories, contractors, rates] = await Promise.all([
     dbGetAccounts(),
     dbGetCategories(),
     dbGetContractors(),
+    dbGetRates(),
   ]);
   if (manifest.references.accounts.version > (accounts?.metadata.version ?? 0)) {
     const remoteAccounts = await loadRemoteObject<AccountsStorage>(
@@ -168,6 +181,17 @@ const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
     if (remoteContractors !== null) {
       await dbSaveContractors(remoteContractors);
       updateReferenceDataState(ReferenceDataKey.Contractors, remoteContractors);
+    }
+  }
+  if (manifest.references.rates.version > (rates?.metadata.version ?? 0)) {
+    const remoteRates = await loadRemoteObject<CurrencyRatesStorage>(
+      manifest.references.rates,
+      validateCurrencyRatesStorage,
+      "currency rates",
+    );
+    if (remoteRates !== null) {
+      await dbSaveRates(remoteRates);
+      updateReferenceDataState(ReferenceDataKey.Rates, remoteRates);
     }
   }
 };
