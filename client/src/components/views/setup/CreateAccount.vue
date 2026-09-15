@@ -60,11 +60,9 @@ const currentBalance = ref(0);
 const save = async () => {
   const now = new Date().toISOString();
   const accountsStorage = getState().referenceData.accounts;
-
   if (accountsStorage === null) {
     throw new Error("Accounts have not been initialized");
   }
-
   const account = {
     id: generateEntityId("a"),
     name: name.value,
@@ -75,7 +73,6 @@ const save = async () => {
     updatedAt: now,
     isDeleted: false,
   };
-
   await saveReferenceData({
     key: ReferenceDataKey.Accounts,
     data: {
@@ -83,14 +80,12 @@ const save = async () => {
       accounts: [...accountsStorage.accounts, account],
     },
   });
-
   const settings = {
     ...getSettings(),
     defaultCurrency: currency.value,
   };
   updateSettings(settings);
   saveSettings(settings);
-
   router.push("/setup/complete");
 };
 </script>

@@ -41,10 +41,12 @@ import { initializeEncryptionKey } from "@/encryption/key";
 import { saveSalt } from "@/encryption/salt";
 import { decryptRemoteManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
+import { getSettings, updateSettings } from "@/state/settings";
 import { getState } from "@/state/state";
 import { getSetupState } from "@/state/setup";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { importRemoteData } from "@/sync";
+import { saveSettings } from "@/settings";
 
 const router = useRouter();
 const passphrase = ref("");
@@ -55,25 +57,32 @@ const unlock = async () => {
     error.value = "Passphrase is required";
     return;
   }
-
   const setupState = getSetupState();
-
   if (setupState.remoteSalt === null || setupState.remoteManifest === null) {
     error.value = "Storage has not been checked";
     return;
   }
-
   error.value = null;
   const loadingId = setLoadingOn();
-
   try {
     await initializeEncryptionKey(passphrase.value, setupState.remoteSalt);
     const manifest = await decryptRemoteManifest(setupState.remoteManifest);
     await initializeData();
     await importRemoteData(manifest);
     getState().manifest = structuredClone(manifest);
+    const accountsStorage = getState().referenceData.accounts;
+    if (accountsStorage === null || accountsStorage.accounts.length === 0) {
+      throw new Error("Accounts have not been initialized");
+    }
+    const firstAccount = accountsStorage.accounts[0];
+    const settings = {
+      ...getSettings(),
+      defaultCurrency: firstAccount.currency,
+    };
+    updateSettings(settings);
+    saveSettings(settings);
     await saveSalt(setupState.remoteSalt);
-    router.push("/");
+    router.push("/setup/complete");
   } catch {
     error.value = "Incorrect passphrase";
   } finally {
