@@ -33,6 +33,18 @@
         :options="chartOptions"
       />
     </div>
+
+    <Modal
+      v-if="showMissingRatesModal"
+      title="Missing currency rates"
+      primary-button-label="Ok"
+      secondary-button-label="Cancel"
+      @close="cancelRecalculate"
+      @ok="confirmRecalculate"
+      @cancel="cancelRecalculate"
+    >
+      Some currency rates are missing. Statistics will use 1:1 for missing rates.
+    </Modal>
   </DashboardWidget>
 </template>
 
@@ -50,7 +62,8 @@ import {
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import RefreshIcon from "@/components/icons/Refresh.vue";
-import { rebuildStatistics } from "@/stats";
+import Modal from "@/components/ui/Modal.vue";
+import { hasMissingCurrencyRates, rebuildStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 
@@ -98,6 +111,7 @@ const currentYear = new Date().getFullYear();
 const selectedYear = ref(String(currentYear));
 const selectedAccount = ref("total");
 const selectedMetric = ref<StatisticsMetric>("balance");
+const showMissingRatesModal = ref(false);
 
 const state = getState();
 
@@ -176,7 +190,20 @@ const chartOptions = {
 };
 
 const recalculate = async (): Promise<void> => {
+  if (hasMissingCurrencyRates()) {
+    showMissingRatesModal.value = true;
+    return;
+  }
   await rebuildStatistics();
+};
+
+const confirmRecalculate = async (): Promise<void> => {
+  showMissingRatesModal.value = false;
+  await rebuildStatistics();
+};
+
+const cancelRecalculate = (): void => {
+  showMissingRatesModal.value = false;
 };
 </script>
 

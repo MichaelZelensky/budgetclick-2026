@@ -65,6 +65,7 @@ const datetime = ref("");
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showMonthChangeModal = ref(false);
+const originalTransaction = ref(props.transaction);
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -74,6 +75,7 @@ const accountOptions = computed<Option[]>(() =>
 );
 
 const populateEditor = (transaction: Transaction): void => {
+  originalTransaction.value = transaction;
   description.value = transaction.description;
   amount.value = String(transaction.amount);
   accountId.value = transaction.accountId;
@@ -112,7 +114,7 @@ const saveRecord = async (): Promise<void> => {
     throw new Error("Datetime must be valid");
   }
 
-  const month = props.transaction.datetime.slice(0, 7);
+  const month = originalTransaction.value.datetime.slice(0, 7);
   const updatedMonth = transactionDatetime.toISOString().slice(0, 7);
 
   if (updatedMonth !== month) {
@@ -127,7 +129,7 @@ const saveRecord = async (): Promise<void> => {
   }
 
   const updatedTransaction: Transaction = {
-    ...props.transaction,
+    ...originalTransaction.value,
     updatedAt: new Date().toISOString(),
     direction: direction.value,
     amount: Number(amount.value),
@@ -142,7 +144,7 @@ const saveRecord = async (): Promise<void> => {
     data: {
       ...chunk,
       transactions: chunk.transactions.map(transaction =>
-        transaction.id === props.transaction.id
+        transaction.id === originalTransaction.value.id
           ? updatedTransaction
           : transaction
       ),
@@ -151,12 +153,14 @@ const saveRecord = async (): Promise<void> => {
 
   await updateStatistics(
     month,
-    props.transaction.accountId,
+    originalTransaction.value.accountId,
     (updatedTransaction.direction === "in" ? updatedTransaction.amount : 0) -
-      (props.transaction.direction === "in" ? props.transaction.amount : 0),
+      (originalTransaction.value.direction === "in" ? originalTransaction.value.amount : 0),
     (updatedTransaction.direction === "out" ? updatedTransaction.amount : 0) -
-      (props.transaction.direction === "out" ? props.transaction.amount : 0),
+      (originalTransaction.value.direction === "out" ? originalTransaction.value.amount : 0),
   );
+
+  originalTransaction.value = updatedTransaction;
 };
 </script>
 

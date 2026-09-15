@@ -11,10 +11,49 @@ const encodeData = (data: unknown): Uint8Array => {
   return new TextEncoder().encode(JSON.stringify(data));
 };
 
+const getCurrencyRate = (from: string, to: string, date: string): number => {
+  if (from === to) {
+    return 1;
+  }
+  const rates = getState().referenceData.rates?.rates ?? [];
+  const pairRates = rates
+    .filter(
+      x =>
+        (x.from === from && x.to === to) ||
+        (x.from === to && x.to === from),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const rate = pairRates.find(x => x.date <= date) ?? pairRates[pairRates.length - 1];
+  if (rate === undefined) {
+    return 1;
+  }
+  return rate.from === from ? rate.rate : 1 / rate.rate;
+};
+
+export const hasMissingCurrencyRates = (): boolean => {
+  const state = getState();
+  const accounts = state.referenceData.accounts?.accounts ?? [];
+  const defaultCurrency = state.settings?.defaultCurrency ?? "";
+  const rates = state.referenceData.rates?.rates ?? [];
+
+  return accounts.some(account => {
+    if (account.isDeleted || account.currency === defaultCurrency) {
+      return false;
+    }
+    return !rates.some(
+      rate =>
+        (rate.from === account.currency && rate.to === defaultCurrency) ||
+        (rate.from === defaultCurrency && rate.to === account.currency),
+    );
+  });
+};
+
 const calculateMonthlyStatistics = (
   chunks: Record<string, ChunkStorage>,
 ): Record<string, MonthlyStatistics> => {
-  const accounts = getState().referenceData.accounts?.accounts ?? [];
+  const state = getState();
+  const accounts = state.referenceData.accounts?.accounts ?? [];
+  const defaultCurrency = state.settings?.defaultCurrency ?? "";
   const statistics: Record<string, MonthlyStatistics> = {};
   for (const [month, chunk] of Object.entries(chunks)) {
     const monthlyStatistics: MonthlyStatistics = {
@@ -36,15 +75,17 @@ const calculateMonthlyStatistics = (
       if (transaction.isDeleted) {
         continue;
       }
+      const account = accounts.find(x => x.id === transaction.accountId);
       const accountStatistics = monthlyStatistics.accounts[transaction.accountId];
-      if (accountStatistics === undefined) {
+      if (account === undefined || accountStatistics === undefined) {
         continue;
       }
+      const amount = transaction.amount * getCurrencyRate(account.currency, defaultCurrency, transaction.date);
       if (transaction.direction === "in") {
-        monthlyStatistics.income += transaction.amount;
+        monthlyStatistics.income += amount;
         accountStatistics.income += transaction.amount;
       } else {
-        monthlyStatistics.outcome += transaction.amount;
+        monthlyStatistics.outcome += amount;
         accountStatistics.outcome += transaction.amount;
       }
     }
@@ -71,7 +112,15 @@ export const updateStatistics = async (
   const loadingId = setLoadingOn();
 
   try {
-    const balanceDelta = incomeDelta - outcomeDelta;
+    const account = getState().referenceData.accounts?.accounts.find(x => x.id === accountId);
+    if (account === undefined) {
+      return;
+    }
+    const defaultCurrency = getState().settings?.defaultCurrency ?? "";
+    const currencyRate = getCurrencyRate(account.currency, defaultCurrency, month);
+    const convertedIncomeDelta = incomeDelta * currencyRate;
+    const convertedOutcomeDelta = outcomeDelta * currencyRate;
+    const balanceDelta = convertedIncomeDelta - convertedOutcomeDelta;
     const statistics = Object.fromEntries(
       Object.entries(currentStatistics.statistics).map(([statisticsMonth, monthlyStatistics]) => {
         if (statisticsMonth < month) {
@@ -88,15 +137,15 @@ export const updateStatistics = async (
         return [
           statisticsMonth,
           {
-            income: monthlyStatistics.income + (isCurrentMonth ? incomeDelta : 0),
-            outcome: monthlyStatistics.outcome + (isCurrentMonth ? outcomeDelta : 0),
+            income: monthlyStatistics.income + (isCurrentMonth ? convertedIncomeDelta : 0),
+            outcome: monthlyStatistics.outcome + (isCurrentMonth ? convertedOutcomeDelta : 0),
             balance: monthlyStatistics.balance + balanceDelta,
             accounts: {
               ...monthlyStatistics.accounts,
               [accountId]: {
                 income: accountStatistics.income + (isCurrentMonth ? incomeDelta : 0),
                 outcome: accountStatistics.outcome + (isCurrentMonth ? outcomeDelta : 0),
-                balance: accountStatistics.balance + balanceDelta,
+                balance: accountStatistics.balance + (isCurrentMonth ? incomeDelta - outcomeDelta : 0),
               },
             },
           },
@@ -138,33 +187,36 @@ export const updateStatistics = async (
 
 export const rebuildStatistics = async (): Promise<void> => {
   const loadingId = setLoadingOn();
-  const manifest = getManifest();
-  const chunks = await loadAllChunks(manifest);
-  const now = new Date().toISOString();
-  const currentStatistics = getState().statistics;
-  const statistics: StatisticsStorage = {
-    metadata: {
-      schemaVersion: currentStatistics?.metadata.schemaVersion ?? 1,
-      version: (currentStatistics?.metadata.version ?? 0) + 1,
-      createdAt: currentStatistics?.metadata.createdAt ?? now,
+  try {
+    const manifest = getManifest();
+    const chunks = await loadAllChunks(manifest);
+    const now = new Date().toISOString();
+    const currentStatistics = getState().statistics;
+    const statistics: StatisticsStorage = {
+      metadata: {
+        schemaVersion: currentStatistics?.metadata.schemaVersion ?? 1,
+        version: (currentStatistics?.metadata.version ?? 0) + 1,
+        createdAt: currentStatistics?.metadata.createdAt ?? now,
+        updatedAt: now,
+        updatedBy: getState().settings?.clientId ?? "-",
+      },
+      statistics: calculateMonthlyStatistics(chunks),
+    };
+    const entry = manifest.statistics;
+    await dbSaveStatistics(statistics);
+    updateState("statistics", statistics);
+    await putFile(entry.objectKey, encodeData(statistics));
+    await saveManifest({
+      ...manifest,
+      version: manifest.version + 1,
       updatedAt: now,
       updatedBy: getState().settings?.clientId ?? "-",
-    },
-    statistics: calculateMonthlyStatistics(chunks),
-  };
-  const entry = manifest.statistics;
-  await dbSaveStatistics(statistics);
-  updateState("statistics", statistics);
-  await putFile(entry.objectKey, encodeData(statistics));
-  await saveManifest({
-    ...manifest,
-    version: manifest.version + 1,
-    updatedAt: now,
-    updatedBy: getState().settings?.clientId ?? "-",
-    statistics: {
-      ...entry,
-      version: statistics.metadata.version,
-    },
-  });
-  setLoadingOff(loadingId);
+      statistics: {
+        ...entry,
+        version: statistics.metadata.version,
+      },
+    });
+  } finally {
+    setLoadingOff(loadingId);
+  }
 };
