@@ -87,6 +87,7 @@ import { getSettings } from "@/state/settings";
 import { getSetupState } from "@/state/setup";
 import { showError } from "@/state/error";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { saveInitialStorageObjects } from "@/setup";
 
 const router = useRouter();
 const passphrase = ref("");
@@ -124,6 +125,7 @@ const confirmSave = async () => {
     await saveSalt(generatedSalt);
     await initializeNewManifest(getSettings().clientId);
     await initializeData();
+    await saveInitialStorageObjects();
 
     const setupState = getSetupState();
     setupState.storageMode = null;

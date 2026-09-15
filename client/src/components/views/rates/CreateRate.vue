@@ -68,7 +68,6 @@ const date = ref(new Date().toISOString().slice(0, 10));
 const rate = ref(0);
 
 const save = async () => {
-  console.log(getState());
   const ratesStorage = getState().referenceData.rates;
 
   if (ratesStorage === null) {

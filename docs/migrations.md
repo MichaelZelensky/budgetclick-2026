@@ -25,9 +25,19 @@ Each version is an independent program under `client/migrations/<version>/index.
 
 Each migration: unique version, migrates from exactly one prior version, deterministic, idempotent, repeatable, safely recoverable, never modifies past migrations. Chains only (`1→2→3→4`); direct jumps (`1→4`) are not allowed.
 
+When a migration introduces a new local storage object, it creates the object store and seeds an empty version-0 storage object. This ensures the local storage object exists for both new and existing installations.
+
+For an existing installation, when a migration introduces a new remote storage object, the migration creates the remote object from the seeded local object and adds its manifest entry if the entry does not already exist.
+
+For a new installation, migrations only prepare the local database. After storage is unlocked, setup creates the new manifest and saves the seeded local storage objects to remote storage.
+
 # Local Database Migration
 
 On startup: read the local schema version → apply required migrations → store the new version.
+
+# New Storage Initialization
+
+For a new storage location: initialize encryption, create the manifest, load the seeded local storage objects, and save those objects to remote storage using the manifest references.
 
 # Migration Failure
 
