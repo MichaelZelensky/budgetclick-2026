@@ -2,34 +2,44 @@
   <main>
     <h1>Create Rate</h1>
 
-    <InlineAlert v-if="error" variant="warning">
+    <InlineAlert v-if="error" variant="warning" class="tw-mb-4">
       {{ error }}
     </InlineAlert>
 
-    <label>
-      From
-      <LiteSelect v-model="from" :options="currencyOptions" />
-    </label>
+    <InlineAlert v-if="!hasMultipleCurrencies" variant="warning" class="tw-mb-4">
+      At least two different account currencies are required to create a rate.
+    </InlineAlert>
 
-    <label>
-      To
-      <LiteSelect v-model="to" :options="currencyOptions" />
-    </label>
+    <div class="tw-mb-4">
+      <label>
+        From
+        <LiteSelect v-model="from" :options="currencyOptions" :disabled="!hasMultipleCurrencies" />
+      </label>
+
+      <label>
+        To
+        <LiteSelect v-model="to" :options="currencyOptions" :disabled="!hasMultipleCurrencies" />
+      </label>
+    </div>
 
     <div>
       <label>
-        Date
-        <LiteInputField v-model="date" type="date" />
+        First effective date of this rate
+        <LiteInputField v-model="date" type="date" :disabled="!hasMultipleCurrencies" />
       </label>
     </div>
 
     <label>
       Rate
-      <LiteInputField v-model="rate" type="number" step="any" />
+      <LiteInputField v-model="rate" type="number" step="any" :disabled="!hasMultipleCurrencies" />
     </label>
 
+    <div v-if="hasMultipleCurrencies" class="tw-mt-2 tw-mb-4 tw-text-lg">
+      1 {{ from }} = {{ rate || 0 }} {{ to }}
+    </div>
+
     <ButtonGroup>
-      <LiteButton @click="save">
+      <LiteButton @click="save" :disabled="!hasMultipleCurrencies">
         Save
       </LiteButton>
       <LiteButton @click="back">
@@ -62,12 +72,18 @@ const currencyOptions = computed(() => {
   }));
 });
 
+const hasMultipleCurrencies = computed(() => currencyOptions.value.length >= 2);
+
 const from = ref(currencyOptions.value[0]?.value ?? "");
 const to = ref(currencyOptions.value[1]?.value ?? currencyOptions.value[0]?.value ?? "");
 const date = ref(new Date().toISOString().slice(0, 10));
 const rate = ref(0);
 
 const save = async () => {
+  if (!hasMultipleCurrencies.value) {
+    return;
+  }
+
   const ratesStorage = getState().referenceData.rates;
 
   if (ratesStorage === null) {
