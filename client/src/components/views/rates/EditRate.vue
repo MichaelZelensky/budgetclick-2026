@@ -2,19 +2,21 @@
   <main>
     <h1>Edit Rate</h1>
 
-    <InlineAlert v-if="error" variant="warning">
+    <InlineAlert v-if="error" variant="warning" class="tw-mb-4">
       {{ error }}
     </InlineAlert>
 
-    <label>
-      From
-      <LiteSelect v-model="from" :options="currencyOptions" />
-    </label>
+    <div class="tw-mb-4">
+      <label>
+        From
+        <LiteSelect v-model="from" :options="currencyOptions" />
+      </label>
 
-    <label>
-      To
-      <LiteSelect v-model="to" :options="currencyOptions" />
-    </label>
+      <label>
+        To
+        <LiteSelect v-model="to" :options="currencyOptions" />
+      </label>
+    </div>
 
     <label>
       Date

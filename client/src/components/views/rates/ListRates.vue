@@ -8,6 +8,10 @@
       </LiteButton>
     </div>
 
+    <InlineAlert variant="warning" class="tw-mb-4">
+      Adding or changing currency rates may require manual statistics recalculation.
+    </InlineAlert>
+
     <Datagrid
       :data="rates"
       :columns="columns"
@@ -32,6 +36,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
+import InlineAlert from "@/components/ui/InlineAlert.vue";
 import { getState } from "@/state/state";
 
 const router = useRouter();

@@ -6,6 +6,14 @@
       {{ error }}
     </InlineAlert>
 
+    <InlineAlert
+      v-if="settings.defaultCurrency !== getSettings().defaultCurrency"
+      variant="warning"
+      class="tw-mb-4"
+    >
+      Changing the default currency may require manual statistics recalculation.
+    </InlineAlert>
+
     <label>
       Storage
       <LiteInputField v-model="settings.storage" disabled />
