@@ -175,6 +175,15 @@ const chartData = computed(() => ({
   ],
 }));
 
+const currency = computed(() => {
+  if (selectedAccount.value === "total") {
+    return state.settings?.defaultCurrency ?? "";
+  }
+  return state.referenceData.accounts?.accounts.find(
+    account => account.id === selectedAccount.value,
+  )?.currency ?? "";
+});
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -182,10 +191,23 @@ const chartOptions = {
     legend: {
       display: false,
     },
+    tooltip: {
+      callbacks: {
+        label: (context: { parsed: { y: number | null } }): string => {
+          const value = context.parsed.y ?? 0;
+
+          return `${value.toLocaleString()} ${currency.value}`;
+        },
+      },
+    },
   },
   scales: {
     y: {
       beginAtZero: true,
+      ticks: {
+        callback: (value: string | number, index: number): string =>
+          index === 0 ? `${value} ${currency.value}` : String(value),
+      },
     },
   },
 };
