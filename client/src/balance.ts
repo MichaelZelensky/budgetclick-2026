@@ -15,34 +15,30 @@ const calculateBalances = (
   const accounts = getState().referenceData.accounts?.accounts ?? [];
   const months = Object.keys(chunks).sort();
   return accounts.flatMap(account => {
-    const accountBalances = months.reduce(
-      (result, month) => {
-        const monthChange = chunks[month].transactions
-          .filter(transaction => !transaction.isDeleted && transaction.accountId === account.id)
-          .reduce(
-            (value, transaction) =>
-              value + (transaction.direction === "in" ? transaction.amount : -transaction.amount),
-            0,
-          );
-        const startingBalance = result.balance;
-        return {
-          balance: startingBalance + monthChange,
-          balances: [
-            ...result.balances,
-            {
-              month,
-              account: account.id,
-              startingBalance,
-            },
-          ],
-        };
-      },
-      {
-        balance: account.currentBalance,
-        balances: [] as Balance[],
-      },
+    const transactionMonths = months.filter(month =>
+      chunks[month].transactions.some(
+        transaction => !transaction.isDeleted && transaction.accountId === account.id,
+      ),
     );
-    return accountBalances.balances;
+    if (transactionMonths.length === 0) {
+      return [];
+    }
+    let balance = account.currentBalance;
+    return transactionMonths.map(month => {
+      const startingBalance = balance;
+      balance += chunks[month].transactions
+        .filter(transaction => !transaction.isDeleted && transaction.accountId === account.id)
+        .reduce(
+          (value, transaction) =>
+            value + (transaction.direction === "in" ? transaction.amount : -transaction.amount),
+          0,
+        );
+      return {
+        month,
+        account: account.id,
+        startingBalance,
+      };
+    });
   });
 };
 

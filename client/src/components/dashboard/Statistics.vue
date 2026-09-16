@@ -19,8 +19,8 @@
       <button
         type="button"
         class="tw-ml-auto tw-flex tw-items-center tw-justify-center tw-p-1 tw-text-zinc-500 hover:tw-text-zinc-300"
-        aria-label="Regenerate statistics"
-        title="Regenerate statistics"
+        aria-label="Regenerate statistics and balances"
+        title="Regenerate statistics and balances"
         @click="recalculate"
       >
         <RefreshIcon />
@@ -66,6 +66,7 @@ import Modal from "@/components/ui/Modal.vue";
 import { hasMissingCurrencyRates, rebuildStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
+import { rebuildBalances } from "@/balance";
 
 ChartJS.register(
   BarElement,
@@ -195,11 +196,13 @@ const recalculate = async (): Promise<void> => {
     return;
   }
   await rebuildStatistics();
+  await rebuildBalances();
 };
 
 const confirmRecalculate = async (): Promise<void> => {
   showMissingRatesModal.value = false;
   await rebuildStatistics();
+  await rebuildBalances();
 };
 
 const cancelRecalculate = (): void => {

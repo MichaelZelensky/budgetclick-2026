@@ -37,21 +37,27 @@ Account balances are derived from the account starting balance and transaction h
 
 Balances are stored separately by month and account as starting-balance checkpoints. A balance entry represents the account balance at the beginning of the month, before that month's transactions are applied.
 
-When the first transaction for an account/month is created, the month's starting balance is saved to the Balances storage. The transaction balance displayed in the spreadsheet is calculated from that starting balance and the transactions in the month up to that transaction.
+When a transaction is created or changed, the affected month's balance checkpoint is created if necessary, and the resulting balance delta is propagated through subsequent existing monthly balance entries.
 
-When a transaction changes, the affected month's balance checkpoint is preserved and the resulting balance delta is propagated through subsequent monthly balance entries. Future transaction chunks do not need to be downloaded because their existing starting-balance checkpoints provide the values needed for propagation.
+The spreadsheet calculates each transaction's balance from the starting balance for its month and the transactions in that month up to that transaction.
+
+For example, an account with a 5000 CHF starting balance has a 300 CHF transaction in September:
+
+- September: 5000 CHF
+- September transaction balance: 4700 CHF
+
+When a 100 CHF transaction is added in October:
+
+- September: 5000 CHF
+- October: 4700 CHF
+- October transaction balance: 4600 CHF
+
+Balances can also be completely rebuilt from all transaction chunks. During a rebuild, the account starting balance is used as the starting balance of the first transaction month, and each subsequent month's starting balance is calculated from the preceding month's transactions.
 
 The account's starting balance remains part of the Account data. Monthly balances are derived checkpoints.
 
-Balances are stored in IndexedDB and encrypted remote storage together with their metadata. The Balances object is initialized in IndexedDB during migration/setup even when it contains no entries.
+Balances are stored in IndexedDB and encrypted remote storage together with their metadata.
 
-## Search and Filtering
-
-Search and filtering initially operate directly on transaction chunks.
-
-If the required historical chunks are not cached locally, all transaction chunks are downloaded and cached before performing a historical search or filter. No separate search index is maintained in the MVP.
-
-A search index may be introduced later if transaction history becomes large enough to make full historical downloads impractical.
 
 # Identifier Strategy
 
