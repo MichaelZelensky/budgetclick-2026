@@ -24,7 +24,7 @@
     </label>
 
     <label class="tw-mt-4 tw-block">
-      Current balance
+      Starting balance
       <LiteInputField v-model="currentBalance" type="number" />
     </label>
 

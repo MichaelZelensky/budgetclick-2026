@@ -56,9 +56,13 @@ export const createManifest = (clientId: string): Manifest => {
       },
     },
     chunks: {},
-    statistics: { 
-      objectKey: generateObjectKey(), 
-      version: 0
+    statistics: {
+      objectKey: generateObjectKey(),
+      version: 0,
+    },
+    balances: {
+      objectKey: generateObjectKey(),
+      version: 0,
     },
     attachments: {
       root: generateObjectKey(),

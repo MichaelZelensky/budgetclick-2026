@@ -23,6 +23,10 @@ export const saveInitialStorageObjects = async (): Promise<void> => {
     throw new Error("Statistics have not been initialized");
   }
   await putFile(manifest.statistics.objectKey, encodeData(state.statistics));
+  if (state.balances === null) {
+    throw new Error("Balances have not been initialized");
+  }
+  await putFile(manifest.balances.objectKey, encodeData(state.balances));
 };
 
 export const getRequiredSetupRoute = async (): Promise<string | null> => {

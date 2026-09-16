@@ -1,4 +1,5 @@
 import { dbGetAccounts, dbSaveAccounts } from "@/repository/account";
+import { dbGetBalances, dbSaveBalances } from "@/repository/balance";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetRates, dbSaveRates } from "@/repository/rates";
@@ -8,6 +9,7 @@ import { getFile } from "@/storage";
 import { updateChunksState, updateReferenceDataState, updateState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
+import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
@@ -19,6 +21,7 @@ import validateContractorsStorage from "@/validators/default/ContractorsStorage.
 import validateCurrencyRatesStorage from "@/validators/default/CurrencyRatesStorage.js";
 import validateChunkStorage from "@/validators/default/ChunkStorage.js";
 import validateStatisticsStorage from "@/validators/default/StatisticsStorage.js";
+import validateBalanceStorage from "@/validators/default/BalanceStorage.js";
 import { dbGetStatistics, dbSaveStatistics } from "@/repository/statistics";
 import { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 
@@ -98,7 +101,7 @@ const loadInitialTransactionChunks = async (
 };
 
 export const importRemoteData = async (manifest: Manifest): Promise<void> => {
-  const [accounts, categories, contractors, rates, chunks] = await Promise.all([
+  const [accounts, categories, contractors, rates, chunks, balances, statistics] = await Promise.all([
     loadRemoteObject<AccountsStorage>(
       manifest.references.accounts,
       validateAccountsStorage,
@@ -120,6 +123,16 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
       "currency rates",
     ),
     loadInitialTransactionChunks(manifest),
+    loadRemoteObject<BalanceStorage>(
+      manifest.balances,
+      validateBalanceStorage,
+      "balances",
+    ),
+    loadRemoteObject<StatisticsStorage>(
+      manifest.statistics,
+      validateStatisticsStorage,
+      "statistics",
+    ),
   ]);
   if (accounts !== null) {
     await dbSaveAccounts(accounts);
@@ -133,6 +146,12 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   if (rates !== null) {
     await dbSaveRates(rates);
   }
+  if (balances !== null) {
+    await dbSaveBalances(balances);
+  }
+  if (statistics !== null) {
+    await dbSaveStatistics(statistics);
+  }
   for (const [month, chunk] of Object.entries(chunks)) {
     await dbSaveChunk(month, chunk);
     updateChunksState(month, chunk);
@@ -141,6 +160,8 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   updateReferenceDataState(ReferenceDataKey.Categories, categories);
   updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
   updateReferenceDataState(ReferenceDataKey.Rates, rates);
+  updateState("balances", balances);
+  updateState("statistics", statistics);
 };
 
 const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
@@ -251,6 +272,7 @@ export const synchronizeRemoteData = async (): Promise<void> => {
     synchronizeReferenceData(manifest),
     synchronizeChunks(manifest),
     synchronizeStatistics(manifest),
+    synchronizeBalances(manifest),
   ]);
 };
 
@@ -269,4 +291,21 @@ const synchronizeStatistics = async (manifest: Manifest): Promise<void> => {
   }
   await dbSaveStatistics(remoteStatistics);
   updateState("statistics", remoteStatistics);
+};
+
+const synchronizeBalances = async (manifest: Manifest): Promise<void> => {
+  const localBalances = await dbGetBalances();
+  if (manifest.balances.version <= (localBalances?.metadata.version ?? 0)) {
+    return;
+  }
+  const remoteBalances = await loadRemoteObject<BalanceStorage>(
+    manifest.balances,
+    validateBalanceStorage,
+    "balances",
+  );
+  if (remoteBalances === null) {
+    return;
+  }
+  await dbSaveBalances(remoteBalances);
+  updateState("balances", remoteBalances);
 };

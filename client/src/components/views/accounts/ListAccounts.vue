@@ -41,7 +41,7 @@ const columns = [
   { key: "name", label: "Name", filterable: true },
   { key: "description", label: "Description", filterable: true },
   { key: "currency", label: "Currency", filterable: true },
-  { key: "currentBalance", label: "Balance", filterable: true },
+  { key: "currentBalance", label: "Starting balance", filterable: true },
   { key: "actions", label: "Actions" },
 ];
 

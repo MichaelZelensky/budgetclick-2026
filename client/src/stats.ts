@@ -55,7 +55,12 @@ const calculateMonthlyStatistics = (
   const accounts = state.referenceData.accounts?.accounts ?? [];
   const defaultCurrency = state.settings?.defaultCurrency ?? "";
   const statistics: Record<string, MonthlyStatistics> = {};
-  for (const [month, chunk] of Object.entries(chunks)) {
+  const balances = Object.fromEntries(
+    accounts.map(account => [account.id, account.currentBalance]),
+  );
+
+  for (const month of Object.keys(chunks).sort()) {
+    const chunk = chunks[month];
     const monthlyStatistics: MonthlyStatistics = {
       income: 0,
       outcome: 0,
@@ -66,11 +71,12 @@ const calculateMonthlyStatistics = (
           {
             income: 0,
             outcome: 0,
-            balance: account.currentBalance,
+            balance: balances[account.id],
           },
         ]),
       ),
     };
+
     for (const transaction of chunk.transactions) {
       if (transaction.isDeleted) {
         continue;
@@ -80,21 +86,36 @@ const calculateMonthlyStatistics = (
       if (account === undefined || accountStatistics === undefined) {
         continue;
       }
-      const amount = transaction.amount * getCurrencyRate(account.currency, defaultCurrency, transaction.date);
+      const amount = transaction.amount * getCurrencyRate(
+        account.currency,
+        defaultCurrency,
+        transaction.datetime,
+      );
       if (transaction.direction === "in") {
         monthlyStatistics.income += amount;
         accountStatistics.income += transaction.amount;
+        accountStatistics.balance += transaction.amount;
+        balances[account.id] += transaction.amount;
       } else {
         monthlyStatistics.outcome += amount;
         accountStatistics.outcome += transaction.amount;
+        accountStatistics.balance -= transaction.amount;
+        balances[account.id] -= transaction.amount;
       }
     }
-    monthlyStatistics.balance = monthlyStatistics.income - monthlyStatistics.outcome;
-    for (const accountStatistics of Object.values(monthlyStatistics.accounts)) {
-      accountStatistics.balance = accountStatistics.income - accountStatistics.outcome;
-    }
+
+    monthlyStatistics.balance = Object.entries(monthlyStatistics.accounts).reduce(
+      (value, [accountId, accountStatistics]) =>
+        value + accountStatistics.balance * getCurrencyRate(
+          accounts.find(account => account.id === accountId)?.currency ?? defaultCurrency,
+          defaultCurrency,
+          month,
+        ),
+      0,
+    );
     statistics[month] = monthlyStatistics;
   }
+
   return statistics;
 };
 

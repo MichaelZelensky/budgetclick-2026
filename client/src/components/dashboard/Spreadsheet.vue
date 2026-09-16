@@ -44,6 +44,7 @@ type SpreadsheetRow = {
   amount: number;
   account: string;
   description: string;
+  balance: number | string;
 };
 
 const state = getState();
@@ -55,6 +56,35 @@ const transactions = computed<SpreadsheetRow[]>(() => {
     .flatMap(x => x.transactions)
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
+      const startingBalance = state.balances?.balances.find(
+        x => x.month === transaction.datetime.slice(0, 7) && x.account === transaction.accountId,
+      )?.startingBalance;
+
+      if (startingBalance === undefined) {
+        return {
+          id: transaction.id,
+          actual: transaction.isActual,
+          direction: transaction.direction,
+          date: transaction.datetime.substring(0, 10),
+          amount: transaction.amount,
+          account: `${account?.name ?? ""} (${account?.currency ?? ""})`,
+          description: transaction.description,
+          balance: ""
+        };
+      }
+
+      const balance = Object.values(state.chunks)
+        .flatMap(x => x.transactions)
+        .filter(
+          x =>
+            x.accountId === transaction.accountId
+            && x.datetime.slice(0, 7) === transaction.datetime.slice(0, 7)
+            && x.datetime <= transaction.datetime,
+        )
+        .reduce(
+          (value, x) => value + (x.direction === "in" ? x.amount : -x.amount),
+          startingBalance,
+        );
 
       return {
         id: transaction.id,
@@ -63,7 +93,8 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         date: transaction.datetime.substring(0, 10),
         amount: transaction.amount,
         account: `${account?.name ?? ""} (${account?.currency ?? ""})`,
-        description: transaction.description
+        description: transaction.description,
+        balance
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -73,6 +104,7 @@ const columns = [
   { key: "actual", label: "", filterable: false, type: DatagridColumnType.BOOLEAN },
   { key: "date", label: "Date", filterable: true },
   { key: "amount", label: "Amount", filterable: true },
+  { key: "balance", label: "Balance", filterable: true },
   { key: "account", label: "Account", filterable: true },
   { key: "description", label: "Description", filterable: true }
 ];

@@ -9,6 +9,7 @@ export type Manifest = {
   references: ManifestReferences;
   chunks: Record<Month, ManifestEntry>;
   statistics: ManifestEntry;
+  balances: ManifestEntry;
   attachments: ManifestAttachments;
   migration: {
     version: number;

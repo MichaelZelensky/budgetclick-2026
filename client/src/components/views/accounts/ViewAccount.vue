@@ -4,7 +4,7 @@
 
     <p>{{ account.description }}</p>
     <p>{{ account.currency }}</p>
-    <p>{{ account.currentBalance }}</p>
+    <p>Starting balance: {{ account.currentBalance }}</p>
 
     <ButtonGroup>
       <LiteButton @click="edit">

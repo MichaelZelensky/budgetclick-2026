@@ -7,7 +7,7 @@
 
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
         <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
-        <LiteSelect v-model="accountId" :options="accountOptions" title="Account" />
+        <LiteSelect v-model="accountId" :options="accountOptions" title="Account" disabled />
       </div>
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
@@ -49,6 +49,7 @@ import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
+import { updateBalance } from "@/balance";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -133,7 +134,7 @@ const saveRecord = async (): Promise<void> => {
     updatedAt: new Date().toISOString(),
     direction: direction.value,
     amount: Number(amount.value),
-    accountId: accountId.value,
+    accountId: originalTransaction.value.accountId,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
     isActual: isActual.value,
@@ -158,6 +159,15 @@ const saveRecord = async (): Promise<void> => {
       (originalTransaction.value.direction === "in" ? originalTransaction.value.amount : 0),
     (updatedTransaction.direction === "out" ? updatedTransaction.amount : 0) -
       (originalTransaction.value.direction === "out" ? originalTransaction.value.amount : 0),
+  );
+
+  const balanceDelta = (transaction: Transaction): number =>
+    transaction.direction === "in" ? transaction.amount : -transaction.amount;
+
+  await updateBalance(
+    month,
+    originalTransaction.value.accountId,
+    balanceDelta(updatedTransaction) - balanceDelta(originalTransaction.value),
   );
 
   originalTransaction.value = updatedTransaction;

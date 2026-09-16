@@ -35,11 +35,15 @@ Statistics are not authoritative financial data.
 
 Account balances are derived from the account starting balance and transaction history.
 
-Balances are stored separately by month and account as ending balances. A balance entry represents the account's ending balance after the transactions in that month.
+Balances are stored separately by month and account as starting-balance checkpoints. A balance entry represents the account balance at the beginning of the month, before that month's transactions are applied.
 
-When a transaction changes, the affected month's balance is recalculated and the resulting balance delta is propagated through subsequent monthly balance entries. Future transaction chunks do not need to be downloaded because their existing ending balances provide the values needed for propagation.
+When the first transaction for an account/month is created, the month's starting balance is saved to the Balances storage. The transaction balance displayed in the spreadsheet is calculated from that starting balance and the transactions in the month up to that transaction.
+
+When a transaction changes, the affected month's balance checkpoint is preserved and the resulting balance delta is propagated through subsequent monthly balance entries. Future transaction chunks do not need to be downloaded because their existing starting-balance checkpoints provide the values needed for propagation.
 
 The account's starting balance remains part of the Account data. Monthly balances are derived checkpoints.
+
+Balances are stored in IndexedDB and encrypted remote storage together with their metadata. The Balances object is initialized in IndexedDB during migration/setup even when it contains no entries.
 
 ## Search and Filtering
 
@@ -53,7 +57,7 @@ A search index may be introduced later if transaction history becomes large enou
 
 Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local collision detection, one namespace per entity.
 
-## Type Prefixes
+# Type Prefixes
 
 | Entity | Prefix | Example |
 |----------|--------|---------|

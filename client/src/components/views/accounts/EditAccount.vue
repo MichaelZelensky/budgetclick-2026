@@ -18,9 +18,13 @@
     </label>
 
     <label>
-      Current balance
+      Starting balance
       <LiteInputField v-model="currentBalance" type="number" />
     </label>
+
+    <InlineAlert v-if="currentBalance !== account.currentBalance" variant="warning" class="tw-mb-4">
+      Changing the starting balance requires statistics recalculation to correct account transaction balances.
+    </InlineAlert>
 
     <ButtonGroup>
       <LiteButton @click="save">
@@ -37,6 +41,7 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
+import InlineAlert from "@/components/ui/InlineAlert.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { getState } from "@/state/state";
