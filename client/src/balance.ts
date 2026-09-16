@@ -61,30 +61,23 @@ export const updateBalance = async (
     const existingBalance = currentBalances?.balances.find(
       balance => balance.account === accountId && balance.month === month,
     );
-    const balances = existingBalance === undefined
-      ? [
-          ...(currentBalances?.balances ?? []),
-          {
-            month,
-            account: accountId,
-            startingBalance: account.currentBalance,
-          },
-        ].map(balance =>
-          balance.account === accountId && balance.month > month
-            ? {
-                ...balance,
-                startingBalance: balance.startingBalance + balanceDelta,
-              }
-            : balance,
-        )
-      : currentBalances.balances.map(balance =>
-          balance.account === accountId && balance.month > month
-            ? {
-                ...balance,
-                startingBalance: balance.startingBalance + balanceDelta,
-              }
-            : balance,
-        );
+    const balances = [
+      ...(currentBalances?.balances ?? []).filter(
+        balance => !(balance.account === accountId && balance.month === month),
+      ),
+      {
+        month,
+        account: accountId,
+        startingBalance: existingBalance?.startingBalance ?? account.currentBalance,
+      },
+    ].map(balance =>
+      balance.account === accountId && balance.month > month
+        ? {
+            ...balance,
+            startingBalance: balance.startingBalance + balanceDelta,
+          }
+        : balance,
+    );
     const now = new Date().toISOString();
     const updatedBalances: BalanceStorage = {
       metadata: {
