@@ -104,9 +104,9 @@ const columns = [
   { key: "actual", label: "", filterable: false, type: DatagridColumnType.BOOLEAN },
   { key: "date", label: "Date", filterable: true },
   { key: "amount", label: "Amount", filterable: true },
-  { key: "balance", label: "Balance", filterable: true },
+  { key: "description", label: "Description", filterable: true },
+  { key: "balance", label: "Balance", filterable: false },
   { key: "account", label: "Account", filterable: true },
-  { key: "description", label: "Description", filterable: true }
 ];
 
 const onSelectionChange = (ids: string[]): void => {
