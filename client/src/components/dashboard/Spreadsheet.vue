@@ -22,6 +22,12 @@
         {{ item.amount }}
       </span>
     </template>
+
+    <template #balance="{ item }">
+      <span :class="{ 'tw-text-red-600': Number(item.balance) < 0 }">
+        {{ item.balance }}
+      </span>
+    </template>
   </Datagrid>
 </template>
 
