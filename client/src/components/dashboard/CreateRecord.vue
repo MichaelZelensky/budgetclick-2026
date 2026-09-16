@@ -41,6 +41,7 @@ import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
+import { updateBalance } from "@/balance";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -118,6 +119,12 @@ const saveRecord = async (): Promise<void> => {
     transaction.accountId,
     transaction.direction === "in" ? transaction.amount : 0,
     transaction.direction === "out" ? transaction.amount : 0,
+  );
+
+  await updateBalance(
+    month,
+    transaction.accountId,
+    transaction.direction === "in" ? transaction.amount : -transaction.amount,
   );
 
   description.value = "";

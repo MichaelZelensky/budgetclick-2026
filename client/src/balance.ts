@@ -69,7 +69,14 @@ export const updateBalance = async (
             account: accountId,
             startingBalance: account.currentBalance,
           },
-        ]
+        ].map(balance =>
+          balance.account === accountId && balance.month > month
+            ? {
+                ...balance,
+                startingBalance: balance.startingBalance + balanceDelta,
+              }
+            : balance,
+        )
       : currentBalances.balances.map(balance =>
           balance.account === accountId && balance.month > month
             ? {
@@ -89,10 +96,11 @@ export const updateBalance = async (
       },
       balances,
     };
+    const balancesData = JSON.parse(JSON.stringify(updatedBalances)) as BalanceStorage;
     const manifest = getManifest();
-    await dbSaveBalances(updatedBalances);
-    updateState("balances", updatedBalances);
-    await putFile(manifest.balances.objectKey, encodeData(updatedBalances));
+    await dbSaveBalances(balancesData);
+    updateState("balances", balancesData);
+    await putFile(manifest.balances.objectKey, encodeData(balancesData));
     await saveManifest({
       ...manifest,
       version: manifest.version + 1,
@@ -100,7 +108,7 @@ export const updateBalance = async (
       updatedBy: getState().settings?.clientId ?? "-",
       balances: {
         ...manifest.balances,
-        version: updatedBalances.metadata.version,
+        version: balancesData.metadata.version,
       },
     });
   } finally {
