@@ -38,10 +38,4 @@ Views → Components → State → Data
 
 ## Derived Data
 
-Derived data is calculated from primary transaction and reference data and is persisted separately when useful:
-
-- Statistics are generated and rebuilt on demand.
-- Account balances are maintained as derived monthly ending balances.
-- Search and filtering operate on cached transaction chunks. Historical chunks are downloaded when required.
-
-Derived data does not replace the underlying transaction data and can be regenerated.
+Derived data (statistics, account balances, and cached search/filter results) is computed from primary transaction and reference data via the `cache` and `data` modules, and can be regenerated. See `docs/data.md` and `docs/stats.md` for the underlying rules.

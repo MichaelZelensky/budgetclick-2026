@@ -20,16 +20,7 @@ Derived data is stored separately from primary entities and can be regenerated f
 
 ## Statistics
 
-Statistics contain aggregated financial values:
-
-- total income
-- total outcome
-- ending total balance
-- the same values by account
-
-Statistics are generated on demand. Initial generation downloads the transaction chunks required to calculate the complete result. After a transaction changes, statistics are recalculated from the affected point forward rather than downloading all chunks again.
-
-Statistics are not authoritative financial data.
+See `docs/stats.md` for statistics content, currency handling, and calculation/sync rules. Statistics are not authoritative financial data.
 
 ## Account Balances
 

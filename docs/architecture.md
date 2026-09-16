@@ -21,13 +21,7 @@ IndexedDB   S3 Storage
 
 ## Derived Data
 
-BudgetClick maintains derived data separately from primary financial data:
-
-- Statistics: aggregated financial statistics generated on demand and persisted as a versioned storage object.
-- Balances: per-account ending balances by month, persisted as a versioned storage object.
-- Search/filter: performed against locally cached transaction chunks. If required historical chunks are not cached, they are downloaded and then reused locally.
-
-Derived data can be regenerated from transaction data and is not authoritative financial data.
+BudgetClick maintains statistics and account balances as derived, regenerable data, kept separate from primary transaction data. See `docs/data.md` (schema/balances) and `docs/stats.md` (statistics) for details.
 
 # Technology Stack
 
