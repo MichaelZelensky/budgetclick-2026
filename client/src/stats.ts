@@ -6,10 +6,7 @@ import { loadAllChunks } from "@/sync";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { MonthlyStatistics, StatisticsStorage } from "@/types/storage/StatisticsStorage";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-
-const encodeData = (data: unknown): Uint8Array => {
-  return new TextEncoder().encode(JSON.stringify(data));
-};
+import { encodeData } from "@/utils/data";
 
 const getCurrencyRate = (from: string, to: string, date: string): number => {
   if (from === to) {

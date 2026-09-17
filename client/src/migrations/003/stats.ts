@@ -3,16 +3,8 @@ import { getRawManifest, generateObjectKey, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { getState } from "@/state/state";
 import type { BalanceStorage } from "@/types/storage/BalanceStorage";
-import type { Manifest } from "@/types/storage/Manifest";
 import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
-
-const decodeManifest = (body: ArrayBuffer): Manifest => {
-  return JSON.parse(new TextDecoder().decode(body)) as Manifest;
-};
-
-const encodeData = (data: unknown): Uint8Array => {
-  return new TextEncoder().encode(JSON.stringify(data));
-};
+import { decodeManifest, encodeData } from "@/utils/data";
 
 export const migrateManifest = async (): Promise<void> => {
   const body = await getRawManifest();
