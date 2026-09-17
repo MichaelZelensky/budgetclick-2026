@@ -17,6 +17,7 @@ describe("state", () => {
     expect(getState()).toStrictEqual({
       config: null,
       settings: null,
+      isOnline: navigator.onLine,
       manifest: null,
       referenceData: {
         accounts: null,
@@ -26,6 +27,7 @@ describe("state", () => {
       },
       chunks: {},
       statistics: null,
+      balances: null,
     });
   });
 
@@ -135,6 +137,7 @@ describe("state", () => {
     expect(getState()).toStrictEqual({
       config: null,
       settings: null,
+      isOnline: navigator.onLine,
       manifest: null,
       referenceData: {
         accounts: null,
@@ -144,6 +147,7 @@ describe("state", () => {
       },
       chunks: {},
       statistics: null,
+      balances: null,
     });
   });
 });

@@ -1,22 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { migrate } from "@/migrations/migrate";
+import { migrations } from "@/migrations/migrations";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import { migrate as migrateV1 } from "@/migrations/001/migration";
 
-vi.mock("@/migrations/001/migration", () => ({
-  migrate: vi.fn(),
-}));
-
-vi.mock("@/migrations/002/migration", () => ({
-  migrate: vi.fn(),
-}));
-
-vi.mock("@/migrations/003/migration", () => ({
-  migrate: vi.fn(),
-}));
-
-vi.mock("@/migrations/004/migration", () => ({
-  migrate: vi.fn(),
+vi.mock("@/migrations/migrations", () => ({
+  migrations: [
+    { version: 1, migrate: vi.fn() },
+    { version: 2, migrate: vi.fn() },
+    { version: 3, migrate: vi.fn() },
+  ],
 }));
 
 vi.mock("@/state/loading", () => ({
@@ -29,28 +21,30 @@ describe("migrate", () => {
     vi.clearAllMocks();
   });
 
-  it("starts and stops loading when migrations are pending", () => {
+  it("runs pending migrations and manages loading", () => {
     const database = {} as IDBDatabase;
 
-    migrate(database, 0);
+    migrate(database, 1);
 
+    expect(migrations[0].migrate).not.toHaveBeenCalled();
+    expect(migrations[1].migrate).toHaveBeenCalledWith(database);
+    expect(migrations[2].migrate).toHaveBeenCalledWith(database);
     expect(setLoadingOn).toHaveBeenCalledOnce();
     expect(setLoadingOff).toHaveBeenCalledWith("loading-id");
   });
 
-  it("does not start loading when database is up to date", () => {
+  it("does nothing when database is up to date", () => {
     const database = {} as IDBDatabase;
 
-    migrate(database, 4);
+    migrate(database, 3);
 
     expect(setLoadingOn).not.toHaveBeenCalled();
     expect(setLoadingOff).not.toHaveBeenCalled();
   });
 
-  it("propagates migration errors", () => {
+  it("stops loading when a migration fails", () => {
     const database = {} as IDBDatabase;
-
-    vi.mocked(migrateV1).mockImplementation(() => {
+    vi.mocked(migrations[1].migrate).mockImplementation(() => {
       throw new Error("Migration failed");
     });
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dbGetAccounts, dbSaveAccounts } from "@/repository/account";
+import { dbGetBalances, dbSaveBalances } from "@/repository/balance";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetRates, dbSaveRates } from "@/repository/rates";
@@ -11,6 +12,11 @@ import { getState, initializeState } from "@/state/state";
 import { importRemoteData, synchronizeRemoteData } from "@/sync";
 import type { Manifest } from "@/types/storage/Manifest";
 
+const balancesMocks = vi.hoisted(() => ({
+  dbGetBalances: vi.fn(),
+  dbSaveBalances: vi.fn(),
+}));
+
 const ratesMocks = vi.hoisted(() => ({
   dbGetRates: vi.fn(),
   dbSaveRates: vi.fn(),
@@ -20,6 +26,8 @@ vi.mock("@/repository/account", () => ({
   dbGetAccounts: vi.fn(),
   dbSaveAccounts: vi.fn(),
 }));
+
+vi.mock("@/repository/balance", () => balancesMocks);
 
 vi.mock("@/repository/category", () => ({
   dbGetCategories: vi.fn(),
@@ -75,8 +83,14 @@ vi.mock("@/validators/default/StatisticsStorage.js", () => ({
   default: vi.fn(() => true),
 }));
 
+vi.mock("@/validators/default/BalanceStorage.js", () => ({
+  default: vi.fn(() => true),
+}));
+
 const mockedDbGetAccounts = vi.mocked(dbGetAccounts);
 const mockedDbSaveAccounts = vi.mocked(dbSaveAccounts);
+const mockedDbGetBalances = vi.mocked(balancesMocks.dbGetBalances);
+const mockedDbSaveBalances = vi.mocked(balancesMocks.dbSaveBalances);
 const mockedDbGetCategories = vi.mocked(dbGetCategories);
 const mockedDbSaveCategories = vi.mocked(dbSaveCategories);
 const mockedDbGetContractors = vi.mocked(dbGetContractors);
@@ -125,6 +139,10 @@ const createManifest = (): Manifest => ({
       version: 2,
     },
   },
+  balances: {
+    objectKey: "balances-key",
+    version: 2,
+  },
   statistics: {
     objectKey: "statistics-key",
     version: 2,
@@ -147,6 +165,17 @@ const createAccounts = (version: number) => ({
     updatedBy: "client-123",
   },
   accounts: [],
+});
+
+const createBalances = (version: number) => ({
+  metadata: {
+    schemaVersion: 1,
+    version,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    updatedBy: "client-123",
+  },
+  balances: {},
 });
 
 const createCategories = (version: number) => ({
@@ -214,6 +243,8 @@ describe("sync", () => {
 
     mockedDbGetAccounts.mockReset();
     mockedDbSaveAccounts.mockReset();
+    mockedDbGetBalances.mockReset();
+    mockedDbSaveBalances.mockReset();
     mockedDbGetCategories.mockReset();
     mockedDbSaveCategories.mockReset();
     mockedDbGetContractors.mockReset();
@@ -228,6 +259,7 @@ describe("sync", () => {
     mockedGetFile.mockReset();
 
     mockedDbSaveAccounts.mockResolvedValue();
+    mockedDbSaveBalances.mockResolvedValue();
     mockedDbSaveCategories.mockResolvedValue();
     mockedDbSaveContractors.mockResolvedValue();
     mockedDbSaveRates.mockResolvedValue();
@@ -251,7 +283,9 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const balances = createBalances(2);
       const chunk = createChunk(2);
+      const statistics = createStatistics(2);
 
       mockedGetFile.mockImplementation(async key => {
         const values: Record<string, ArrayBuffer> = {
@@ -259,7 +293,9 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "balances-key": encode(balances),
           [`chunk-${currentMonth}`]: encode(chunk),
+          "statistics-key": encode(statistics),
         };
 
         return values[key];
@@ -271,12 +307,17 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith(currentMonth, chunk);
+      expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
+
       expect(getState().referenceData.accounts).toStrictEqual(accounts);
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
       expect(getState().referenceData.rates).toStrictEqual(rates);
       expect(getState().chunks[currentMonth]).toStrictEqual(chunk);
+      expect(getState().balances).toStrictEqual(balances);
+      expect(getState().statistics).toStrictEqual(statistics);
     });
   });
 
@@ -287,11 +328,13 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(createAccounts(1));
+      mockedDbGetBalances.mockResolvedValue(createBalances(1));
       mockedDbGetCategories.mockResolvedValue(createCategories(1));
       mockedDbGetContractors.mockResolvedValue(createContractors(1));
       mockedDbGetRates.mockResolvedValue(createRates(1));
@@ -306,6 +349,7 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "balances-key": encode(balances),
           "chunk-2026-09": encode(chunk),
           "statistics-key": encode(statistics),
         };
@@ -320,14 +364,16 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
-      expect(mockedGetFile).toHaveBeenCalledTimes(6);
+      expect(mockedGetFile).toHaveBeenCalledTimes(7);
       expect(getState().referenceData.accounts).toStrictEqual(accounts);
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
       expect(getState().referenceData.rates).toStrictEqual(rates);
       expect(getState().chunks["2026-09"]).toStrictEqual(chunk);
+      expect(getState().balances).toStrictEqual(balances);
       expect(getState().statistics).toStrictEqual(statistics);
     });
 
@@ -336,6 +382,7 @@ describe("sync", () => {
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(createAccounts(2));
+      mockedDbGetBalances.mockResolvedValue(createBalances(2));
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(2));
@@ -348,6 +395,7 @@ describe("sync", () => {
 
       expect(mockedGetFile).not.toHaveBeenCalled();
       expect(mockedDbSaveAccounts).not.toHaveBeenCalled();
+      expect(mockedDbSaveBalances).not.toHaveBeenCalled();
       expect(mockedDbSaveCategories).not.toHaveBeenCalled();
       expect(mockedDbSaveContractors).not.toHaveBeenCalled();
       expect(mockedDbSaveRates).not.toHaveBeenCalled();
@@ -361,11 +409,13 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(null);
+      mockedDbGetBalances.mockResolvedValue(null);
       mockedDbGetCategories.mockResolvedValue(null);
       mockedDbGetContractors.mockResolvedValue(null);
       mockedDbGetRates.mockResolvedValue(null);
@@ -378,6 +428,7 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "balances-key": encode(balances),
           "chunk-2026-09": encode(chunk),
           "statistics-key": encode(statistics),
         };
@@ -391,6 +442,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
     });
@@ -400,6 +452,7 @@ describe("sync", () => {
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(createAccounts(1));
+      mockedDbGetBalances.mockResolvedValue(createBalances(2));
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(2));
@@ -419,6 +472,7 @@ describe("sync", () => {
 
       mockedGetManifest.mockReturnValue(manifest);
       mockedDbGetAccounts.mockResolvedValue(createAccounts(2));
+      mockedDbGetBalances.mockResolvedValue(createBalances(2));
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(1));

@@ -70,8 +70,9 @@ export const getFile = async (key: string): Promise<ArrayBuffer> => {
   if (body === null) {
     throw createFileNotFoundError(key);
   }
-  console.debug(`Getting file: ${key}`, decodeData(await decryptData(body)));
-  return decryptData(body);
+  const decrypted = await decryptData(body);
+  console.debug(`Getting file: ${key}`, decodeData(decrypted));
+  return decrypted;
 };
 
 export const putFile = async (key: string, body: Uint8Array): Promise<void> => {

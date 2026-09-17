@@ -5,9 +5,14 @@ import EditRecord from "@/components/dashboard/EditRecord.vue";
 import { saveChunkData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
+import { nextTick } from "vue";
 
 vi.mock("@/data-flow", () => ({
   saveChunkData: vi.fn(),
+}));
+
+vi.mock("@/balance", () => ({
+  updateBalance: vi.fn(),
 }));
 
 const createInputStub = () => ({
@@ -78,7 +83,10 @@ const mountEditRecord = (transaction: Transaction) => mount(EditRecord, {
   },
 });
 
-const findToggle = (wrapper: ReturnType<typeof mountCreateRecord>, label: string) =>
+const findToggle = (
+  wrapper: ReturnType<typeof mountCreateRecord>,
+  label: string,
+) =>
   wrapper
     .findAll("label")
     .find(toggle => toggle.text() === label)
@@ -251,10 +259,13 @@ describe("transactions CRUD", () => {
     await inputs[2].setValue("2026-08-25T09:00");
 
     await wrapper.find("button").trigger("click");
+    await nextTick();
 
-    expect(inputs[0].element.value).toBe("");
-    expect(inputs[1].element.value).toBe("");
-    expect(inputs[2].element.value).toMatch(
+    const updatedInputs = wrapper.findAll("input");
+
+    expect(updatedInputs[0].element.value).toBe("");
+    expect(updatedInputs[1].element.value).toBe("");
+    expect(updatedInputs[2].element.value).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
     );
   });

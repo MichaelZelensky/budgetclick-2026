@@ -63,8 +63,8 @@ describe("storage", () => {
   });
 
   it("gets and decrypts a file", async () => {
-    const encrypted = new ArrayBuffer(3);
-    const decrypted = new ArrayBuffer(2);
+    const encrypted = new TextEncoder().encode('"encrypted"').buffer;
+    const decrypted = new TextEncoder().encode('{"test":true}').buffer;
 
     vi.stubGlobal(
       "fetch",
@@ -78,6 +78,7 @@ describe("storage", () => {
 
     const result = await getFile("accounts");
 
+    expect(decryptData).toHaveBeenCalledTimes(1);
     expect(decryptData).toHaveBeenCalledWith(encrypted);
     expect(result).toBe(decrypted);
   });

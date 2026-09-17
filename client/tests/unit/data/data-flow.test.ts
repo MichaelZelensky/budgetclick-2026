@@ -9,6 +9,13 @@ import { ReferenceDataKey } from "@/types/AppState";
 vi.mock("@/manifest", () => ({
   getManifest: vi.fn(),
   saveManifest: vi.fn(),
+  clearManifestPending: vi.fn().mockResolvedValue(undefined),
+  manifestKey: "manifest",
+}));
+
+vi.mock("@/offline-sync", () => ({
+  setReferenceDataPending: vi.fn().mockResolvedValue(undefined),
+  clearReferenceDataPending: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/storage", () => ({
@@ -25,6 +32,12 @@ vi.mock("@/repository/category", () => ({
 
 vi.mock("@/repository/contractor", () => ({
   dbSaveContractors: vi.fn(),
+}));
+
+vi.mock("@/offline-sync", () => ({
+  setReferenceDataPending: vi.fn().mockResolvedValue(undefined),
+  clearReferenceDataPending: vi.fn().mockResolvedValue(undefined),
+  clearManifestPending: vi.fn().mockResolvedValue(undefined),
 }));
 
 const accountsStorage = {
@@ -93,8 +106,9 @@ describe("data flow", () => {
     expect(uploadedData).toEqual(savedData);
     expect(savedManifest.version).toBe(2);
     expect(savedManifest.references.accounts.version).toBe(2);
-    expect(vi.mocked(putFile)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(putFile)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(putFile).mock.calls[0][0]).toBe("accounts");
+    expect(vi.mocked(putFile).mock.calls[1][0]).toBe("manifest");
   });
 
   it("throws when the manifest reference is missing", async () => {

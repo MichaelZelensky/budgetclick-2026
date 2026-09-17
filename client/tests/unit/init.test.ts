@@ -9,6 +9,7 @@ import { initializeStoredEncryptionKey } from "@/encryption/key";
 import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { synchronizeRemoteData } from "@/sync";
+import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
 
 vi.mock("@/database", () => ({
   initializeDatabase: vi.fn(),
@@ -30,6 +31,11 @@ vi.mock("@/sync", () => ({
   synchronizeRemoteData: vi.fn(),
 }));
 
+vi.mock("@/offline-sync", () => ({
+  initializeOfflineSync: vi.fn(),
+  synchronizeOfflineData: vi.fn(),
+}));
+
 const mockedInitializeDatabase = vi.mocked(initializeDatabase);
 const mockedInitializeStoredEncryptionKey = vi.mocked(initializeStoredEncryptionKey);
 const mockedInitializeManifest = vi.mocked(initializeManifest);
@@ -46,6 +52,9 @@ describe("application initialization", () => {
     mockedInitializeManifest.mockReset();
     mockedInitializeData.mockReset();
     mockedSynchronizeRemoteData.mockReset();
+
+    vi.mocked(initializeOfflineSync).mockReset();
+    vi.mocked(synchronizeOfflineData).mockReset();
 
     mockedInitializeStoredEncryptionKey.mockResolvedValue(true);
     mockedInitializeManifest.mockResolvedValue(false);
