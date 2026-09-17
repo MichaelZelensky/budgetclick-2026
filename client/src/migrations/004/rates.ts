@@ -3,7 +3,8 @@ import { getRawManifest, generateObjectKey, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { getState } from "@/state/state";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
-import { decodeManifest, encodeData } from "@/utils/data";
+import { decodeData, encodeData } from "@/utils/data";
+import { Manifest } from "@/types/storage/Manifest";
 
 export const migrateManifest = async (): Promise<void> => {
   const body = await getRawManifest();
@@ -11,7 +12,7 @@ export const migrateManifest = async (): Promise<void> => {
     return;
   }
   const decrypted = await decryptData(body);
-  const manifest = decodeManifest(decrypted);
+  const manifest = decodeData<Manifest>(decrypted);
   if (manifest.references.rates !== undefined) {
     return;
   }

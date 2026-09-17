@@ -2,6 +2,7 @@ import { getConfig } from "@/state/config";
 import { getSettings } from "@/state/settings";
 import { decryptData, encryptData } from "@/encryption/encryption";
 import { getArrayBuffer } from "@/utils/buffer";
+import { decodeData } from "@/utils/data";
 
 export type FileNotFoundError = Error & { name: "FileNotFoundError" };
 
@@ -69,9 +70,11 @@ export const getFile = async (key: string): Promise<ArrayBuffer> => {
   if (body === null) {
     throw createFileNotFoundError(key);
   }
+  console.debug(`Getting file: ${key}`, decodeData(await decryptData(body)));
   return decryptData(body);
 };
 
 export const putFile = async (key: string, body: Uint8Array): Promise<void> => {
+  console.debug(`Putting file: ${key}`);
   await putRawFile(key, await encryptData(body));
 };

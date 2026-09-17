@@ -4,8 +4,9 @@ import { getState } from "@/state/state";
 import { getFile, getRawFile, isFileNotFoundError, putFile } from "@/storage";
 import { decryptData } from "@/encryption/encryption";
 import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
+import { decodeData, encodeData } from "./utils/data";
 
-const manifestKey = "manifest";
+export const manifestKey = "manifest";
 
 const validateManifestData = (value: unknown): Manifest => {
   if (!validateManifest(value)) {
@@ -15,14 +16,6 @@ const validateManifestData = (value: unknown): Manifest => {
     throw new Error(`Invalid manifest\n${errors}`);
   }
   return value;
-};
-
-const decodeManifest = (body: ArrayBuffer): unknown => {
-  return JSON.parse(new TextDecoder().decode(body));
-};
-
-const encodeManifest = (manifest: Manifest): Uint8Array => {
-  return new TextEncoder().encode(JSON.stringify(manifest));
 };
 
 export const generateObjectKey = (): string => {
@@ -81,13 +74,13 @@ export const getRawManifest = (): Promise<ArrayBuffer | null> => {
 
 export const decryptRemoteManifest = async (body: ArrayBuffer): Promise<Manifest> => {
   const decrypted = await decryptData(body);
-  return validateManifestData(decodeManifest(decrypted));
+  return validateManifestData(decodeData<Manifest>(decrypted));
 };
 
 export const initializeManifest = async (): Promise<boolean> => {
   try {
     const body = await getFile(manifestKey);
-    const manifest = validateManifestData(decodeManifest(body));
+    const manifest = validateManifestData(decodeData<Manifest>(body));
     getState().manifest = structuredClone(manifest);
     return true;
   } catch (error) {
@@ -115,15 +108,20 @@ export const saveManifest = async (manifest: Manifest): Promise<void> => {
     ...offlineSync,
     manifest: validatedManifest,
   });
-  await putFile(manifestKey, encodeManifest(validatedManifest));
+  getState().manifest = structuredClone(validatedManifest);
+};
+
+export const clearManifestPending = async (): Promise<void> => {
+  const offlineSync = await dbGetOfflineSync();
   await dbSaveOfflineSync({
     ...offlineSync,
     manifest: null,
   });
-  getState().manifest = structuredClone(validatedManifest);
 };
 
 export const initializeNewManifest = async (clientId: string): Promise<void> => {
   const manifest = createManifest(clientId);
   await saveManifest(manifest);
+  await putFile(manifestKey, encodeData(manifest));
+  await clearManifestPending();
 };
