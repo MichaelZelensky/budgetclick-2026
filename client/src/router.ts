@@ -112,7 +112,7 @@ export const router = createRouter({
 });
 
 router.beforeEach(async to => {
-  if (to.path === "/settings" || to.path === "/help") {
+  if (to.path === "/help") {
     return true;
   }
   const requiredRoute = await getRequiredSetupRoute();
