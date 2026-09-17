@@ -6,7 +6,7 @@ import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
-import { dbSaveChunk, dbDeleteChunk } from "@/repository/transaction";
+import { dbSaveChunk } from "@/repository/transaction";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
@@ -15,6 +15,8 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { showError } from "@/state/error";
+import { encodeData } from "@/utils/data";
+import { clearChunkPending, clearReferenceDataPending, setChunkPending, setReferenceDataPending } from "./offline-sync";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
@@ -24,10 +26,6 @@ type SaveDataInput<K extends ReferenceDataKey> = {
 type SaveTransactionDataInput = {
   key: string;
   data: ChunkStorage;
-};
-
-const encodeData = (data: unknown): Uint8Array => {
-  return new TextEncoder().encode(JSON.stringify(data));
 };
 
 const toPlain = <T>(data: T): T => {
@@ -90,9 +88,6 @@ const referenceDataSavers: { [K in ReferenceDataKey]: (data: ReferenceDataTypes[
 
 export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {
   const loadingId = setLoadingOn();
-  const previousData = referenceDataGetters[key]();
-  const plainPreviousData = previousData === null ? null : toPlain(previousData);
-
   try {
     const plainData = toPlain(data);
     const updatedData = updateStorageMetadata(plainData);
@@ -104,17 +99,14 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
     }
 
     const dbSave = referenceDataSavers[key];
-    await dbSave((updatedData));
+    await dbSave(updatedData);
     updateReferenceDataState(key, updatedData);
+    await setReferenceDataPending(key);
     await putFile(entry.objectKey, encodeData(updatedData));
     const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
+    await clearReferenceDataPending(key);
   } catch (error) {
-    if (plainPreviousData !== null) {
-      await referenceDataSavers[key](plainPreviousData);
-    }
-
-    updateReferenceDataState(key, plainPreviousData);
     showError(getErrorMessage(error));
     throw error;
   } finally {
@@ -124,9 +116,6 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
 
 export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Promise<void> => {
   const loadingId = setLoadingOn();
-  const previousChunk = getState().chunks[key];
-  const plainPreviousChunk = previousChunk === undefined ? undefined : toPlain(previousChunk);
-
   try {
     const plainData = toPlain(data);
     const now = new Date().toISOString();
@@ -145,19 +134,13 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
 
     await dbSaveChunk(key, updatedData);
     updateChunksState(key, updatedData);
+    await setChunkPending(key);
     await putFile(objectKey, encodeData(updatedData));
 
     const updatedManifest = bumpManifest(manifest, "chunks", key, { objectKey, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
+    await clearChunkPending(key);
   } catch (error) {
-    if (plainPreviousChunk !== undefined) {
-      await dbSaveChunk(key, plainPreviousChunk);
-      updateChunksState(key, plainPreviousChunk);
-    } else {
-      await dbDeleteChunk(key);
-      delete getState().chunks[key];
-    }
-
     showError(getErrorMessage(error));
     throw error;
   } finally {

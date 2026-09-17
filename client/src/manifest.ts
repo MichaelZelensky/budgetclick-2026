@@ -3,6 +3,7 @@ import validateManifest from "@/validators/default/Manifest.js";
 import { getState } from "@/state/state";
 import { getFile, getRawFile, isFileNotFoundError, putFile } from "@/storage";
 import { decryptData } from "@/encryption/encryption";
+import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
 
 const manifestKey = "manifest";
 
@@ -109,7 +110,16 @@ export const getManifest = (): Readonly<Manifest> => {
 export const saveManifest = async (manifest: Manifest): Promise<void> => {
   const plainManifest = JSON.parse(JSON.stringify(manifest)) as Manifest;
   const validatedManifest = validateManifestData(plainManifest);
+  const offlineSync = await dbGetOfflineSync();
+  await dbSaveOfflineSync({
+    ...offlineSync,
+    manifest: validatedManifest,
+  });
   await putFile(manifestKey, encodeManifest(validatedManifest));
+  await dbSaveOfflineSync({
+    ...offlineSync,
+    manifest: null,
+  });
   getState().manifest = structuredClone(validatedManifest);
 };
 
