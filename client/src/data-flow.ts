@@ -1,6 +1,6 @@
 import { toRaw } from "vue";
 import { getState, updateReferenceDataState, updateChunksState } from "@/state/state";
-import { getManifest, saveManifest } from "@/manifest";
+import { getManifest, saveManifest, clearManifestPending, manifestKey } from "@/manifest";
 import { putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
@@ -102,10 +102,12 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
     await dbSave(updatedData);
     updateReferenceDataState(key, updatedData);
     await setReferenceDataPending(key);
-    await putFile(entry.objectKey, encodeData(updatedData));
     const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
+    await putFile(entry.objectKey, encodeData(updatedData));
+    await putFile(manifestKey, encodeData(updatedManifest));
     await clearReferenceDataPending(key);
+    await clearManifestPending();
   } catch (error) {
     showError(getErrorMessage(error));
     throw error;
@@ -135,11 +137,14 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
     await dbSaveChunk(key, updatedData);
     updateChunksState(key, updatedData);
     await setChunkPending(key);
-    await putFile(objectKey, encodeData(updatedData));
 
     const updatedManifest = bumpManifest(manifest, "chunks", key, { objectKey, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
+
+    await putFile(objectKey, encodeData(updatedData));
+    await putFile(manifestKey, encodeData(updatedManifest));
     await clearChunkPending(key);
+    await clearManifestPending();
   } catch (error) {
     showError(getErrorMessage(error));
     throw error;

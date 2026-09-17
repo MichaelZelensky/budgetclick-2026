@@ -4,7 +4,7 @@ import { ReferenceDataKey } from "@/types/AppState";
 import type { OfflineSync } from "@/types/data/OfflineSync";
 import { putFile } from "@/storage";
 import { encodeData } from "@/utils/data";
-import { getManifest, saveManifest } from "@/manifest";
+import { manifestKey } from "@/manifest";
 import { dbGetChunks } from "@/repository/transaction";
 import { dbGetStatistics } from "@/repository/statistics";
 import { dbGetBalances } from "@/repository/balance";
@@ -37,6 +37,14 @@ const hasPendingData = (offlineSync: OfflineSync): boolean => {
     offlineSync.objects.statistics ||
     offlineSync.objects.balances
   );
+};
+
+const getPendingManifest = async () => {
+  const offlineSync = await dbGetOfflineSync();
+  if (offlineSync.manifest === null) {
+    throw new Error("Offline sync manifest not found");
+  }
+  return offlineSync.manifest;
 };
 
 export const initializeOfflineSync = (): void => {
@@ -96,13 +104,15 @@ export const setObjectPending = (key: "statistics" | "balances", pending: boolea
 };
 
 const saveObject = async (objectKey: string, data: unknown): Promise<void> => {
+  const manifest = await getPendingManifest();
+  console.debug(`Saving object: ${objectKey}`, data);
   await putFile(objectKey, encodeData(data));
-  await saveManifest(getManifest());
+  await putFile(manifestKey, encodeData(manifest));
 };
 
 const synchronizeReferenceData = async (): Promise<void> => {
   const offlineSync = await dbGetOfflineSync();
-  const manifest = getManifest();
+  const manifest = await getPendingManifest();
 
   const referenceData = {
     accounts: {
@@ -125,8 +135,10 @@ const synchronizeReferenceData = async (): Promise<void> => {
 
   for (const key of Object.values(ReferenceDataKey)) {
     if (!offlineSync.objects[key]) {
+      console.debug(`Skip: ${key}`);
       continue;
     }
+    console.debug(`Synchronizing reference data: ${key}`);
     const value = referenceData[key];
     if (value.data === null) {
       throw new Error(`Reference data not found: ${key}`);
@@ -138,7 +150,7 @@ const synchronizeReferenceData = async (): Promise<void> => {
 
 const synchronizeChunks = async (): Promise<void> => {
   const offlineSync = await dbGetOfflineSync();
-  const manifest = getManifest();
+  const manifest = await getPendingManifest();
   const chunks = await dbGetChunks();
 
   for (const [month, pending] of Object.entries(offlineSync.objects.chunks)) {
@@ -164,7 +176,8 @@ const synchronizeStatistics = async (): Promise<void> => {
   if (statistics === null) {
     throw new Error("Statistics not found");
   }
-  await saveObject(getManifest().statistics.objectKey, statistics);
+  const manifest = await getPendingManifest();
+  await saveObject(manifest.statistics.objectKey, statistics);
   await setObjectPending("statistics", false);
 };
 
@@ -177,7 +190,8 @@ const synchronizeBalances = async (): Promise<void> => {
   if (balances === null) {
     throw new Error("Balances not found");
   }
-  await saveObject(getManifest().balances.objectKey, balances);
+  const manifest = await getPendingManifest();
+  await saveObject(manifest.balances.objectKey, balances);
   await setObjectPending("balances", false);
 };
 
@@ -186,24 +200,35 @@ export const synchronizeOfflineData = async (): Promise<void> => {
     return;
   }
   const offlineSync = await dbGetOfflineSync();
+  console.log("Offline sync state:", offlineSync);
   if (!hasPendingData(offlineSync)) {
     return;
   }
   synchronizing = true;
   const loadingId = setLoadingOn();
-  console.log("Synchronizing offline data...");
+  console.log("Synchronizing offline data... +");
   try {
     await synchronizeReferenceData();
     await synchronizeChunks();
     await synchronizeStatistics();
     await synchronizeBalances();
     const updatedOfflineSync = await dbGetOfflineSync();
-    if (updatedOfflineSync.manifest !== null) {
-      await saveManifest(updatedOfflineSync.manifest);
+    const hasPendingObjects =
+      Object.values(updatedOfflineSync.objects.chunks).some(Boolean) ||
+      updatedOfflineSync.objects.accounts ||
+      updatedOfflineSync.objects.categories ||
+      updatedOfflineSync.objects.contractors ||
+      updatedOfflineSync.objects.rates ||
+      updatedOfflineSync.objects.statistics ||
+      updatedOfflineSync.objects.balances;
+    if (!hasPendingObjects && updatedOfflineSync.manifest !== null) {
+      await dbSaveOfflineSync({
+        ...updatedOfflineSync,
+        manifest: null,
+      });
     }
   } catch {
     console.error("Error occurred during offline data synchronization. Please check your internet connection and try again.");
-    getState().isOnline = false;
   } finally {
     setLoadingOff(loadingId);
     console.log("Offline data synchronization completed.");
