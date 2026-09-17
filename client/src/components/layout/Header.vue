@@ -7,7 +7,9 @@
       BudgetClick
     </RouterLink>
 
-    <div class="tw-ml-auto tw-flex tw-items-center">
+    <div class="tw-ml-auto tw-flex tw-items-center tw-gap-3">
+      <OfflineIndicator />
+
       <span
         class="tw-flex tw-cursor-pointer tw-items-center tw-justify-center tw-p-1 tw-text-zinc-300 md:tw-hidden"
         role="button"
@@ -30,6 +32,7 @@
 import { ref } from "vue";
 import ListIcon from "@/components/icons/List.vue";
 import Menu from "@/components/layout/Menu.vue";
+import OfflineIndicator from "@/components/ui/OfflineIndicator.vue";
 
 const isMenuOpen = ref(false);
 </script>

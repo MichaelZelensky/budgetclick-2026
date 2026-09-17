@@ -8,6 +8,11 @@ import { getManifest, saveManifest } from "@/manifest";
 import { dbGetChunks } from "@/repository/transaction";
 import { dbGetStatistics } from "@/repository/statistics";
 import { dbGetBalances } from "@/repository/balance";
+import { dbGetAccounts } from "@/repository/account";
+import { dbGetCategories } from "@/repository/category";
+import { dbGetContractors } from "@/repository/contractor";
+import { dbGetRates } from "@/repository/rates";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 let synchronizing = false;
 
@@ -19,6 +24,19 @@ const updatePending = async (
     ...offlineSync,
     objects: update(offlineSync.objects),
   });
+};
+
+const hasPendingData = (offlineSync: OfflineSync): boolean => {
+  return (
+    offlineSync.manifest !== null ||
+    Object.values(offlineSync.objects.chunks).some(Boolean) ||
+    offlineSync.objects.accounts ||
+    offlineSync.objects.categories ||
+    offlineSync.objects.contractors ||
+    offlineSync.objects.rates ||
+    offlineSync.objects.statistics ||
+    offlineSync.objects.balances
+  );
 };
 
 export const initializeOfflineSync = (): void => {
@@ -167,19 +185,28 @@ export const synchronizeOfflineData = async (): Promise<void> => {
   if (!getState().isOnline || synchronizing) {
     return;
   }
+  const offlineSync = await dbGetOfflineSync();
+  if (!hasPendingData(offlineSync)) {
+    return;
+  }
   synchronizing = true;
+  const loadingId = setLoadingOn();
+  console.log("Synchronizing offline data...");
   try {
     await synchronizeReferenceData();
     await synchronizeChunks();
     await synchronizeStatistics();
     await synchronizeBalances();
-    const offlineSync = await dbGetOfflineSync();
-    if (offlineSync.manifest !== null) {
-      await saveManifest(offlineSync.manifest);
+    const updatedOfflineSync = await dbGetOfflineSync();
+    if (updatedOfflineSync.manifest !== null) {
+      await saveManifest(updatedOfflineSync.manifest);
     }
   } catch {
+    console.error("Error occurred during offline data synchronization. Please check your internet connection and try again.");
     getState().isOnline = false;
   } finally {
+    setLoadingOff(loadingId);
+    console.log("Offline data synchronization completed.");
     synchronizing = false;
   }
 };
