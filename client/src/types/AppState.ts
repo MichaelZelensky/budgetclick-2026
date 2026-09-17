@@ -12,6 +12,7 @@ import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 export type AppState = {
   config: Readonly<Config> | null;
   settings: Settings | null;
+  isOnline: boolean;
   manifest: Manifest | null;
   referenceData: {
     accounts: AccountsStorage | null;

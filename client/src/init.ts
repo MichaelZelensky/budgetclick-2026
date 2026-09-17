@@ -10,6 +10,7 @@ import { initializeStoredEncryptionKey } from "@/encryption/key";
 import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { synchronizeRemoteData } from "@/sync";
+import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -20,6 +21,7 @@ export const initializeApplication = async () => {
   const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
   initializeLogger(logLevel);
   await initializeDatabase();
+  initializeOfflineSync();
   if (settings.clientId === "-" || settings.storage === "-") {
     return;
   }
@@ -30,6 +32,7 @@ export const initializeApplication = async () => {
   const manifestInitialized = await initializeManifest();
   if (manifestInitialized) {
     await initializeData();
+    await synchronizeOfflineData();
     await synchronizeRemoteData();
   }
 };

@@ -5,6 +5,7 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 const state = reactive<AppState>({
   config: null,
   settings: null,
+  isOnline: navigator.onLine,
   manifest: null,
   referenceData: {
     accounts: null,
@@ -20,6 +21,7 @@ const state = reactive<AppState>({
 export const initializeState = (): void => {
   state.config = null;
   state.settings = null;
+  state.isOnline = navigator.onLine;
   state.manifest = null;
   state.referenceData.accounts = null;
   state.referenceData.categories = null;
