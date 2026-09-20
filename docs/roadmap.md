@@ -194,7 +194,7 @@ Scope:
 - ✅ Monthly statistics
    - ✅ rates
 
-- Basic offline workflow
+- ✅Basic offline workflow
 
 Included:
 
