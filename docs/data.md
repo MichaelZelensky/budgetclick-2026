@@ -49,21 +49,21 @@ The account's starting balance remains part of the Account data. Monthly balance
 
 Balances are stored in IndexedDB and encrypted remote storage together with their metadata.
 
-
 # Identifier Strategy
 
 Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local collision detection, one namespace per entity.
 
 # Type Prefixes
 
-| Entity | Prefix | Example |
-|----------|--------|---------|
-| Transaction | `t_` | `t_Ak39LmP2` |
-| Account | `a_` | `a_Qw82NdXa` |
-| Category | `c_` | `c_Fd91LpRt` |
-| Contractor | `o_` | `o_Xy82LmQa` |
-| Attachment | `f_` | `f_Mn73BxKe` |
-| Recurrence *(future)* | `r_` | `r_Cv62NdQa` |
+| Entity                | Prefix | Example      |
+| --------------------- | ------ | ------------ |
+| Transaction           | `t_`   | `t_Ak39LmP2` |
+| Account               | `a_`   | `a_Qw82NdXa` |
+| Category              | `c_`   | `c_Fd91LpRt` |
+| Contractor            | `o_`   | `o_Xy82LmQa` |
+| Recurrence *(future)* | `r_`   | `r_Cv62NdQa` |
+
+Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key and filename.
 
 Prefixes are globally unique, permanent, and every future entity type gets its own.
 
@@ -77,4 +77,4 @@ Schema must support new entities without redesigning existing ones: assets, liab
 
 # Open Decisions
 
-Attachment metadata, asset model, investment model, bank integration model.
+Asset model, investment model, bank integration model.

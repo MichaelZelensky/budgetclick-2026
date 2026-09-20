@@ -1,4 +1,4 @@
-# BudgetClick 2026 - Storage Contract
+# BudgetClick 2026 - Storage
 
 ## Design Principles
 
@@ -25,6 +25,7 @@ The proxy validates and parses the user-provided path as a supported S3 location
 # S3 Setup (AWS example)
 
 **1. Create the bucket**
+
 ```bash
 AWS_REGION=us-east-1
 BUCKET_NAME=budgetclick-user-example
@@ -34,9 +35,11 @@ aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION"
 aws s3api create-bucket --bucket "$BUCKET_NAME" --region "$AWS_REGION" \
   --create-bucket-configuration LocationConstraint="$AWS_REGION"
 ```
+
 Resulting path: `https://BUCKET_NAME.s3.us-east-1.amazonaws.com/`
 
 **2. Disable public access blocking** (bucket relies on public policy access; ACLs stay disabled)
+
 ```bash
 aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
   --public-access-block-configuration \
@@ -44,6 +47,7 @@ aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
 ```
 
 **3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket` only:
+
 ```json
 {
   "Version": "2012-10-17",
@@ -55,11 +59,13 @@ aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
   ]
 }
 ```
+
 No delete, bucket configuration, or IAM access is granted.
 
 **4. No delete permission** — `s3:DeleteObject` is intentionally omitted; deletion is represented by application-level tombstones, limiting damage if the path leaks.
 
 **5. Test**
+
 ```
 curl -i "https://liteed.com/budgetclick-storage/get" \
   -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/" \
@@ -94,17 +100,21 @@ Serialize → Encrypt → Upload → Download → Decrypt → Deserialize
 
 The storage layer only ever handles encrypted data. The salt is unencrypted because it's needed to initialize encryption.
 
+Attachments use the same encryption flow, but are stored as files directly under their attachment ID.
+
 # Storage Objects
 
 - **Salt:** random value for key derivation; fixed name `salt`; unencrypted, not secret; must not change for the life of the key.
 - **Manifest:** entry point into storage — schema version, manifest version, reference/chunk object locations, attachment root. Encrypted like all other objects.
 - **Reference objects:** relatively static data (accounts, categories, contractors), synced independently of transactions.
 - **Monthly chunks:** primary sync unit; each holds metadata + transaction records. The month comes from the manifest entry, not duplicated in the chunk.
-- **Attachments:** independent encrypted objects, referenced directly by transaction records via their object key.
+- **Attachments:** encrypted files stored directly using their attachment ID as the object key. They have no metadata, version, or manifest entry. Content type is determined from the file's magic bytes.
 
 # Metadata & Versioning
 
-Every object except manifest and salt carries `schemaVersion`, `version`, `createdAt`, `updatedAt`, `updatedBy`. Version increments on every change and drives sync/conflict detection.
+Every versioned object except manifest and salt carries `schemaVersion`, `version`, `createdAt`, `updatedAt`, `updatedBy`. Version increments on every change and drives sync/conflict detection.
+
+Attachments are not versioned storage objects and do not carry storage metadata.
 
 # Object Independence
 
