@@ -2,7 +2,7 @@ import { migrate } from "@/migrations/migrate";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 const databaseName = "budgetclick";
-const databaseVersion = 5;
+const databaseVersion = 6;
 const databaseState = {
   database: null as IDBDatabase | null,
 };
@@ -15,7 +15,7 @@ export const initializeDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, databaseVersion);
     request.onupgradeneeded = event => {
-      migrate(request.result, event.oldVersion);
+      migrate(request.result, event.oldVersion, request.transaction);
     };
     request.onsuccess = () => {
       databaseState.database = request.result;
