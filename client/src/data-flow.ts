@@ -113,6 +113,7 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
     const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
     await putFile(entry.objectKey, encodeData(updatedData));
+    await putFile(manifestKey, encodeData(updatedManifest));
     await clearReferenceDataPending(key);
     await clearManifestPending();
   } catch (error) {
