@@ -10,5 +10,6 @@ export type OfflineSync = {
     contractors: boolean;
     rates: boolean;
     balances: boolean;
+    attachments: Record<string, boolean>;
   };
-};
+}

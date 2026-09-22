@@ -12,6 +12,27 @@
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
+      <input
+        type="file"
+        multiple
+        @change="selectAttachments"
+      />
+
+      <div v-if="attachments.length > 0" class="tw-grid tw-gap-1">
+        <div
+          v-for="attachment in attachments"
+          :key="attachment.id"
+          class="tw-flex tw-items-center tw-gap-2"
+        >
+          <a :href="attachment.url" target="_blank" rel="noopener">
+            {{ attachment.name }}
+          </a>
+          <button type="button" @click="removeAttachment(attachment.id)">
+            ×
+          </button>
+        </div>
+      </div>
+
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteToggle v-model="isActual">
           Actual
@@ -47,13 +68,22 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
-import { saveChunkData } from "@/data-flow";
+import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import Modal from "@/components/ui/Modal.vue";
+import { generateEntityId } from "@/utils/entity";
+
+type Attachment = {
+  id: string;
+  name: string;
+  url: string;
+  deleted: boolean;
+  file?: File;
+};
 
 const props = defineProps<{
   transaction: Transaction;
@@ -67,6 +97,7 @@ const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showMonthChangeModal = ref(false);
 const originalTransaction = ref(props.transaction);
+const attachments = ref<Attachment[]>([]);
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -75,7 +106,22 @@ const accountOptions = computed<Option[]>(() =>
   })) ?? []
 );
 
-const populateEditor = (transaction: Transaction): void => {
+const loadAttachment = async (id: string): Promise<void> => {
+  const data = await getAttachment(id);
+  const blob = new Blob([data]);
+  const url = URL.createObjectURL(blob);
+  attachments.value = [
+    ...attachments.value,
+    {
+      id,
+      name: id,
+      url,
+      deleted: false,
+    },
+  ];
+};
+
+const populateEditor = async (transaction: Transaction): Promise<void> => {
   originalTransaction.value = transaction;
   description.value = transaction.description;
   amount.value = String(transaction.amount);
@@ -87,6 +133,9 @@ const populateEditor = (transaction: Transaction): void => {
   datetime.value = localDatetime.toISOString().slice(0, 16);
   direction.value = transaction.direction;
   isActual.value = transaction.isActual;
+  attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
+  attachments.value = [];
+  await Promise.all(transaction.attachmentIds.map(loadAttachment));
 };
 
 watch(
@@ -97,6 +146,36 @@ watch(
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
+};
+
+const selectAttachments = (event: Event): void => {
+  const input = event.target as HTMLInputElement;
+
+  if (input.files === null) {
+    return;
+  }
+
+  attachments.value = [
+    ...attachments.value,
+    ...Array.from(input.files).map(file => ({
+      id: generateEntityId("f").slice(2),
+      name: file.name,
+      file,
+      url: URL.createObjectURL(file),
+      deleted: false,
+    })),
+  ];
+
+  input.value = "";
+};
+
+const removeAttachment = (id: string): void => {
+  const attachment = attachments.value.find(item => item.id === id);
+
+  if (attachment !== undefined) {
+    attachment.deleted = true;
+    URL.revokeObjectURL(attachment.url);
+  }
 };
 
 const saveRecord = async (): Promise<void> => {
@@ -129,6 +208,12 @@ const saveRecord = async (): Promise<void> => {
     throw new Error(`Chunk not found: ${month}`);
   }
 
+  for (const attachment of attachments.value) {
+    if (attachment.file !== undefined) {
+      await saveAttachment(attachment.id, await attachment.file.arrayBuffer());
+    }
+  }
+
   const updatedTransaction: Transaction = {
     ...originalTransaction.value,
     updatedAt: new Date().toISOString(),
@@ -137,6 +222,7 @@ const saveRecord = async (): Promise<void> => {
     accountId: originalTransaction.value.accountId,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
+    attachmentIds: attachments.value.map(attachment => attachment.id),
     isActual: isActual.value,
   };
 

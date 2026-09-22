@@ -6,6 +6,7 @@ import { putFile } from "@/storage";
 import { encodeData } from "@/utils/data";
 import { manifestKey } from "@/manifest";
 import { dbGetChunks } from "@/repository/transaction";
+import { dbGetAttachment } from "@/repository/attachment";
 import { dbGetStatistics } from "@/repository/statistics";
 import { dbGetBalances } from "@/repository/balance";
 import { dbGetAccounts } from "@/repository/account";
@@ -29,6 +30,7 @@ const updatePending = async (
 const hasPendingData = (offlineSync: OfflineSync): boolean => {
   return (
     offlineSync.manifest !== null ||
+    Object.values(offlineSync.objects.attachments).some(Boolean) ||
     Object.values(offlineSync.objects.chunks).some(Boolean) ||
     offlineSync.objects.accounts ||
     offlineSync.objects.categories ||
@@ -73,6 +75,26 @@ export const clearReferenceDataPending = (key: ReferenceDataKey): Promise<void> 
   return updatePending(objects => ({
     ...objects,
     [key]: false,
+  }));
+};
+
+export const setAttachmentPending = (id: string): Promise<void> => {
+  return updatePending(objects => ({
+    ...objects,
+    attachments: {
+      ...objects.attachments,
+      [id]: true,
+    },
+  }));
+};
+
+export const clearAttachmentPending = (id: string): Promise<void> => {
+  return updatePending(objects => ({
+    ...objects,
+    attachments: {
+      ...objects.attachments,
+      [id]: false,
+    },
   }));
 };
 
@@ -148,6 +170,22 @@ const synchronizeReferenceData = async (): Promise<void> => {
   }
 };
 
+const synchronizeAttachments = async (): Promise<void> => {
+  const offlineSync = await dbGetOfflineSync();
+  for (const [id, pending] of Object.entries(offlineSync.objects.attachments)) {
+    if (!pending) {
+      continue;
+    }
+    console.debug(`Synchronizing attachment: ${id}`);
+    const attachment = await dbGetAttachment(id);
+    if (attachment === null) {
+      throw new Error(`Attachment not found: ${id}`);
+    }
+    await putFile(id, new Uint8Array(attachment));
+    await clearAttachmentPending(id);
+  }
+};
+
 const synchronizeChunks = async (): Promise<void> => {
   const offlineSync = await dbGetOfflineSync();
   const manifest = await getPendingManifest();
@@ -209,11 +247,13 @@ export const synchronizeOfflineData = async (): Promise<void> => {
   console.log("Synchronizing offline data... +");
   try {
     await synchronizeReferenceData();
+    await synchronizeAttachments();
     await synchronizeChunks();
     await synchronizeStatistics();
     await synchronizeBalances();
     const updatedOfflineSync = await dbGetOfflineSync();
     const hasPendingObjects =
+      Object.values(updatedOfflineSync.objects.attachments).some(Boolean) ||
       Object.values(updatedOfflineSync.objects.chunks).some(Boolean) ||
       updatedOfflineSync.objects.accounts ||
       updatedOfflineSync.objects.categories ||

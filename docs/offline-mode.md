@@ -1,4 +1,4 @@
-# BudgetClick 2026 — Offline Mode (Condensed)
+# BudgetClick 2026 — Offline Mode
 
 **Purpose:** App stays usable offline. Changes persist locally (IndexedDB) and sync to file storage (S3) on reconnect. No conflict resolution in MVP. (See `docs/sync.md`/`docs/storage.md` for `Manifest` shape and pull-based sync basics.)
 
@@ -8,12 +8,13 @@
 - **No pull-before-push:** Push only updates the touched object's manifest entry; all others carry through from this device's *last-known local* manifest, not current remote state. If another device updated an untouched object while this device was offline, that update gets silently reverted. Fix (pull → rebase → push) is top post-MVP priority.
 - **No migration interaction:** Reconnecting clients don't check/run pending migrations before pushing. Deferred; will need integration with `migrations.md`'s exclusive lock.
 
-## OfflineSync Structure
+## OfflineSync Structur
 ```ts
 interface OfflineSync {
   manifest: Manifest | null;  // full manifest, or null if synced
   objects: {
     chunks: Record<string, boolean>;  // by month
+    attachments: Record<string, boolean>;  // by attachment ID
     statistics: boolean;
     accounts: boolean;
     categories: boolean;
@@ -27,10 +28,11 @@ interface OfflineSync {
 
 ## Sync Order (fixed, must be explicit in code — not object property order)
 1. Reference data: `accounts`, `categories`, `contractors`, `rates`
-2. Transaction `chunks[month]`
-3. Derived: `statistics`, `balances`
+2. Attachments
+3. Transaction `chunks[month]`
+4. Derived: `statistics`, `balances`
 
-Rationale: dependencies flow downward; this ordering limits the risk of derived data syncing ahead of its source if interrupted.
+Rationale: dependencies flow downward; attachments must be uploaded before transaction chunks that reference them.
 
 ## Flows
 **Normal/offline save:** `User change → IndexedDB → State → OfflineSync (if storage unreachable)`. No op-log — later local changes just overwrite; `OfflineSync` only flags "needs sync."
@@ -48,14 +50,15 @@ upload object → success?
       → yes: clear OfflineSync.objects[type] flag
       → no: leave flag true (retry object+manifest together next time)
 ```
-Manifest is pushed immediately after *each* object (not batched at the end) to minimize the window where the manifest references a not-yet-uploaded version. Flag clears only after **both** object upload and manifest push succeed; object uploads must be idempotent. A failed object blocks its dependents from syncing ahead of it.
+
+Attachments are not represented in the manifest, so attachment synchronization is simply `upload attachment → success → clear OfflineSync.objects.attachments[id]`. The manifest is pushed after each manifest-backed object. A failed object blocks its dependents from syncing ahead of it.
 
 ## Crash/Reload Safety
 `OfflineSync` must be persisted *before* attempting remote sync, so any interruption (reload/crash/close) leaves pending state recoverable. DB persists: local data, full manifest, and sync state.
 
 ## Empty/Synced State
 ```json
-{"manifest": null, "objects": {"chunks": {}, "statistics": false, "accounts": false, "categories": false, "contractors": false}}
+{"manifest": null, "objects": {"chunks": {}, "attachments": {}, "statistics": false, "accounts": false, "categories": false, "contractors": false}}
 ```
 
 ## Failure/Recovery

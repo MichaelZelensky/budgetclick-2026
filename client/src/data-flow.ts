@@ -1,12 +1,13 @@
 import { toRaw } from "vue";
 import { getState, updateReferenceDataState, updateChunksState } from "@/state/state";
 import { getManifest, saveManifest, clearManifestPending, manifestKey } from "@/manifest";
-import { putFile } from "@/storage";
+import { getFile, putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
 import { dbSaveChunk } from "@/repository/transaction";
+import { dbGetAttachment, dbSaveAttachment } from "@/repository/attachment";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
@@ -16,7 +17,14 @@ import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { showError } from "@/state/error";
 import { encodeData } from "@/utils/data";
-import { clearChunkPending, clearReferenceDataPending, setChunkPending, setReferenceDataPending } from "./offline-sync";
+import {
+  clearAttachmentPending,
+  clearChunkPending,
+  clearReferenceDataPending,
+  setAttachmentPending,
+  setChunkPending,
+  setReferenceDataPending,
+} from "@/offline-sync";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
@@ -105,7 +113,6 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
     const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
     await putFile(entry.objectKey, encodeData(updatedData));
-    await putFile(manifestKey, encodeData(updatedManifest));
     await clearReferenceDataPending(key);
     await clearManifestPending();
   } catch (error) {
@@ -114,6 +121,37 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
   } finally {
     setLoadingOff(loadingId);
   }
+};
+
+export const saveAttachment = async (id: string, data: ArrayBuffer): Promise<void> => {
+  const loadingId = setLoadingOn();
+  try {
+    await dbSaveAttachment(id, data);
+    await setAttachmentPending(id);
+    if (getState().isOnline) {
+      try {
+        await putFile(id, new Uint8Array(data));
+        await clearAttachmentPending(id);
+      } catch {
+        getState().isOnline = false;
+      }
+    }
+  } catch (error) {
+    showError(getErrorMessage(error));
+    throw error;
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+export const getAttachment = async (id: string): Promise<ArrayBuffer> => {
+  const cached = await dbGetAttachment(id);
+  if (cached !== null) {
+    return cached;
+  }
+  const data = await getFile(id);
+  await dbSaveAttachment(id, data);
+  return data;
 };
 
 export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Promise<void> => {
@@ -142,7 +180,6 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
     await saveManifest(updatedManifest);
 
     await putFile(objectKey, encodeData(updatedData));
-    await putFile(manifestKey, encodeData(updatedManifest));
     await clearChunkPending(key);
     await clearManifestPending();
   } catch (error) {

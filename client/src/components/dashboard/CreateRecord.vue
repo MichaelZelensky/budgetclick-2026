@@ -12,6 +12,27 @@
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
+      <input
+        type="file"
+        multiple
+        @change="selectAttachments"
+      />
+
+      <div v-if="attachments.length > 0" class="tw-grid tw-gap-1">
+        <div
+          v-for="attachment in attachments"
+          :key="attachment.id"
+          class="tw-flex tw-items-center tw-gap-2"
+        >
+          <a :href="attachment.url" target="_blank" rel="noopener">
+            {{ attachment.name }}
+          </a>
+          <button type="button" @click="removeAttachment(attachment.id)">
+            ×
+          </button>
+        </div>
+      </div>
+
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteToggle v-model="isActual">
           Actual
@@ -39,7 +60,7 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
-import { saveChunkData } from "@/data-flow";
+import { saveAttachment, saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import { getState } from "@/state/state";
@@ -47,6 +68,13 @@ import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
+
+type Attachment = {
+  id: string;
+  name: string;
+  file: File;
+  url: string;
+};
 
 const description = ref("");
 const amount = ref("");
@@ -56,6 +84,7 @@ const accountId = ref<string | undefined>(
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
+const attachments = ref<Attachment[]>([]);
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -66,6 +95,36 @@ const accountOptions = computed<Option[]>(() =>
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
+};
+
+const selectAttachments = (event: Event): void => {
+  const input = event.target as HTMLInputElement;
+
+  if (input.files === null) {
+    return;
+  }
+
+  attachments.value = [
+    ...attachments.value,
+    ...Array.from(input.files).map(file => ({
+      id: generateEntityId("f").slice(2),
+      name: file.name,
+      file,
+      url: URL.createObjectURL(file),
+    })),
+  ];
+
+  input.value = "";
+};
+
+const removeAttachment = (id: string): void => {
+  const attachment = attachments.value.find(item => item.id === id);
+
+  if (attachment !== undefined) {
+    URL.revokeObjectURL(attachment.url);
+  }
+
+  attachments.value = attachments.value.filter(item => item.id !== id);
 };
 
 const saveRecord = async (): Promise<void> => {
@@ -92,7 +151,7 @@ const saveRecord = async (): Promise<void> => {
     accountId: accountId.value,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
-    attachmentIds: [],
+    attachmentIds: attachments.value.map(attachment => attachment.id),
     isActual: isActual.value,
   };
   const chunk: ChunkStorage = existingChunk ?? {
@@ -105,6 +164,10 @@ const saveRecord = async (): Promise<void> => {
     },
     transactions: [],
   };
+
+  for (const attachment of attachments.value) {
+    await saveAttachment(attachment.id, await attachment.file.arrayBuffer());
+  }
 
   await saveChunkData({
     key: month,
@@ -127,11 +190,13 @@ const saveRecord = async (): Promise<void> => {
     transaction.direction === "in" ? transaction.amount : -transaction.amount,
   );
 
+  attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
   description.value = "";
   amount.value = "";
   datetime.value = new Date().toISOString().slice(0, 16);
   direction.value = "out";
   isActual.value = true;
+  attachments.value = [];
 };
 </script>
 
