@@ -15,7 +15,11 @@ export const initializeDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, databaseVersion);
     request.onupgradeneeded = event => {
-      migrate(request.result, event.oldVersion, request.transaction);
+      const transaction = request.transaction;
+      if (transaction === null) {
+        throw new Error("Upgrade transaction not available");
+      }
+      migrate(request.result, event.oldVersion, transaction);
     };
     request.onsuccess = () => {
       databaseState.database = request.result;

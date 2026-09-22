@@ -181,7 +181,7 @@ const synchronizeAttachments = async (): Promise<void> => {
     if (attachment === null) {
       throw new Error(`Attachment not found: ${id}`);
     }
-    await putFile(id, new Uint8Array(attachment));
+    await putFile(id, encodeData(attachment));
     await clearAttachmentPending(id);
   }
 };
