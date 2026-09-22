@@ -146,8 +146,7 @@ export const saveAttachment = async (id: string, data: Attachment): Promise<void
 
 export const getAttachment = async (id: string): Promise<Attachment> => {
   const cached = await dbGetAttachment(id);
-
-  if (cached !== null) {
+  if (cached) {
     return cached;
   }
 
