@@ -100,7 +100,17 @@ Serialize → Encrypt → Upload → Download → Decrypt → Deserialize
 
 The storage layer only ever handles encrypted data. The salt is unencrypted because it's needed to initialize encryption.
 
-Attachments use the same encryption flow, but are stored as files directly under their attachment ID.
+Attachments use the same encryption flow. Each attachment is serialized as:
+
+```json
+{
+  "name": "receipt.png",
+  "type": "image/png",
+  "blob": "<base64-encoded file bytes>"
+}
+```
+
+The attachment object is then encrypted and stored under its attachment ID.
 
 # Storage Objects
 
@@ -108,13 +118,13 @@ Attachments use the same encryption flow, but are stored as files directly under
 - **Manifest:** entry point into storage — schema version, manifest version, reference/chunk object locations, attachment root. Encrypted like all other objects.
 - **Reference objects:** relatively static data (accounts, categories, contractors), synced independently of transactions.
 - **Monthly chunks:** primary sync unit; each holds metadata + transaction records. The month comes from the manifest entry, not duplicated in the chunk.
-- **Attachments:** encrypted files stored directly using their attachment ID as the object key. They have no metadata, version, or manifest entry. Content type is determined from the file's magic bytes.
+- **Attachments:** encrypted JSON objects stored using their attachment ID as the object key. They have no metadata, version, or manifest entry. The `type` field preserves the MIME type required to recreate the browser Blob.
 
 # Metadata & Versioning
 
 Every versioned object except manifest and salt carries `schemaVersion`, `version`, `createdAt`, `updatedAt`, `updatedBy`. Version increments on every change and drives sync/conflict detection.
 
-Attachments are not versioned storage objects and do not carry storage metadata.
+Attachments are independent JSON data objects but are not versioned storage objects.
 
 # Object Independence
 

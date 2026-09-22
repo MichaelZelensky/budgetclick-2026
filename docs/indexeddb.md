@@ -17,7 +17,7 @@ Name: `budgetclick`, initial version `1`. Version is controlled solely by schema
 | `categories` | `key` | Local copy of categories storage object |
 | `contractors` | `key` | Local copy of contractors storage object |
 | `chunks` | `month` | Local monthly transaction chunks |
-| `attachments` | `id` | Locally cached attachment files |
+| `attachments` | `id` | Locally cached attachment objects |
 
 Each store maps to one logical remote storage object or group.
 
@@ -31,7 +31,19 @@ Each store maps to one logical remote storage object or group.
 
 ## Attachments
 
-`attachments` holds locally cached attachment files, keyed by attachment ID. The attachment ID is also the remote storage object key and filename.
+`attachments` holds locally cached attachment objects, keyed by attachment ID. The attachment ID is also the remote storage object key.
+
+Each attachment contains:
+
+```ts
+{
+  name: string;
+  type: string;
+  data: string;
+}
+```
+
+`name` is the original filename, `type` is the MIME type, and `blob` is the attachment bytes encoded as base64 for JSON serialization.
 
 Attachments are cached on demand and are not required to be loaded during initial synchronization. The cache is not the source of truth; a missing attachment is retrieved from remote storage when needed.
 

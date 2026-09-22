@@ -76,10 +76,12 @@ import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import Modal from "@/components/ui/Modal.vue";
 import { generateEntityId } from "@/utils/entity";
+import { decodeBlob, encodeBlob } from "@/utils/data";
 
 type Attachment = {
   id: string;
   name: string;
+  type: string;
   url: string;
   deleted: boolean;
   file?: File;
@@ -107,16 +109,20 @@ const accountOptions = computed<Option[]>(() =>
 );
 
 const loadAttachment = async (id: string): Promise<void> => {
-  const data = await getAttachment(id);
-  const blob = new Blob([data]);
-  const url = URL.createObjectURL(blob);
+  const attachment = await getAttachment(id);
+  const file = new File([decodeBlob(attachment.data)], attachment.name, {
+    type: attachment.type,
+  });
+  const url = URL.createObjectURL(file);
   attachments.value = [
     ...attachments.value,
     {
       id,
-      name: id,
+      name: attachment.name,
+      type: attachment.type,
       url,
       deleted: false,
+      file,
     },
   ];
 };
@@ -160,6 +166,7 @@ const selectAttachments = (event: Event): void => {
     ...Array.from(input.files).map(file => ({
       id: generateEntityId("f").slice(2),
       name: file.name,
+      type: file.type,
       file,
       url: URL.createObjectURL(file),
       deleted: false,
@@ -210,7 +217,11 @@ const saveRecord = async (): Promise<void> => {
 
   for (const attachment of attachments.value) {
     if (attachment.file !== undefined) {
-      await saveAttachment(attachment.id, await attachment.file.arrayBuffer());
+      await saveAttachment(attachment.id, {
+        name: attachment.name,
+        type: attachment.type,
+        data: encodeBlob(await attachment.file.arrayBuffer()),
+      });
     }
   }
 
@@ -222,7 +233,9 @@ const saveRecord = async (): Promise<void> => {
     accountId: originalTransaction.value.accountId,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
-    attachmentIds: attachments.value.map(attachment => attachment.id),
+    attachmentIds: attachments.value
+      .filter(attachment => !attachment.deleted)
+      .map(attachment => attachment.id),
     isActual: isActual.value,
   };
 

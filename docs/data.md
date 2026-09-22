@@ -14,7 +14,23 @@ Every persisted object carries a schema version, used by local and remote migrat
 - **Account:** owns many Transactions.
 - **Category / Contractor:** referenced by many Transactions.
 
-# Derived Data
+## Attachments
+
+An Attachment is identified by an 8-character identifier and stored independently from transactions. Transactions store only attachment IDs.
+
+An attachment contains:
+
+```ts
+{
+  name: string;
+  type: string;
+  blob: string;
+}
+```
+
+`name` is the original filename, `type` is the MIME type, and `blob` is the attachment bytes encoded as base64 for JSON serialization.
+
+## Derived Data
 
 Derived data is stored separately from primary entities and can be regenerated from transactions and reference data.
 
@@ -63,7 +79,7 @@ Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local c
 | Contractor            | `o_`   | `o_Xy82LmQa` |
 | Recurrence *(future)* | `r_`   | `r_Cv62NdQa` |
 
-Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key and filename.
+Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key.
 
 Prefixes are globally unique, permanent, and every future entity type gets its own.
 

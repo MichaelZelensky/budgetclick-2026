@@ -13,10 +13,11 @@ import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
+import type { Attachment } from "@/types/data/Attachment";
 import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { showError } from "@/state/error";
-import { encodeData } from "@/utils/data";
+import { encodeData, decodeData } from "@/utils/data";
 import {
   clearAttachmentPending,
   clearChunkPending,
@@ -124,14 +125,14 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
   }
 };
 
-export const saveAttachment = async (id: string, data: ArrayBuffer): Promise<void> => {
+export const saveAttachment = async (id: string, data: Attachment): Promise<void> => {
   const loadingId = setLoadingOn();
   try {
     await dbSaveAttachment(id, data);
     await setAttachmentPending(id);
     if (getState().isOnline) {
       try {
-        await putFile(id, new Uint8Array(data));
+        await putFile(id, encodeData(data));
         await clearAttachmentPending(id);
       } catch {
         getState().isOnline = false;
@@ -145,12 +146,14 @@ export const saveAttachment = async (id: string, data: ArrayBuffer): Promise<voi
   }
 };
 
-export const getAttachment = async (id: string): Promise<ArrayBuffer> => {
+export const getAttachment = async (id: string): Promise<Attachment> => {
   const cached = await dbGetAttachment(id);
+
   if (cached !== null) {
     return cached;
   }
-  const data = await getFile(id);
+
+  const data = decodeData<Attachment>(await getFile(id));
   await dbSaveAttachment(id, data);
   return data;
 };

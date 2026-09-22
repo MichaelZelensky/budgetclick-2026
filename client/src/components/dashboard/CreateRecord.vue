@@ -68,10 +68,12 @@ import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
+import { encodeBlob } from "@/utils/data";
 
 type Attachment = {
   id: string;
   name: string;
+  type: string;
   file: File;
   url: string;
 };
@@ -109,6 +111,7 @@ const selectAttachments = (event: Event): void => {
     ...Array.from(input.files).map(file => ({
       id: generateEntityId("f").slice(2),
       name: file.name,
+      type: file.type,
       file,
       url: URL.createObjectURL(file),
     })),
@@ -166,7 +169,11 @@ const saveRecord = async (): Promise<void> => {
   };
 
   for (const attachment of attachments.value) {
-    await saveAttachment(attachment.id, await attachment.file.arrayBuffer());
+    await saveAttachment(attachment.id, {
+      name: attachment.name,
+      type: attachment.type,
+      data: encodeBlob(await attachment.file.arrayBuffer()),
+    });
   }
 
   await saveChunkData({
