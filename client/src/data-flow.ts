@@ -1,5 +1,5 @@
 import { toRaw } from "vue";
-import { getState, updateReferenceDataState, updateChunksState } from "@/state/state";
+import { getState, updateReferenceDataState, updateChunksState, updateState } from "@/state/state";
 import { getManifest, saveManifest, clearManifestPending, manifestKey } from "@/manifest";
 import { getFile, putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
@@ -8,12 +8,16 @@ import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
 import { dbSaveChunk } from "@/repository/transaction";
 import { dbGetAttachment, dbSaveAttachment } from "@/repository/attachment";
+import { dbSaveStatistics } from "@/repository/statistics";
+import { dbSaveBalances } from "@/repository/balance";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { Attachment } from "@/types/data/Attachment";
+import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
+import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 import { ReferenceDataKey, ReferenceDataTypes } from "@/types/AppState";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { showError } from "@/state/error";
@@ -25,6 +29,7 @@ import {
   setAttachmentPending,
   setChunkPending,
   setReferenceDataPending,
+  setObjectPending,
 } from "@/offline-sync";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
@@ -79,13 +84,6 @@ const generateObjectKey = (): string => {
 
 const getErrorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : "Failed to save data";
-};
-
-const referenceDataGetters: { [K in ReferenceDataKey]: () => ReferenceDataTypes[K] | null } = {
-  [ReferenceDataKey.Accounts]: () => getState().referenceData.accounts,
-  [ReferenceDataKey.Categories]: () => getState().referenceData.categories,
-  [ReferenceDataKey.Contractors]: () => getState().referenceData.contractors,
-  [ReferenceDataKey.Rates]: () => getState().referenceData.rates,
 };
 
 const referenceDataSavers: { [K in ReferenceDataKey]: (data: ReferenceDataTypes[K]) => Promise<void> } = {
@@ -184,8 +182,89 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
     await saveManifest(updatedManifest);
 
     await putFile(objectKey, encodeData(updatedData));
+    await putFile(manifestKey, encodeData(updatedManifest));
     await clearChunkPending(key);
     await clearManifestPending();
+  } catch (error) {
+    showError(getErrorMessage(error));
+    throw error;
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+export const saveStatisticsData = async (data: StatisticsStorage): Promise<void> => {
+  const loadingId = setLoadingOn();
+  try {
+    const statistics = toPlain(data);
+    const manifest = getManifest();
+    const now = new Date().toISOString();
+    const updatedManifest = {
+      ...manifest,
+      version: manifest.version + 1,
+      updatedAt: now,
+      updatedBy: getState().settings?.clientId ?? "-",
+      statistics: {
+        ...manifest.statistics,
+        version: statistics.metadata.version,
+      },
+    };
+
+    await dbSaveStatistics(statistics);
+    updateState("statistics", statistics);
+    await setObjectPending("statistics", true);
+    await saveManifest(updatedManifest);
+
+    if (getState().isOnline) {
+      try {
+        await putFile(manifest.statistics.objectKey, encodeData(statistics));
+        await putFile(manifestKey, encodeData(updatedManifest));
+        await setObjectPending("statistics", false);
+        await clearManifestPending();
+      } catch {
+        getState().isOnline = false;
+      }
+    }
+  } catch (error) {
+    showError(getErrorMessage(error));
+    throw error;
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+export const saveBalancesData = async (data: BalanceStorage): Promise<void> => {
+  const loadingId = setLoadingOn();
+  try {
+    const balances = toPlain(data);
+    const manifest = getManifest();
+    const now = new Date().toISOString();
+    const updatedManifest = {
+      ...manifest,
+      version: manifest.version + 1,
+      updatedAt: now,
+      updatedBy: getState().settings?.clientId ?? "-",
+      balances: {
+        ...manifest.balances,
+        version: balances.metadata.version,
+      },
+    };
+
+    await dbSaveBalances(balances);
+    updateState("balances", balances);
+    await setObjectPending("balances", true);
+    await saveManifest(updatedManifest);
+
+    if (getState().isOnline) {
+      try {
+        await putFile(manifest.balances.objectKey, encodeData(balances));
+        await putFile(manifestKey, encodeData(updatedManifest));
+        await setObjectPending("balances", false);
+        await clearManifestPending();
+      } catch {
+        getState().isOnline = false;
+      }
+    }
   } catch (error) {
     showError(getErrorMessage(error));
     throw error;
