@@ -24,11 +24,25 @@ An attachment contains:
 {
   name: string;
   type: string;
-  blob: string;
+  data: string;
 }
 ```
 
-`name` is the original filename, `type` is the MIME type, and `blob` is the attachment bytes encoded as base64 for JSON serialization.
+`name` is the original filename, `type` is the MIME type, and `data` is the attachment bytes encoded as base64 for JSON serialization.
+
+Attachments are cached lazily. They are not downloaded or synchronized during application startup.
+
+When a transaction is opened, its attachment IDs are displayed immediately. Opening an attachment loads it through the attachment data flow:
+
+1. Check the IndexedDB attachment cache.
+2. If cached, use the cached attachment.
+3. If not cached, load it from remote storage.
+4. Save the loaded attachment to IndexedDB.
+5. Display the attachment using its original filename and MIME type.
+
+A missing attachment cache entry is therefore normal and must not prevent a transaction or its attachment IDs from being displayed.
+
+Attachments are not represented in the manifest and do not participate in startup synchronization.
 
 ## Derived Data
 

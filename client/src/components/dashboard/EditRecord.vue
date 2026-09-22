@@ -24,7 +24,12 @@
           :key="attachment.id"
           class="tw-flex tw-items-center tw-gap-2"
         >
-          <a :href="attachment.url" target="_blank" rel="noopener">
+          <a
+            :href="attachment.url"
+            target="_blank"
+            rel="noopener"
+            @click="openAttachment(attachment, $event)"
+          >
             {{ attachment.name }}
           </a>
           <button type="button" @click="removeAttachment(attachment.id)">
@@ -108,25 +113,6 @@ const accountOptions = computed<Option[]>(() =>
   })) ?? []
 );
 
-const loadAttachment = async (id: string): Promise<void> => {
-  const attachment = await getAttachment(id);
-  const file = new File([decodeBlob(attachment.data)], attachment.name, {
-    type: attachment.type,
-  });
-  const url = URL.createObjectURL(file);
-  attachments.value = [
-    ...attachments.value,
-    {
-      id,
-      name: attachment.name,
-      type: attachment.type,
-      url,
-      deleted: false,
-      file,
-    },
-  ];
-};
-
 const populateEditor = async (transaction: Transaction): Promise<void> => {
   originalTransaction.value = transaction;
   description.value = transaction.description;
@@ -140,8 +126,13 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
   direction.value = transaction.direction;
   isActual.value = transaction.isActual;
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
-  attachments.value = [];
-  await Promise.all(transaction.attachmentIds.map(loadAttachment));
+  attachments.value = transaction.attachmentIds.map(id => ({
+    id,
+    name: id,
+    type: "",
+    url: "",
+    deleted: false,
+  }));
 };
 
 watch(
@@ -152,6 +143,36 @@ watch(
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
+};
+
+const openAttachment = async (attachment: Attachment, event: MouseEvent): Promise<void> => {
+  event.preventDefault();
+
+  if (attachment.url !== "") {
+    window.open(attachment.url, "_blank", "noopener");
+    return;
+  }
+
+  const windowReference = window.open("about:blank", "_blank");
+
+  try {
+    const data = await getAttachment(attachment.id);
+    const file = new File([decodeBlob(data.data)], data.name, {
+      type: data.type,
+    });
+    const url = URL.createObjectURL(file);
+    attachment.name = data.name;
+    attachment.type = data.type;
+    attachment.url = url;
+    attachment.file = file;
+
+    if (windowReference !== null) {
+      windowReference.location.href = url;
+    }
+  } catch (error) {
+    windowReference?.close();
+    throw error;
+  }
 };
 
 const selectAttachments = (event: Event): void => {
