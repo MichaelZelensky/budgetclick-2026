@@ -67,10 +67,8 @@ const unlock = async () => {
   try {
     await initializeEncryptionKey(passphrase.value, setupState.remoteSalt);
     const manifest = await decryptRemoteManifest(setupState.remoteManifest);
-    console.debug("Decrypted manifest:", manifest);
     await initializeData();
     await importRemoteData(manifest);
-    console.debug("Imported remote data:", getState().referenceData);
     getState().manifest = structuredClone(manifest);
     const accountsStorage = getState().referenceData.accounts;
     if (accountsStorage === null || accountsStorage.accounts.length === 0) {
