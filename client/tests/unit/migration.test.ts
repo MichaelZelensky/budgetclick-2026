@@ -27,8 +27,8 @@ describe("migrate", () => {
     migrate(database, 1);
 
     expect(migrations[0].migrate).not.toHaveBeenCalled();
-    expect(migrations[1].migrate).toHaveBeenCalledWith(database);
-    expect(migrations[2].migrate).toHaveBeenCalledWith(database);
+    expect(migrations[1].migrate).toHaveBeenCalledWith(database, undefined);
+    expect(migrations[2].migrate).toHaveBeenCalledWith(database, undefined);
     expect(setLoadingOn).toHaveBeenCalledOnce();
     expect(setLoadingOff).toHaveBeenCalledWith("loading-id");
   });
@@ -38,12 +38,16 @@ describe("migrate", () => {
 
     migrate(database, 3);
 
+    expect(migrations[0].migrate).not.toHaveBeenCalled();
+    expect(migrations[1].migrate).not.toHaveBeenCalled();
+    expect(migrations[2].migrate).not.toHaveBeenCalled();
     expect(setLoadingOn).not.toHaveBeenCalled();
     expect(setLoadingOff).not.toHaveBeenCalled();
   });
 
   it("stops loading when a migration fails", () => {
     const database = {} as IDBDatabase;
+
     vi.mocked(migrations[1].migrate).mockImplementation(() => {
       throw new Error("Migration failed");
     });

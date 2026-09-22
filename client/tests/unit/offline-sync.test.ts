@@ -129,6 +129,7 @@ const createOfflineSync = (): OfflineSync => ({
     contractors: false,
     rates: false,
     balances: false,
+    attachments: {},
   },
 });
 

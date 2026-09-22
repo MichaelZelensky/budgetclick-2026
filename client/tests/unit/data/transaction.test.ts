@@ -1,13 +1,15 @@
-import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mount, flushPromises } from "@vue/test-utils";
 import CreateRecord from "@/components/dashboard/CreateRecord.vue";
 import EditRecord from "@/components/dashboard/EditRecord.vue";
-import { saveChunkData } from "@/data-flow";
+import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
 import { nextTick } from "vue";
 
 vi.mock("@/data-flow", () => ({
+  getAttachment: vi.fn(),
+  saveAttachment: vi.fn(),
   saveChunkData: vi.fn(),
 }));
 
@@ -92,6 +94,13 @@ const findToggle = (
     .find(toggle => toggle.text() === label)
     ?.find("input");
 
+const findSaveButton = (
+  wrapper: ReturnType<typeof mountCreateRecord>,
+) =>
+  wrapper
+    .findAll("button")
+    .find(button => button.text() === "Save");
+
 const account = {
   id: "account-1",
   name: "Cash",
@@ -105,6 +114,28 @@ const account = {
 
 describe("transactions CRUD", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:test"),
+      revokeObjectURL: vi.fn(),
+    });
+
+    vi.stubGlobal("File", class extends Blob {
+      name: string;
+
+      constructor(
+        bits: BlobPart[],
+        name: string,
+        options?: FilePropertyBag,
+      ) {
+        super(bits, options);
+        this.name = name;
+      }
+
+      arrayBuffer = async (): Promise<ArrayBuffer> => new ArrayBuffer(0);
+    });
+
     initializeState();
 
     getState().settings = {
@@ -135,7 +166,7 @@ describe("transactions CRUD", () => {
     await inputs[1].setValue("42.5");
     await inputs[2].setValue("2026-08-25T10:30");
 
-    await wrapper.find("button").trigger("click");
+    await findSaveButton(wrapper)?.trigger("click");
 
     expect(saveChunkData).toHaveBeenCalledOnce();
 
@@ -188,7 +219,7 @@ describe("transactions CRUD", () => {
 
     await incomeToggle?.setValue(true);
 
-    await wrapper.find("button").trigger("click");
+    await findSaveButton(wrapper)?.trigger("click");
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
     const transaction = call.data.transactions[0];
@@ -235,7 +266,7 @@ describe("transactions CRUD", () => {
     await inputs[1].setValue("5");
     await inputs[2].setValue("2026-08-25T09:00");
 
-    await wrapper.find("button").trigger("click");
+    await findSaveButton(wrapper)?.trigger("click");
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
 
@@ -258,7 +289,7 @@ describe("transactions CRUD", () => {
     await inputs[1].setValue("5");
     await inputs[2].setValue("2026-08-25T09:00");
 
-    await wrapper.find("button").trigger("click");
+    await findSaveButton(wrapper)?.trigger("click");
     await nextTick();
 
     const updatedInputs = wrapper.findAll("input");
@@ -285,6 +316,12 @@ describe("transactions CRUD", () => {
       isActual: true,
     };
 
+    vi.mocked(getAttachment).mockResolvedValue({
+      name: "test.txt",
+      type: "text/plain",
+      data: "aGVsbG8=",
+    });
+
     getState().chunks["2026-08"] = {
       metadata: {
         schemaVersion: 1,
@@ -297,6 +334,7 @@ describe("transactions CRUD", () => {
     };
 
     const wrapper = mountEditRecord(transaction);
+    await flushPromises();
     const inputs = wrapper.findAll("input");
 
     await inputs[0].setValue("Updated description");
@@ -313,8 +351,9 @@ describe("transactions CRUD", () => {
     expect(incomeToggle).toBeDefined();
     await incomeToggle?.setValue(true);
 
-    await wrapper.find("button").trigger("click");
+    await findSaveButton(wrapper)?.trigger("click");
 
+    expect(saveAttachment).toHaveBeenCalledOnce();
     expect(saveChunkData).toHaveBeenCalledOnce();
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
