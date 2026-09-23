@@ -24,9 +24,18 @@
     </template>
 
     <template #balance="{ item }">
-      <span :class="{ 'tw-text-red-600': Number(item.balance) < 0 }">
-        {{ item.balance }}
-      </span>
+      <div class="tw-flex tw-w-full tw-items-center">
+        <Paperclip
+          v-if="item.hasAttachments"
+          class="tw-shrink-0"
+        />
+        <span
+          class="tw-ml-auto tw-text-right"
+          :class="{ 'tw-text-red-600': Number(item.balance) < 0 }"
+        >
+          {{ item.balance }}
+        </span>
+      </div>
     </template>
   </Datagrid>
 </template>
@@ -37,6 +46,7 @@ import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import { getState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
 import { DatagridColumnType } from "@/components/ui/datagrid/Datagrid.types";
+import Paperclip from "@/components/icons/Paperclip.vue";
 
 const emit = defineEmits<{
   selectionChange: [transaction: Transaction | null];
@@ -51,6 +61,7 @@ type SpreadsheetRow = {
   account: string;
   description: string;
   balance: number | string;
+  hasAttachments: boolean;
 };
 
 const state = getState();
@@ -75,7 +86,8 @@ const transactions = computed<SpreadsheetRow[]>(() => {
           amount: transaction.amount,
           account: `${account?.name ?? ""} (${account?.currency ?? ""})`,
           description: transaction.description,
-          balance: ""
+          balance: "",
+          hasAttachments: transaction.attachmentIds.length > 0,
         };
       }
 
@@ -100,7 +112,8 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         amount: transaction.amount,
         account: `${account?.name ?? ""} (${account?.currency ?? ""})`,
         description: transaction.description,
-        balance
+        balance,
+        hasAttachments: transaction.attachmentIds.length > 0,
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -109,9 +122,9 @@ const transactions = computed<SpreadsheetRow[]>(() => {
 const columns = [
   { key: "actual", label: "", filterable: false, type: DatagridColumnType.BOOLEAN },
   { key: "date", label: "Date", filterable: true },
-  { key: "amount", label: "Amount", filterable: true },
+  { key: "amount", label: "Amount", filterable: true, align: "right" },
   { key: "description", label: "Description", filterable: true },
-  { key: "balance", label: "Balance", filterable: false },
+  { key: "balance", label: "Balance", filterable: false, align: "right" },
   { key: "account", label: "Account", filterable: true },
 ];
 

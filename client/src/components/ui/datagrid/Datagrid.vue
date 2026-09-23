@@ -22,6 +22,7 @@
               v-for="column in columns"
               :key="column.key"
               :style="{ width: resolvedWidth(column.key), minWidth: resolvedMinWidth(column.key) }"
+              :class="`align-${column.align ?? 'left'}`"
             >
               <div class="th-inner tw-flex tw-items-center tw-gap-2 tw-relative">
                 <button
@@ -74,6 +75,7 @@
               v-for="column in columns"
               :key="'filter-' + column.key"
               :style="{ width: resolvedWidth(column.key), minWidth: resolvedMinWidth(column.key) }"
+              :class="`align-${column.align ?? 'left'}`"
             >
               <div class="th-inner tw-px-4 tw-py-1">
                 <LiteSelect
@@ -130,7 +132,7 @@
               v-for="column in columns"
               :key="column.key"
               :style="{ width: resolvedWidth(column.key), minWidth: resolvedMinWidth(column.key) }"
-              :class="{ 'boolean-column': column.type === DatagridColumnType.BOOLEAN }"
+              :class="[{ 'boolean-column': column.type === DatagridColumnType.BOOLEAN }, `align-${column.align ?? 'left'}`]"
             >
               <slot :name="column.key" :item="item" v-if="$slots[column.key]"></slot>
               <span v-else-if="column.type === DatagridColumnType.BOOLEAN && item[column.key]" class="tw-text-green-500">Yes</span>
@@ -214,6 +216,7 @@ type DatagridColumn<TRow extends DatagridRow = DatagridRow> = {
   label: string;
   filterable?: boolean;
   type?: DatagridColumnType;
+  align?: "left" | "right" | "center";
   getSortValue?: (row: TRow) => string | number | boolean | Date | null | undefined;
   compare?: (a: TRow, b: TRow) => number;
 };
@@ -674,6 +677,10 @@ th, td { @apply tw-overflow-hidden; }
 th:not(.boolean-column), td:not(.boolean-column) {
   @apply tw-whitespace-nowrap tw-text-ellipsis;
 }
+
+.align-left { text-align: left; }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
 
 thead tr { @apply tw-bg-zinc-700; }
 
