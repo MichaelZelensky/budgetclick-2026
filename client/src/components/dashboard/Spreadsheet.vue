@@ -18,7 +18,10 @@
     </template>
 
     <template #amount="{ item }">
-      <span :class="item.direction === 'in' ? 'tw-text-green-700' : ''">
+      <span
+        class="tw-block tw-w-full tw-text-right"
+        :class="item.direction === 'in' ? 'tw-text-green-700' : ''"
+      >
         {{ item.amount }}
       </span>
     </template>
@@ -122,9 +125,9 @@ const transactions = computed<SpreadsheetRow[]>(() => {
 const columns = [
   { key: "actual", label: "", filterable: false, type: DatagridColumnType.BOOLEAN },
   { key: "date", label: "Date", filterable: true },
-  { key: "amount", label: "Amount", filterable: true, align: "right" },
+  { key: "amount", label: "Amount", filterable: true, align: "right" as const },
   { key: "description", label: "Description", filterable: true },
-  { key: "balance", label: "Balance", filterable: false, align: "right" },
+  { key: "balance", label: "Balance", filterable: false, align: "right" as const },
   { key: "account", label: "Account", filterable: true },
 ];
 
