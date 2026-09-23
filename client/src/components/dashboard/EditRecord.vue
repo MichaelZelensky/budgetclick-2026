@@ -92,6 +92,7 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
+import { dbGetAttachment } from "@/repository/attachment";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import { getState } from "@/state/state";
@@ -147,15 +148,21 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
   direction.value = transaction.direction;
   isActual.value = transaction.isActual;
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
-  attachments.value = transaction.attachments
-    .filter(attachment => !attachment.isDeleted)
-    .map(attachment => ({
-      id: attachment.id,
-      name: attachment.id,
-      type: "",
-      url: "",
-      deleted: false,
-    }));
+  attachments.value = await Promise.all(
+    transaction.attachments
+      .filter(attachment => !attachment.isDeleted)
+      .map(async attachment => {
+        const cached = await dbGetAttachment(attachment.id);
+
+        return {
+          id: attachment.id,
+          name: cached?.name ?? attachment.id,
+          type: cached?.type ?? "",
+          url: "",
+          deleted: false,
+        };
+      }),
+  );
 };
 
 watch(
