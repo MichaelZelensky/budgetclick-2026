@@ -16,7 +16,16 @@ Every persisted object carries a schema version, used by local and remote migrat
 
 ## Attachments
 
-An Attachment is identified by an 8-character identifier and stored independently from transactions. Transactions store only attachment IDs.
+An Attachment is identified by an 8-character identifier and stored independently from transactions. Transactions store attachment references containing the attachment ID and, when removed, a deletion tombstone.
+
+A transaction attachment reference contains:
+
+```ts
+{
+  id: string;
+  isDeleted?: true;
+}
+```
 
 An attachment contains:
 
@@ -43,6 +52,8 @@ When a transaction is opened, its attachment IDs are displayed immediately. Open
 A missing attachment cache entry is therefore normal and must not prevent a transaction or its attachment IDs from being displayed.
 
 Attachments are not represented in the manifest and do not participate in startup synchronization.
+
+When an attachment is removed from a saved transaction, its reference is retained with `isDeleted: true`. New attachments removed before the transaction is saved are removed from the transaction entirely. Physical attachment data is not removed in the MVP.
 
 ## Derived Data
 

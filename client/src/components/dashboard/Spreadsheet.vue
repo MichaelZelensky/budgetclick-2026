@@ -87,7 +87,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
           account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
           description: transaction.description,
           balance: "",
-          hasAttachments: transaction.attachmentIds.length > 0,
+          hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
         };
       }
 
@@ -113,7 +113,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
         balance,
-        hasAttachments: transaction.attachmentIds.length > 0,
+        hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));

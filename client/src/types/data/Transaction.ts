@@ -2,6 +2,11 @@ import type { Entity } from "@/types/data/Entity";
 
 export type TransactionDirection = "in" | "out";
 
+export type TransactionAttachment = {
+  id: string;
+  isDeleted?: true;
+};
+
 export type Transaction = Entity & {
   direction: TransactionDirection;
   amount: number;
@@ -10,6 +15,6 @@ export type Transaction = Entity & {
   contractorId?: string;
   description: string;
   datetime: string;
-  attachmentIds: string[];
+  attachments: TransactionAttachment[];
   isActual: boolean;
 };

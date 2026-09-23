@@ -18,9 +18,9 @@
         @change="selectAttachments"
       />
 
-      <div v-if="attachments.length > 0" class="tw-grid tw-gap-1">
+      <div v-if="attachments.some(attachment => !attachment.deleted)" class="tw-grid tw-gap-1">
         <div
-          v-for="attachment in attachments"
+          v-for="attachment in attachments.filter(item => !item.deleted)"
           :key="attachment.id"
           class="tw-flex tw-items-center tw-gap-2"
         >
@@ -32,7 +32,7 @@
           >
             {{ attachment.name }}
           </a>
-          <button type="button" @click="removeAttachment(attachment.id)">
+          <button type="button" @click="requestRemoveAttachment(attachment.id)">
             ×
           </button>
         </div>
@@ -62,6 +62,24 @@
       @ok="showMonthChangeModal = false"
     >
       Changing the transaction month is not supported.
+    </Modal>
+    <Modal
+      v-if="showDuplicateAttachmentModal"
+      title="Duplicate Attachment"
+      @close="showDuplicateAttachmentModal = false"
+      @ok="showDuplicateAttachmentModal = false"
+    >
+      This attachment is already added.
+    </Modal>
+    <Modal
+      v-if="showRemoveAttachmentModal"
+      title="Remove Attachment"
+      secondary-button-label="Cancel"
+      @close="showRemoveAttachmentModal = false"
+      @cancel="showRemoveAttachmentModal = false"
+      @ok="confirmRemoveAttachment"
+    >
+      Remove this attachment?
     </Modal>
   </DashboardWidget>
 </template>
@@ -103,6 +121,9 @@ const datetime = ref("");
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showMonthChangeModal = ref(false);
+const showDuplicateAttachmentModal = ref(false);
+const showRemoveAttachmentModal = ref(false);
+const attachmentToRemove = ref<string | undefined>();
 const originalTransaction = ref(props.transaction);
 const attachments = ref<Attachment[]>([]);
 
@@ -126,13 +147,15 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
   direction.value = transaction.direction;
   isActual.value = transaction.isActual;
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
-  attachments.value = transaction.attachmentIds.map(id => ({
-    id,
-    name: id,
-    type: "",
-    url: "",
-    deleted: false,
-  }));
+  attachments.value = transaction.attachments
+    .filter(attachment => !attachment.isDeleted)
+    .map(attachment => ({
+      id: attachment.id,
+      name: attachment.id,
+      type: "",
+      url: "",
+      deleted: false,
+    }));
 };
 
 watch(
@@ -175,16 +198,42 @@ const openAttachment = async (attachment: Attachment, event: MouseEvent): Promis
   }
 };
 
-const selectAttachments = (event: Event): void => {
+const selectAttachments = async (event: Event): Promise<void> => {
   const input = event.target as HTMLInputElement;
 
   if (input.files === null) {
     return;
   }
 
+  const selectedFiles = Array.from(input.files);
+  const existingAttachments = await Promise.all(
+    attachments.value.map(async attachment => {
+      if (attachment.type !== "") {
+        return attachment;
+      }
+
+      const data = await getAttachment(attachment.id);
+      attachment.name = data.name;
+      attachment.type = data.type;
+      return attachment;
+    }),
+  );
+
+  const selectedAttachments = selectedFiles.filter(file => {
+    const duplicate = existingAttachments.some(
+      attachment => attachment.name === file.name && attachment.type === file.type,
+    );
+
+    if (duplicate) {
+      showDuplicateAttachmentModal.value = true;
+    }
+
+    return !duplicate;
+  });
+
   attachments.value = [
     ...attachments.value,
-    ...Array.from(input.files).map(file => ({
+    ...selectedAttachments.map(file => ({
       id: generateEntityId("f").slice(2),
       name: file.name,
       type: file.type,
@@ -197,13 +246,37 @@ const selectAttachments = (event: Event): void => {
   input.value = "";
 };
 
-const removeAttachment = (id: string): void => {
-  const attachment = attachments.value.find(item => item.id === id);
+const requestRemoveAttachment = (id: string): void => {
+  attachmentToRemove.value = id;
+  showRemoveAttachmentModal.value = true;
+};
 
-  if (attachment !== undefined) {
-    attachment.deleted = true;
-    URL.revokeObjectURL(attachment.url);
+const confirmRemoveAttachment = (): void => {
+  if (attachmentToRemove.value === undefined) {
+    return;
   }
+
+  const attachment = attachments.value.find(
+    item => item.id === attachmentToRemove.value,
+  );
+
+  if (attachment === undefined) {
+    return;
+  }
+
+  URL.revokeObjectURL(attachment.url);
+
+  if (
+    attachment.file !== undefined
+    && !originalTransaction.value.attachments.some(item => item.id === attachment.id)
+  ) {
+    attachments.value = attachments.value.filter(item => item.id !== attachment.id);
+  } else {
+    attachment.deleted = true;
+  }
+
+  attachmentToRemove.value = undefined;
+  showRemoveAttachmentModal.value = false;
 };
 
 const saveRecord = async (): Promise<void> => {
@@ -237,7 +310,7 @@ const saveRecord = async (): Promise<void> => {
   }
 
   for (const attachment of attachments.value) {
-    if (attachment.file !== undefined) {
+    if (attachment.file !== undefined && !attachment.deleted) {
       await saveAttachment(attachment.id, {
         name: attachment.name,
         type: attachment.type,
@@ -245,6 +318,30 @@ const saveRecord = async (): Promise<void> => {
       });
     }
   }
+
+  const updatedAttachments = [
+    ...originalTransaction.value.attachments
+      .filter(attachment =>
+        attachments.value.some(item => item.id === attachment.id && item.deleted)
+      )
+      .map(attachment => ({
+        ...attachment,
+        isDeleted: true as const,
+      })),
+    ...attachments.value
+      .filter(attachment =>
+        !attachment.deleted
+        && !originalTransaction.value.attachments.some(item => item.id === attachment.id)
+      )
+      .map(attachment => ({
+        id: attachment.id,
+      })),
+    ...originalTransaction.value.attachments
+      .filter(attachment =>
+        !attachment.isDeleted
+        && attachments.value.some(item => item.id === attachment.id && !item.deleted)
+      ),
+  ];
 
   const updatedTransaction: Transaction = {
     ...originalTransaction.value,
@@ -254,9 +351,7 @@ const saveRecord = async (): Promise<void> => {
     accountId: originalTransaction.value.accountId,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
-    attachmentIds: attachments.value
-      .filter(attachment => !attachment.deleted)
-      .map(attachment => attachment.id),
+    attachments: updatedAttachments,
     isActual: isActual.value,
   };
 

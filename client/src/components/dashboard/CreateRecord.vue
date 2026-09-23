@@ -27,7 +27,7 @@
           <a :href="attachment.url" target="_blank" rel="noopener">
             {{ attachment.name }}
           </a>
-          <button type="button" @click="removeAttachment(attachment.id)">
+          <button type="button" @click="requestRemoveAttachment(attachment.id)">
             ×
           </button>
         </div>
@@ -50,6 +50,24 @@
         </LiteButton>
       </div>
     </div>
+    <Modal
+      v-if="showDuplicateAttachmentModal"
+      title="Duplicate Attachment"
+      @close="showDuplicateAttachmentModal = false"
+      @ok="showDuplicateAttachmentModal = false"
+    >
+      This attachment is already added.
+    </Modal>
+    <Modal
+      v-if="showRemoveAttachmentModal"
+      title="Remove Attachment"
+      secondary-button-label="Cancel"
+      @close="showRemoveAttachmentModal = false"
+      @cancel="showRemoveAttachmentModal = false"
+      @ok="confirmRemoveAttachment"
+    >
+      Remove this attachment?
+    </Modal>
   </DashboardWidget>
 </template>
 
@@ -60,6 +78,7 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
+import Modal from "@/components/ui/Modal.vue";
 import { saveAttachment, saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
@@ -86,6 +105,9 @@ const accountId = ref<string | undefined>(
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
+const showDuplicateAttachmentModal = ref(false);
+const showRemoveAttachmentModal = ref(false);
+const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
 
 const accountOptions = computed<Option[]>(() =>
@@ -106,9 +128,21 @@ const selectAttachments = (event: Event): void => {
     return;
   }
 
+  const selectedAttachments = Array.from(input.files).filter(file => {
+    const duplicate = attachments.value.some(
+      attachment => attachment.name === file.name && attachment.type === file.type,
+    );
+
+    if (duplicate) {
+      showDuplicateAttachmentModal.value = true;
+    }
+
+    return !duplicate;
+  });
+
   attachments.value = [
     ...attachments.value,
-    ...Array.from(input.files).map(file => ({
+    ...selectedAttachments.map(file => ({
       id: generateEntityId("f").slice(2),
       name: file.name,
       type: file.type,
@@ -120,14 +154,29 @@ const selectAttachments = (event: Event): void => {
   input.value = "";
 };
 
-const removeAttachment = (id: string): void => {
-  const attachment = attachments.value.find(item => item.id === id);
+const requestRemoveAttachment = (id: string): void => {
+  attachmentToRemove.value = id;
+  showRemoveAttachmentModal.value = true;
+};
+
+const confirmRemoveAttachment = (): void => {
+  if (attachmentToRemove.value === undefined) {
+    return;
+  }
+
+  const attachment = attachments.value.find(
+    item => item.id === attachmentToRemove.value,
+  );
 
   if (attachment !== undefined) {
     URL.revokeObjectURL(attachment.url);
+    attachments.value = attachments.value.filter(
+      item => item.id !== attachmentToRemove.value,
+    );
   }
 
-  attachments.value = attachments.value.filter(item => item.id !== id);
+  attachmentToRemove.value = undefined;
+  showRemoveAttachmentModal.value = false;
 };
 
 const saveRecord = async (): Promise<void> => {
@@ -154,7 +203,9 @@ const saveRecord = async (): Promise<void> => {
     accountId: accountId.value,
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
-    attachmentIds: attachments.value.map(attachment => attachment.id),
+    attachments: attachments.value.map(attachment => ({
+      id: attachment.id,
+    })),
     isActual: isActual.value,
   };
   const chunk: ChunkStorage = existingChunk ?? {

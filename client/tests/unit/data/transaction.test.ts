@@ -184,7 +184,7 @@ describe("transactions CRUD", () => {
       amount: 42.5,
       accountId: account.id,
       description: "Groceries",
-      attachmentIds: [],
+      attachments: [],
       isActual: true,
       isDeleted: false,
     });
@@ -244,7 +244,7 @@ describe("transactions CRUD", () => {
       accountId: account.id,
       description: "Salary",
       datetime: "2026-08-01T00:00:00.000Z",
-      attachmentIds: [],
+      attachments: [],
       isActual: true,
     };
 
@@ -312,15 +312,9 @@ describe("transactions CRUD", () => {
       accountId: account.id,
       description: "Old description",
       datetime: "2026-08-01T10:00:00.000Z",
-      attachmentIds: ["attachment-1"],
+      attachments: [{ id: "attachment-1" }],
       isActual: true,
     };
-
-    vi.mocked(getAttachment).mockResolvedValue({
-      name: "test.txt",
-      type: "text/plain",
-      data: "aGVsbG8=",
-    });
 
     getState().chunks["2026-08"] = {
       metadata: {
@@ -353,7 +347,7 @@ describe("transactions CRUD", () => {
 
     await findSaveButton(wrapper)?.trigger("click");
 
-    expect(saveAttachment).toHaveBeenCalledOnce();
+    expect(saveAttachment).not.toHaveBeenCalled();
     expect(saveChunkData).toHaveBeenCalledOnce();
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
@@ -377,7 +371,7 @@ describe("transactions CRUD", () => {
       accountId: account.id,
       description: "Updated description",
       datetime: new Date("2026-08-15T12:30").toISOString(),
-      attachmentIds: ["attachment-1"],
+      attachments: [{ id: "attachment-1" }],
       isActual: false,
     });
 
