@@ -27,9 +27,8 @@ const updatePending = async (
   });
 };
 
-const hasPendingData = (offlineSync: OfflineSync): boolean => {
+const hasPendingObject = (offlineSync: OfflineSync): boolean => {
   return (
-    offlineSync.manifest !== null ||
     Object.values(offlineSync.objects.attachments).some(Boolean) ||
     Object.values(offlineSync.objects.chunks).some(Boolean) ||
     offlineSync.objects.accounts ||
@@ -39,6 +38,10 @@ const hasPendingData = (offlineSync: OfflineSync): boolean => {
     offlineSync.objects.statistics ||
     offlineSync.objects.balances
   );
+};
+
+const hasPendingData = (offlineSync: OfflineSync): boolean => {
+  return offlineSync.manifest !== null || hasPendingObject(offlineSync);
 };
 
 const getPendingManifest = async () => {
@@ -252,16 +255,7 @@ export const synchronizeOfflineData = async (): Promise<void> => {
     await synchronizeStatistics();
     await synchronizeBalances();
     const updatedOfflineSync = await dbGetOfflineSync();
-    const hasPendingObjects =
-      Object.values(updatedOfflineSync.objects.attachments).some(Boolean) ||
-      Object.values(updatedOfflineSync.objects.chunks).some(Boolean) ||
-      updatedOfflineSync.objects.accounts ||
-      updatedOfflineSync.objects.categories ||
-      updatedOfflineSync.objects.contractors ||
-      updatedOfflineSync.objects.rates ||
-      updatedOfflineSync.objects.statistics ||
-      updatedOfflineSync.objects.balances;
-    if (!hasPendingObjects && updatedOfflineSync.manifest !== null) {
+    if (!hasPendingObject(updatedOfflineSync) && updatedOfflineSync.manifest !== null) {
       await dbSaveOfflineSync({
         ...updatedOfflineSync,
         manifest: null,
