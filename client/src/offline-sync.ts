@@ -168,8 +168,12 @@ const synchronizeReferenceData = async (): Promise<void> => {
     if (value.data === null) {
       throw new Error(`Reference data not found: ${key}`);
     }
-    await saveObject(value.entry.objectKey, value.data);
-    await clearReferenceDataPending(key);
+    try {
+      await saveObject(value.entry.objectKey, value.data);
+      await clearReferenceDataPending(key);
+    } catch (error) {
+      console.error(`Failed to synchronize reference data: ${key}`, error);
+    }
   }
 };
 
@@ -180,12 +184,16 @@ const synchronizeAttachments = async (): Promise<void> => {
       continue;
     }
     console.debug(`Synchronizing attachment: ${id}`);
-    const attachment = await dbGetAttachment(id);
-    if (attachment === null) {
-      throw new Error(`Attachment not found: ${id}`);
+    try {
+      const attachment = await dbGetAttachment(id);
+      if (attachment === null) {
+        throw new Error(`Attachment not found: ${id}`);
+      }
+      await putFile(id, encodeData(attachment));
+      await clearAttachmentPending(id);
+    } catch (error) {
+      console.error(`Failed to synchronize attachment: ${id}`, error);
     }
-    await putFile(id, encodeData(attachment));
-    await clearAttachmentPending(id);
   }
 };
 
@@ -203,8 +211,12 @@ const synchronizeChunks = async (): Promise<void> => {
     if (chunk === undefined || entry === undefined) {
       throw new Error(`Chunk not found: ${month}`);
     }
-    await saveObject(entry.objectKey, chunk);
-    await clearChunkPending(month);
+    try {
+      await saveObject(entry.objectKey, chunk);
+      await clearChunkPending(month);
+    } catch (error) {
+      console.error(`Failed to synchronize chunk: ${month}`, error);
+    }
   }
 };
 
@@ -218,8 +230,12 @@ const synchronizeStatistics = async (): Promise<void> => {
     throw new Error("Statistics not found");
   }
   const manifest = await getPendingManifest();
-  await saveObject(manifest.statistics.objectKey, statistics);
-  await setObjectPending("statistics", false);
+  try {
+    await saveObject(manifest.statistics.objectKey, statistics);
+    await setObjectPending("statistics", false);
+  } catch (error) {
+    console.error("Failed to synchronize statistics", error);
+  }
 };
 
 const synchronizeBalances = async (): Promise<void> => {
@@ -232,8 +248,12 @@ const synchronizeBalances = async (): Promise<void> => {
     throw new Error("Balances not found");
   }
   const manifest = await getPendingManifest();
-  await saveObject(manifest.balances.objectKey, balances);
-  await setObjectPending("balances", false);
+  try {
+    await saveObject(manifest.balances.objectKey, balances);
+    await setObjectPending("balances", false);
+  } catch (error) {
+    console.error("Failed to synchronize balances", error);
+  }
 };
 
 export const synchronizeOfflineData = async (): Promise<void> => {
