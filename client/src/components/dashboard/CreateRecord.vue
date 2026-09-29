@@ -59,6 +59,14 @@
       This attachment is already added.
     </Modal>
     <Modal
+      v-if="showAttachmentSizeModal"
+      title="Attachment Too Large"
+      @close="showAttachmentSizeModal = false"
+      @ok="showAttachmentSizeModal = false"
+    >
+      Attachments must be smaller than 7 MB.
+    </Modal>
+    <Modal
       v-if="showRemoveAttachmentModal"
       title="Remove Attachment"
       secondary-button-label="Cancel"
@@ -97,6 +105,7 @@ type Attachment = {
   url: string;
 };
 
+const maxAttachmentSize = 7 * 1024 * 1024;
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
@@ -106,6 +115,7 @@ const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showDuplicateAttachmentModal = ref(false);
+const showAttachmentSizeModal = ref(false);
 const showRemoveAttachmentModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
@@ -129,6 +139,11 @@ const selectAttachments = (event: Event): void => {
   }
 
   const selectedAttachments = Array.from(input.files).filter(file => {
+    if (file.size > maxAttachmentSize) {
+      showAttachmentSizeModal.value = true;
+      return false;
+    }
+
     const duplicate = attachments.value.some(
       attachment => attachment.name === file.name && attachment.type === file.type,
     );
