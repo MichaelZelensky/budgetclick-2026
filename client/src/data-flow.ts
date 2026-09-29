@@ -111,10 +111,16 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
     await setReferenceDataPending(key);
     const updatedManifest = bumpManifest(manifest, "references", key, { ...entry, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
-    await putFile(entry.objectKey, encodeData(updatedData));
-    await putFile(manifestKey, encodeData(updatedManifest));
-    await clearReferenceDataPending(key);
-    await clearManifestPending();
+    if (getState().isOnline) {
+      try {
+        await putFile(entry.objectKey, encodeData(updatedData));
+        await putFile(manifestKey, encodeData(updatedManifest));
+        await clearReferenceDataPending(key);
+        await clearManifestPending();
+      } catch {
+        getState().isOnline = false;
+      }
+    }
   } catch (error) {
     showError(getErrorMessage(error));
     throw error;
@@ -180,10 +186,16 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
     const updatedManifest = bumpManifest(manifest, "chunks", key, { objectKey, version: updatedData.metadata.version });
     await saveManifest(updatedManifest);
 
-    await putFile(objectKey, encodeData(updatedData));
-    await putFile(manifestKey, encodeData(updatedManifest));
-    await clearChunkPending(key);
-    await clearManifestPending();
+    if (getState().isOnline) {
+      try {
+        await putFile(objectKey, encodeData(updatedData));
+        await putFile(manifestKey, encodeData(updatedManifest));
+        await clearChunkPending(key);
+        await clearManifestPending();
+      } catch {
+        getState().isOnline = false;
+      }
+    }
   } catch (error) {
     showError(getErrorMessage(error));
     throw error;
