@@ -223,6 +223,7 @@ const confirmImport = async () => {
   try {
     error.value = null;
     await importData(file);
+    settings.defaultCurrency = getSettings().defaultCurrency;
   } catch (errorValue) {
     error.value = errorValue instanceof Error ? errorValue.message : "Failed to import data";
   }

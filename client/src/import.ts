@@ -20,6 +20,8 @@ import { rebuildStatistics } from "@/stats";
 import { listRawFiles, putFile, removeRawFile } from "@/storage";
 import { encodeBlob, encodeData } from "@/utils/data";
 import { generateObjectKey } from "@/utils/key";
+import { getSettings, updateSettings } from "@/state/settings";
+import { saveSettings } from "@/settings";
 
 const createMetadata = (clientId: string): StorageMetadata => {
   const now = new Date().toISOString();
@@ -171,6 +173,15 @@ export const importData = async (file: File): Promise<void> => {
     );
     await clearData();
     resetStateData();
+    const firstAccount = accounts.accounts[0];
+    if (firstAccount !== undefined) {
+      const settings = {
+        ...getSettings(),
+        defaultCurrency: firstAccount.currency,
+      };
+      updateSettings(settings);
+      saveSettings(settings);
+    }
     await dbSaveOfflineSync({
       manifest: updatedManifest,
       objects: {
