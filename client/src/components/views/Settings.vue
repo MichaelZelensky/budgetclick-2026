@@ -52,10 +52,14 @@
         Import/Export Data
       </label>
       <ButtonGroup>
+        <LiteButton @click="openImportFile">
+          Import
+        </LiteButton>
         <LiteButton @click="openExportModal">
           Export
         </LiteButton>
       </ButtonGroup>
+      <input ref="importInput" class="tw-hidden" type="file" accept=".zip,application/zip" @change="selectImportFile" />
     </div>
 
     <ButtonGroup class="tw-mt-8">
@@ -78,6 +82,18 @@
       @close="showClientIdModal = false"
     >
       Changing the Client ID affects synchronization and conflict detection. Continue?
+    </Modal>
+
+    <Modal
+      v-if="showImportModal"
+      title="Import Data"
+      primary-button-label="Import"
+      secondary-button-label="Cancel"
+      @ok="confirmImport"
+      @cancel="cancelImport"
+      @close="cancelImport"
+    >
+      Import replaces the current data. Continue?
     </Modal>
 
     <Modal
@@ -117,12 +133,16 @@ import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
 import { getSettings, updateSettings } from "@/state/settings";
 import { exportData } from "@/export";
+import { importData } from "@/import";
 
 const router = useRouter();
 const error = ref<string | null>(null);
 const showClientIdModal = ref(false);
+const showImportModal = ref(false);
 const showExportModal = ref(false);
 const includeAttachments = ref(true);
+const importInput = ref<HTMLInputElement | null>(null);
+const importFile = ref<File | null>(null);
 
 const settings = reactive({
   ...getSettings(),
@@ -173,6 +193,39 @@ const back = () => {
 
 const setClientId = (clientId: string) => {
   settings.clientId = clientId;
+};
+
+const openImportFile = () => {
+  importInput.value?.click();
+};
+
+const selectImportFile = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  importFile.value = input.files?.[0] ?? null;
+  input.value = "";
+  if (importFile.value) {
+    showImportModal.value = true;
+  }
+};
+
+const cancelImport = () => {
+  showImportModal.value = false;
+  importFile.value = null;
+};
+
+const confirmImport = async () => {
+  const file = importFile.value;
+  cancelImport();
+  if (!file) {
+    return;
+  }
+
+  try {
+    error.value = null;
+    await importData(file);
+  } catch (errorValue) {
+    error.value = errorValue instanceof Error ? errorValue.message : "Failed to import data";
+  }
 };
 
 const openExportModal = () => {

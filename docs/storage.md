@@ -4,7 +4,7 @@
 
 Every user data object is encrypted and independently versioned. Storage is untrusted and holds no plaintext except the salt. Objects remain independent whenever possible.
 
-# Storage Configuration
+## Storage Configuration
 
 BudgetClick supports local storage (dev/offline) and remote S3-compatible storage, selected by environment variable; the storage path lives in user settings.
 
@@ -46,23 +46,21 @@ aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
   BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=false,RestrictPublicBuckets=false
 ```
 
-**3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket` only:
+**3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket`/`DeleteObject`:
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     { "Sid": "BudgetClickPublicReadWrite", "Effect": "Allow", "Principal": "*",
-      "Action": ["s3:GetObject", "s3:PutObject"], "Resource": "arn:aws:s3:::BUCKET_NAME/*" },
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], "Resource": "arn:aws:s3:::BUCKET_NAME/*" },
     { "Sid": "BudgetClickPublicList", "Effect": "Allow", "Principal": "*",
       "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::BUCKET_NAME" }
   ]
 }
 ```
 
-No delete, bucket configuration, or IAM access is granted.
-
-**4. No delete permission** — `s3:DeleteObject` is intentionally omitted; deletion is represented by application-level tombstones, limiting damage if the path leaks.
+**4. Delete permission** — required for replacement imports. Import deletes every remote object except `manifest` and `salt`.
 
 **5. Test**
 
@@ -99,6 +97,8 @@ Serialize → Encrypt → Upload → Download → Decrypt → Deserialize
 ```
 
 The storage layer only ever handles encrypted data. The salt is unencrypted because it's needed to initialize encryption.
+
+The storage layer supports getting, putting, listing, and deleting objects. Import uses listing and deletion to remove all remote objects except `manifest` and `salt`.
 
 Attachments use the same encryption flow. Each attachment is serialized as:
 

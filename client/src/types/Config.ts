@@ -12,6 +12,8 @@ export type Config = {
 type StorageConfig = {
   putUrl: string;
   getUrl: string;
+  listUrl: string;
+  deleteUrl: string;
 };
 
 type KdfConfig = {

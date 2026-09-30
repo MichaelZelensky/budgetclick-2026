@@ -22,6 +22,10 @@ export const initializeState = (): void => {
   state.config = null;
   state.settings = null;
   state.isOnline = navigator.onLine;
+  resetStateData();
+};
+
+export const resetStateData = (): void => {
   state.manifest = null;
   state.referenceData.accounts = null;
   state.referenceData.categories = null;

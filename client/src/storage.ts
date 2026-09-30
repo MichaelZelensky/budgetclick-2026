@@ -28,6 +28,14 @@ const getPutUrl = (): string => {
   return import.meta.env.DEV ? "http://localhost:3000/put" : getConfig().storage.putUrl;
 };
 
+const getListUrl = (): string => {
+  return import.meta.env.DEV ? "http://localhost:3000/list" : getConfig().storage.listUrl;
+};
+
+const getDeleteUrl = (): string => {
+  return import.meta.env.DEV ? "http://localhost:3000/delete" : getConfig().storage.deleteUrl;
+};
+
 const getStorageKey = (key: string): string => {
   return key === "manifest" || key === "salt" ? key : `${key[0]}/${key}`;
 };
@@ -62,6 +70,33 @@ export const putRawFile = async (key: string, body: Uint8Array): Promise<void> =
   });
   if (!response.ok) {
     throw new Error(`Failed to put file (${response.status})`);
+  }
+};
+
+export const listRawFiles = async (): Promise<string[]> => {
+  const response = await fetch(getListUrl(), {
+    method: "GET",
+    headers: {
+      "X-Storage-Path": getStoragePath(),
+    },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to list files (${response.status})`);
+  }
+  return response.json();
+};
+
+export const removeRawFile = async (key: string): Promise<void> => {
+  const response = await fetch(getDeleteUrl(), {
+    method: "DELETE",
+    headers: {
+      "X-Storage-Path": getStoragePath(),
+      "X-Storage-Key": getStorageKey(key),
+    },
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Failed to delete file (${response.status})`);
   }
 };
 

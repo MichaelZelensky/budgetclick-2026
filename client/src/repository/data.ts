@@ -1,3 +1,4 @@
+import { getDatabase } from "@/database";
 import { dbGetAccounts } from "@/repository/account";
 import { dbGetBalances } from "@/repository/balance";
 import { dbGetCategories } from "@/repository/category";
@@ -7,6 +8,8 @@ import { dbGetStatistics } from "@/repository/statistics";
 import { dbGetRates } from "@/repository/rates";
 import { updateReferenceDataState, updateState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
+
+const encryptionKeyStore = "encryptionKeys";
 
 export const initializeData = async (): Promise<void> => {
   const accounts = await dbGetAccounts();
@@ -23,4 +26,17 @@ export const initializeData = async (): Promise<void> => {
   updateState("chunks", chunks);
   updateState("statistics", statistics);
   updateState("balances", balances);
+};
+
+export const clearData = async (): Promise<void> => {
+  const database = getDatabase();
+  const objectStoreNames = Array.from(database.objectStoreNames).filter(x => x !== encryptionKeyStore);
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(objectStoreNames, "readwrite");
+    objectStoreNames.forEach(objectStoreName => {
+      transaction.objectStore(objectStoreName).clear();
+    });
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Failed to clear data"));
+  });
 };
