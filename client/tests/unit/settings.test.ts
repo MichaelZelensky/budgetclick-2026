@@ -91,8 +91,8 @@ const mountSettings = async () => {
 };
 
 const clickSave = async (wrapper: ReturnType<typeof mount>) => {
-  const buttonGroup = wrapper.find("[data-test='button-group']");
-  const buttons = buttonGroup.findAll("button");
+  const buttonGroups = wrapper.findAll("[data-test='button-group']");
+  const buttons = buttonGroups.at(-1)?.findAll("button") ?? [];
   await buttons[0].trigger("click");
 };
 
@@ -108,7 +108,6 @@ describe("settings", () => {
     };
 
     initializeSettings(settings);
-    getState().settings = settings;
 
     getState().referenceData.accounts = {
       accounts: [

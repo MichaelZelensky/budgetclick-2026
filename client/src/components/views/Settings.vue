@@ -47,7 +47,18 @@
       <LiteSelect v-model="settings.defaultCurrency" :options="currencyOptions" />
     </label>
 
-    <ButtonGroup>
+    <div class="tw-my-8">
+      <label>
+        Import/Export Data
+      </label>
+      <ButtonGroup>
+        <LiteButton @click="openExportModal">
+          Export
+        </LiteButton>
+      </ButtonGroup>
+    </div>
+
+    <ButtonGroup class="tw-mt-8">
       <LiteButton @click="save">
         Save
       </LiteButton>
@@ -68,6 +79,25 @@
     >
       Changing the Client ID affects synchronization and conflict detection. Continue?
     </Modal>
+
+    <Modal
+      v-if="showExportModal"
+      title="Export Data"
+      primary-button-label="Export"
+      secondary-button-label="Cancel"
+      @ok="confirmExport"
+      @cancel="showExportModal = false"
+      @close="showExportModal = false"
+    >
+      <label class="tw-flex tw-items-center tw-gap-2">
+        <input v-model="includeAttachments" type="checkbox" />
+        Include attachments
+      </label>
+
+      <p>
+        Attachments may significantly increase the export size.
+      </p>
+    </Modal>
   </main>
 </template>
 
@@ -86,10 +116,13 @@ import { getState } from "@/state/state";
 import validateSettings from "@/validators/default/Settings.js";
 import { generateClientId } from "@/client-id";
 import { getSettings, updateSettings } from "@/state/settings";
+import { exportData } from "@/export";
 
 const router = useRouter();
 const error = ref<string | null>(null);
 const showClientIdModal = ref(false);
+const showExportModal = ref(false);
+const includeAttachments = ref(true);
 
 const settings = reactive({
   ...getSettings(),
@@ -140,5 +173,14 @@ const back = () => {
 
 const setClientId = (clientId: string) => {
   settings.clientId = clientId;
+};
+
+const openExportModal = () => {
+  showExportModal.value = true;
+};
+
+const confirmExport = async () => {
+  showExportModal.value = false;
+  await exportData(includeAttachments.value);
 };
 </script>
