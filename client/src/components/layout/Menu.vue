@@ -21,16 +21,18 @@
     </RouterLink>
 
     <RouterLink to="/settings" @click="close">
-      Settings
+      <GearIcon class="tw-h-4 tw-w-4" />
     </RouterLink>
 
     <RouterLink to="/help" @click="close">
-      Help
+      <HelpIcon class="tw-h-4 tw-w-4" />
     </RouterLink>
   </nav>
 </template>
 
 <script setup lang="ts">
+import GearIcon from "@/components/icons/Gear.vue";
+import HelpIcon from "@/components/icons/QuestionCircleFill.vue";
 defineProps<{
   open: boolean;
 }>();
