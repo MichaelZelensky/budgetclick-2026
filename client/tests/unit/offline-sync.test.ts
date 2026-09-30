@@ -619,53 +619,59 @@ describe("offline-sync", () => {
     expect(putFile).toHaveBeenCalledTimes(2);
   });
 
-  it("does not synchronize dependents when a prerequisite fails", async () => {
-    getState().isOnline = true;
+  it("continues synchronizing dependents when a prerequisite fails", async () => {
+  getState().isOnline = true;
 
-    const manifest = createManifest();
-    const offlineSync = createOfflineSync();
+  const manifest = createManifest();
+  const offlineSync = createOfflineSync();
 
-    offlineSync.manifest = manifest;
-    offlineSync.objects.accounts = true;
-    offlineSync.objects.chunks["2026-09"] = true;
-    offlineSync.objects.statistics = true;
-    offlineSync.objects.balances = true;
+  offlineSync.manifest = manifest;
+  offlineSync.objects.accounts = true;
+  offlineSync.objects.chunks["2026-09"] = true;
+  offlineSync.objects.statistics = true;
+  offlineSync.objects.balances = true;
 
-    let currentOfflineSync = offlineSync;
+  let currentOfflineSync = offlineSync;
 
-    vi.mocked(dbGetOfflineSync).mockImplementation(
-      async () => currentOfflineSync,
-    );
+  vi.mocked(dbGetOfflineSync).mockImplementation(
+    async () => currentOfflineSync,
+  );
 
-    vi.mocked(dbSaveOfflineSync).mockImplementation(async value => {
-      currentOfflineSync = value;
-    });
-
-    vi.mocked(dbGetAccounts).mockResolvedValue([
-      { id: "account-1" },
-    ]);
-
-    vi.mocked(putFile).mockRejectedValue(
-      new Error("Storage unavailable"),
-    );
-
-    await synchronizeOfflineData();
-
-    expect(putFile).toHaveBeenCalledTimes(1);
-    expect(putFile).toHaveBeenCalledWith(
-      "accounts",
-      [{ id: "account-1" }],
-    );
-
-    expect(currentOfflineSync.objects.accounts).toBe(true);
-    expect(currentOfflineSync.objects.chunks["2026-09"]).toBe(true);
-    expect(currentOfflineSync.objects.statistics).toBe(true);
-    expect(currentOfflineSync.objects.balances).toBe(true);
-
-    expect(dbGetChunks).not.toHaveBeenCalled();
-    expect(dbGetStatistics).not.toHaveBeenCalled();
-    expect(dbGetBalances).not.toHaveBeenCalled();
+  vi.mocked(dbSaveOfflineSync).mockImplementation(async value => {
+    currentOfflineSync = value;
   });
+
+  vi.mocked(dbGetAccounts).mockResolvedValue([{ id: "account-1" }]);
+  vi.mocked(dbGetChunks).mockResolvedValue({
+    "2026-09": [{ id: "transaction-1" }],
+  });
+  vi.mocked(dbGetStatistics).mockResolvedValue({
+    "2026-09": {},
+  });
+  vi.mocked(dbGetBalances).mockResolvedValue({
+    "2026-09": {},
+  });
+
+  vi.mocked(putFile)
+    .mockRejectedValueOnce(new Error("Storage unavailable"))
+    .mockResolvedValue();
+
+  await synchronizeOfflineData();
+
+  expect(putFile).toHaveBeenCalledWith(
+    "accounts",
+    [{ id: "account-1" }],
+  );
+
+  expect(currentOfflineSync.objects.accounts).toBe(true);
+  expect(currentOfflineSync.objects.chunks["2026-09"]).toBe(false);
+  expect(currentOfflineSync.objects.statistics).toBe(false);
+  expect(currentOfflineSync.objects.balances).toBe(false);
+
+  expect(dbGetChunks).toHaveBeenCalledTimes(1);
+  expect(dbGetStatistics).toHaveBeenCalledTimes(1);
+  expect(dbGetBalances).toHaveBeenCalledTimes(1);
+});
 
   it("retries pending data on the next synchronization", async () => {
     getState().isOnline = true;
