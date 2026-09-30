@@ -3,6 +3,7 @@ import { mount, flushPromises } from "@vue/test-utils";
 import CreateRecord from "@/components/dashboard/CreateRecord.vue";
 import EditRecord from "@/components/dashboard/EditRecord.vue";
 import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
+import { dbGetAttachment } from "@/repository/attachment";
 import { getState, initializeState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
 import { nextTick } from "vue";
@@ -11,6 +12,10 @@ vi.mock("@/data-flow", () => ({
   getAttachment: vi.fn(),
   saveAttachment: vi.fn(),
   saveChunkData: vi.fn(),
+}));
+
+vi.mock("@/repository/attachment", () => ({
+  dbGetAttachment: vi.fn(),
 }));
 
 vi.mock("@/balance", () => ({
@@ -315,6 +320,13 @@ describe("transactions CRUD", () => {
       attachments: [{ id: "attachment-1" }],
       isActual: true,
     };
+
+    vi.mocked(dbGetAttachment).mockResolvedValue({
+      id: "attachment-1",
+      name: "attachment-1",
+      type: "application/octet-stream",
+      data: "",
+    });
 
     getState().chunks["2026-08"] = {
       metadata: {
