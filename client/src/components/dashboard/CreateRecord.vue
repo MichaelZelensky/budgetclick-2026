@@ -1,8 +1,13 @@
 <template>
   <DashboardWidget>
-    <div class="title">Add Record</div>
+    <RecordTabs
+      v-model="activeTab"
+      mode="create"
+      :has-attachments="attachments.length > 0"
+      class="tw--mx-4 tw--mt-4 tw-mb-4"
+    />
 
-    <div class="tw-grid tw-gap-2">
+    <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
       <LiteInputField v-model="description" placeholder="Description" required />
 
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
@@ -12,6 +17,25 @@
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteToggle v-model="isActual">
+          Actual
+        </LiteToggle>
+
+        <LiteToggle
+          :model-value="direction === 'in'"
+          @update:model-value="setIncome"
+        >
+          Income
+        </LiteToggle>
+
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'attachments'" class="tw-grid tw-gap-2 tw-pt-2">
       <input
         type="file"
         multiple
@@ -32,24 +56,23 @@
           </button>
         </div>
       </div>
-
       <div class="tw-flex tw-items-center tw-gap-6">
-        <LiteToggle v-model="isActual">
-          Actual
-        </LiteToggle>
-
-        <LiteToggle
-          :model-value="direction === 'in'"
-          @update:model-value="setIncome"
-        >
-          Income
-        </LiteToggle>
-
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
         </LiteButton>
       </div>
     </div>
+
+    <div v-if="activeTab === 'ext'" class="tw-grid tw-gap-2 tw-pt-2">
+      <LiteSelect v-model="categoryId" :options="categoryOptions" title="Category" />
+      <LiteSelect v-model="contractorId" :options="contractorOptions" title="Contractor" />
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
     <Modal
       v-if="showDuplicateAttachmentModal"
       title="Duplicate Attachment"
@@ -87,6 +110,7 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import Modal from "@/components/ui/Modal.vue";
+import RecordTabs from "@/components/dashboard/RecordTabs.vue";
 import { saveAttachment, saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
@@ -104,13 +128,17 @@ type Attachment = {
   file: File;
   url: string;
 };
+type Tab = "main" | "attachments" | "ext";
 
+const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 7 * 1024 * 1024;
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
   getState().referenceData.accounts?.accounts[0]?.id,
 );
+const categoryId = ref("");
+const contractorId = ref("");
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
@@ -126,6 +154,22 @@ const accountOptions = computed<Option[]>(() =>
     text: account.name,
   })) ?? []
 );
+
+const categoryOptions = computed<Option[]>(() => [
+  { value: "", text: "Select category" },
+  ...(getState().referenceData.categories?.categories.map(category => ({
+    value: category.id,
+    text: category.name,
+  })) ?? []),
+]);
+
+const contractorOptions = computed<Option[]>(() => [
+  { value: "", text: "Select contractor" },
+  ...(getState().referenceData.contractors?.contractors.map(contractor => ({
+    value: contractor.id,
+    text: contractor.name,
+  })) ?? []),
+]);
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
@@ -221,6 +265,8 @@ const saveRecord = async (): Promise<void> => {
     attachments: attachments.value.map(attachment => ({
       id: attachment.id,
     })),
+    categoryId: categoryId.value,
+    contractorId: contractorId.value,
     isActual: isActual.value,
   };
   const chunk: ChunkStorage = existingChunk ?? {
@@ -269,6 +315,8 @@ const saveRecord = async (): Promise<void> => {
   datetime.value = new Date().toISOString().slice(0, 16);
   direction.value = "out";
   isActual.value = true;
+  categoryId.value = undefined;
+  contractorId.value = undefined;
   attachments.value = [];
 };
 </script>

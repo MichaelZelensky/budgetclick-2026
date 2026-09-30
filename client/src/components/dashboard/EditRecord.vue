@@ -1,8 +1,13 @@
 <template>
   <DashboardWidget>
-    <div class="title">Edit Record</div>
+    <RecordTabs
+      v-model="activeTab"
+      mode="edit"
+      :has-attachments="attachments.length > 0"
+      class="tw--mx-4 tw--mt-4 tw-mb-4"
+    />
 
-    <div class="tw-grid tw-gap-2">
+    <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
       <LiteInputField v-model="description" placeholder="Description" required />
 
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
@@ -12,6 +17,25 @@
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteToggle v-model="isActual">
+          Actual
+        </LiteToggle>
+
+        <LiteToggle
+          :model-value="direction === 'in'"
+          @update:model-value="setIncome"
+        >
+          Income
+        </LiteToggle>
+
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'attachments'" class="tw-grid tw-gap-2 tw-pt-2">
       <input
         type="file"
         multiple
@@ -37,24 +61,23 @@
           </button>
         </div>
       </div>
-
       <div class="tw-flex tw-items-center tw-gap-6">
-        <LiteToggle v-model="isActual">
-          Actual
-        </LiteToggle>
-
-        <LiteToggle
-          :model-value="direction === 'in'"
-          @update:model-value="setIncome"
-        >
-          Income
-        </LiteToggle>
-
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
         </LiteButton>
       </div>
     </div>
+
+    <div v-if="activeTab === 'ext'" class="tw-grid tw-gap-2 tw-pt-2">
+      <LiteSelect v-model="categoryId" :options="categoryOptions" title="Category" />
+      <LiteSelect v-model="contractorId" :options="contractorOptions" title="Contractor" />
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
     <Modal
       v-if="showMonthChangeModal"
       title="Cannot Change Month"
@@ -107,6 +130,7 @@ import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import Modal from "@/components/ui/Modal.vue";
+import RecordTabs from "@/components/dashboard/RecordTabs.vue";
 import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
 
@@ -118,7 +142,9 @@ type Attachment = {
   deleted: boolean;
   file?: File;
 };
+type Tab = "main" | "attachments" | "ext";
 
+const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 7 * 1024 * 1024;
 const props = defineProps<{
   transaction: Transaction;
@@ -127,6 +153,8 @@ const props = defineProps<{
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>();
+const categoryId = ref<string | undefined>();
+const contractorId = ref<string | undefined>();
 const datetime = ref("");
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
@@ -145,10 +173,28 @@ const accountOptions = computed<Option[]>(() =>
   })) ?? []
 );
 
+const categoryOptions = computed<Option[]>(() => [
+  { value: "", text: "Select category" },
+  ...(getState().referenceData.categories?.categories.map(category => ({
+    value: category.id,
+    text: category.name,
+  })) ?? []),
+]);
+
+const contractorOptions = computed<Option[]>(() => [
+  { value: "", text: "Select contractor" },
+  ...(getState().referenceData.contractors?.contractors.map(contractor => ({
+    value: contractor.id,
+    text: contractor.name,
+  })) ?? []),
+]);
+
 const populateEditor = async (transaction: Transaction): Promise<void> => {
   originalTransaction.value = transaction;
   description.value = transaction.description;
   amount.value = String(transaction.amount);
+  categoryId.value = transaction.categoryId ?? "";
+  contractorId.value = transaction.contractorId ?? "";
   accountId.value = transaction.accountId;
   const localDatetime = new Date(transaction.datetime);
   localDatetime.setMinutes(
@@ -177,7 +223,10 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
 
 watch(
   () => props.transaction,
-  populateEditor,
+  transaction => {
+    activeTab.value = "main";
+    populateEditor(transaction);
+  },
   { immediate: true },
 );
 
@@ -292,7 +341,7 @@ const confirmRemoveAttachment = (): void => {
     attachment.file !== undefined
     && !originalTransaction.value.attachments.some(item => item.id === attachment.id)
   ) {
-    attachments.value = attachments.value.filter(item => item.id !== attachment.id);
+    attachments.value = attachments.value.filter(item => item.id !== attachmentToRemove.value);
   } else {
     attachment.deleted = true;
   }
@@ -374,6 +423,8 @@ const saveRecord = async (): Promise<void> => {
     description: description.value.trim(),
     datetime: transactionDatetime.toISOString(),
     attachments: updatedAttachments,
+    categoryId: categoryId.value,
+    contractorId: contractorId.value,
     isActual: isActual.value,
   };
 
