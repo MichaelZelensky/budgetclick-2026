@@ -226,7 +226,7 @@ Activities:
 - Search
 - Filtering (widget)
 - Reporting improvements
-- attachments
+- ✅attachments
 - import / export
 
 Expected outcome:
