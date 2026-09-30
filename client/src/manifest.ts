@@ -4,7 +4,8 @@ import { getState } from "@/state/state";
 import { getFile, getRawFile, isFileNotFoundError, putFile } from "@/storage";
 import { decryptData } from "@/encryption/encryption";
 import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
-import { decodeData, encodeData } from "./utils/data";
+import { decodeData, encodeData } from "@/utils/data";
+import { generateObjectKey } from "@/utils/key";
 
 export const manifestKey = "manifest";
 
@@ -16,10 +17,6 @@ const validateManifestData = (value: unknown): Manifest => {
     throw new Error(`Invalid manifest\n${errors}`);
   }
   return value;
-};
-
-export const generateObjectKey = (): string => {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 };
 
 export const createManifest = (clientId: string): Manifest => {

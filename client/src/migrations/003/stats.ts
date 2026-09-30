@@ -1,11 +1,12 @@
 import { decryptData } from "@/encryption/encryption";
-import { getRawManifest, generateObjectKey, saveManifest } from "@/manifest";
+import { getRawManifest, saveManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { getState } from "@/state/state";
 import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 import { decodeData, encodeData } from "@/utils/data";
 import { Manifest } from "@/types/storage/Manifest";
+import { generateObjectKey } from "@/utils/key";
 
 export const migrateManifest = async (): Promise<void> => {
   const body = await getRawManifest();

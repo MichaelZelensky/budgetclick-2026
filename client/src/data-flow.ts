@@ -31,6 +31,7 @@ import {
   setReferenceDataPending,
   setObjectPending,
 } from "@/offline-sync";
+import { generateObjectKey } from "@/utils/key";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
@@ -76,10 +77,6 @@ const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | C
       updatedBy: getState().settings?.clientId ?? "-",
     },
   };
-};
-
-const generateObjectKey = (): string => {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 };
 
 const getErrorMessage = (error: unknown): string => {
