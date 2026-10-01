@@ -137,8 +137,8 @@ const amount = ref("");
 const accountId = ref<string | undefined>(
   getState().referenceData.accounts?.accounts[0]?.id,
 );
-const categoryId = ref("");
-const contractorId = ref("");
+const categoryId = ref<string | undefined>();
+const contractorId = ref<string | undefined>();
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
