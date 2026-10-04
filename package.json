@@ -4,7 +4,7 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "tsx util/build.ts",
-    "build-server": "tsc server/lambda/put.ts server/lambda/get.ts server/lambda/list.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --outDir server/lambda/dist",
+    "build-server": "tsc server/lambda/put.ts server/lambda/get.ts server/lambda/list.ts server/lambda/delete.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --outDir server/lambda/dist",
     "local-storage": "tsx server/local/index.ts",
     "test-client": "pnpm --dir client test:run",
     "generate-schemas": "tsx util/generate-schemas.ts"
