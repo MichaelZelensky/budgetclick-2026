@@ -5,6 +5,8 @@
     :options="{
       sortable: false,
       filterable: true,
+      paginate: true,
+      showTotalRows: false,
       fixedColumnWidths: {
         actual: 40
       }
@@ -69,11 +71,56 @@ type SpreadsheetRow = {
 
 const state = getState();
 
+const selectedTransactions = computed<Transaction[]>(() => {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const chunks = Object.entries(state.chunks)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const currentAndFutureChunks = chunks.filter(([month]) => month >= currentMonth);
+  const currentAndFutureTransactions = currentAndFutureChunks.flatMap(
+    ([, chunk]) => chunk.transactions,
+  );
+
+  if (currentAndFutureTransactions.length > 0) {
+    const selectedChunks: typeof chunks = [];
+    let transactionCount = 0;
+
+    for (const chunk of currentAndFutureChunks) {
+      selectedChunks.push(chunk);
+      transactionCount += chunk[1].transactions.length;
+
+      if (transactionCount >= 100) {
+        break;
+      }
+    }
+
+    return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
+  }
+
+  const pastChunks = chunks
+    .filter(([month]) => month < currentMonth)
+    .reverse();
+
+  const selectedChunks: typeof pastChunks = [];
+  let transactionCount = 0;
+
+  for (const chunk of pastChunks) {
+    selectedChunks.push(chunk);
+    transactionCount += chunk[1].transactions.length;
+
+    if (transactionCount >= 20) {
+      break;
+    }
+  }
+
+  return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
+});
+
 const transactions = computed<SpreadsheetRow[]>(() => {
   const accounts = state.referenceData.accounts?.accounts ?? [];
+  const allTransactions = selectedTransactions.value;
 
-  return Object.values(state.chunks)
-    .flatMap(x => x.transactions)
+  return allTransactions
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
       const startingBalance = state.balances?.balances.find(
@@ -94,8 +141,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         };
       }
 
-      const balance = Object.values(state.chunks)
-        .flatMap(x => x.transactions)
+      const balance = allTransactions
         .filter(
           x =>
             x.accountId === transaction.accountId
@@ -135,9 +181,7 @@ const onSelectionChange = (ids: string[]): void => {
   const selectedId = ids[0];
 
   const transaction = selectedId
-    ? Object.values(state.chunks)
-        .flatMap(chunk => chunk.transactions)
-        .find(item => item.id === selectedId) ?? null
+    ? selectedTransactions.value.find(item => item.id === selectedId) ?? null
     : null;
 
   emit("selectionChange", transaction);

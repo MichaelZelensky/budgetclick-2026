@@ -174,7 +174,7 @@
         <LiteButton size="sm" :disabled="currentPage === totalPages" @click="lastPage" title="Last"> ⇥ </LiteButton>
       </div>
 
-      <div>
+      <div v-if="options.showTotalRows !== false">
         Total rows: {{ data.length }}
         <span v-if="filteredData.length !== data.length">(Filtered: {{ filteredData.length }})</span>
       </div>
@@ -225,7 +225,8 @@ type DatagridOptions = {
   sortable?: boolean;
   filterable?: boolean;
   paginate?: boolean;
-  initialSort?: { key: string; order: 'asc' | 'desc' };
+  showTotalRows?: boolean;
+  initialSort?: { key: string; order: "asc" | "desc" };
   fixedColumnWidths?: Record<string, number>;
 };
 
@@ -322,7 +323,9 @@ for (const column of props.columns) {
 const itemsPerPage = ref<number>(
   route.query.pageSize
     ? Number(route.query.pageSize)
-    : rowsPerPageNumbers.value[0]
+    : rowsPerPageNumbers.value.includes(100)
+      ? 100
+      : rowsPerPageNumbers.value[0]
 );
 watch(rowsPerPageNumbers, (newList) => {
   if (!newList.includes(itemsPerPage.value)) {
