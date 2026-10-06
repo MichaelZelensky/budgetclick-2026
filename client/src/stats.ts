@@ -162,6 +162,27 @@ export const updateStatistics = async (
   const previousStatistics = previousMonth === undefined
     ? undefined
     : currentStatistics.statistics[previousMonth];
+
+  if (existingMonth === undefined && previousStatistics !== undefined) {
+    for (const gapMonth of getMonthsBetween(previousMonth, month).slice(1, -1)) {
+      currentStatistics.statistics[gapMonth] = {
+        income: 0,
+        outcome: 0,
+        balance: previousStatistics.balance,
+        accounts: Object.fromEntries(
+          Object.entries(previousStatistics.accounts).map(([statisticsAccountId, accountStatistics]) => [
+            statisticsAccountId,
+            {
+              income: 0,
+              outcome: 0,
+              balance: accountStatistics.balance,
+            },
+          ]),
+        ),
+      };
+    }
+  }
+
   const monthlyAccounts = existingMonth?.accounts ?? Object.fromEntries(
     (getState().referenceData.accounts?.accounts ?? []).map(referenceAccount => [
       referenceAccount.id,
