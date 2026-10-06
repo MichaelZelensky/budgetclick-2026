@@ -71,6 +71,25 @@ export const updateBalance = async (
   const existingBalance = currentBalances?.balances.find(
     balance => balance.account === accountId && balance.month === month,
   );
+  const startingBalance = existingBalance?.startingBalance
+    ?? Object.entries(getState().chunks)
+      .filter(([chunkMonth]) => chunkMonth < month)
+      .reduce(
+        (balance, [, chunk]) =>
+          chunk.transactions
+            .filter(transaction => !transaction.isDeleted && transaction.accountId === accountId)
+            .reduce(
+              (value, transaction) =>
+                value.plus(
+                  transaction.direction === "in"
+                    ? new Big(String(transaction.amount))
+                    : new Big(String(transaction.amount)).neg(),
+                ),
+              balance,
+            ),
+        new Big(String(account.currentBalance)),
+      )
+      .toNumber();
   const balances = [
     ...(currentBalances?.balances ?? []).filter(
       balance => !(balance.account === accountId && balance.month === month),
@@ -78,7 +97,7 @@ export const updateBalance = async (
     {
       month,
       account: accountId,
-      startingBalance: existingBalance?.startingBalance ?? account.currentBalance,
+      startingBalance,
     },
   ].map(balance =>
     balance.account === accountId && balance.month > month

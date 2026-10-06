@@ -134,37 +134,86 @@ export const updateStatistics = async (
   const convertedIncomeDelta = incomeDelta * currencyRate;
   const convertedOutcomeDelta = outcomeDelta * currencyRate;
   const balanceDelta = convertedIncomeDelta - convertedOutcomeDelta;
+  const existingMonth = currentStatistics.statistics[month];
+  const previousMonth = Object.keys(currentStatistics.statistics)
+    .filter(statisticsMonth => statisticsMonth < month)
+    .sort()
+    .pop();
+  const previousStatistics = previousMonth === undefined
+    ? undefined
+    : currentStatistics.statistics[previousMonth];
+  const monthlyAccounts = existingMonth?.accounts ?? Object.fromEntries(
+    (getState().referenceData.accounts?.accounts ?? []).map(referenceAccount => [
+      referenceAccount.id,
+      {
+        income: 0,
+        outcome: 0,
+        balance: previousStatistics?.accounts[referenceAccount.id]?.balance
+          ?? referenceAccount.currentBalance,
+      },
+    ]),
+  );
+  const monthlyStatistics: MonthlyStatistics = existingMonth ?? {
+    income: 0,
+    outcome: 0,
+    balance: Object.entries(monthlyAccounts).reduce(
+      (value, [statisticsAccountId, accountStatistics]) =>
+        value + accountStatistics.balance * getCurrencyRate(
+          getState().referenceData.accounts?.accounts.find(
+            referenceAccount => referenceAccount.id === statisticsAccountId,
+          )?.currency ?? defaultCurrency,
+          defaultCurrency,
+          month,
+        ),
+      0,
+    ),
+    accounts: monthlyAccounts,
+  };
+  const updatedMonthlyStatistics: MonthlyStatistics = {
+    income: monthlyStatistics.income + convertedIncomeDelta,
+    outcome: monthlyStatistics.outcome + convertedOutcomeDelta,
+    balance: monthlyStatistics.balance + balanceDelta,
+    accounts: {
+      ...monthlyStatistics.accounts,
+      [accountId]: {
+        ...monthlyStatistics.accounts[accountId],
+        income: monthlyStatistics.accounts[accountId].income + incomeDelta,
+        outcome: monthlyStatistics.accounts[accountId].outcome + outcomeDelta,
+        balance: monthlyStatistics.accounts[accountId].balance + incomeDelta - outcomeDelta,
+      },
+    },
+  };
   const statistics = Object.fromEntries(
-    Object.entries(currentStatistics.statistics).map(([statisticsMonth, monthlyStatistics]) => {
-      if (statisticsMonth < month) {
-        return [statisticsMonth, monthlyStatistics];
-      }
+    Object.entries(currentStatistics.statistics)
+      .filter(([statisticsMonth]) => statisticsMonth !== month)
+      .map(([statisticsMonth, statisticsMonthData]) => {
+        if (statisticsMonth < month) {
+          return [statisticsMonth, statisticsMonthData];
+        }
 
-      const isCurrentMonth = statisticsMonth === month;
-      const accountStatistics = monthlyStatistics.accounts[accountId];
+        const accountStatistics = statisticsMonthData.accounts[accountId];
+        if (accountStatistics === undefined) {
+          return [statisticsMonth, statisticsMonthData];
+        }
 
-      if (accountStatistics === undefined) {
-        return [statisticsMonth, monthlyStatistics];
-      }
-
-      return [
-        statisticsMonth,
-        {
-          income: monthlyStatistics.income + (isCurrentMonth ? convertedIncomeDelta : 0),
-          outcome: monthlyStatistics.outcome + (isCurrentMonth ? convertedOutcomeDelta : 0),
-          balance: monthlyStatistics.balance + balanceDelta,
-          accounts: {
-            ...monthlyStatistics.accounts,
-            [accountId]: {
-              income: accountStatistics.income + (isCurrentMonth ? incomeDelta : 0),
-              outcome: accountStatistics.outcome + (isCurrentMonth ? outcomeDelta : 0),
-              balance: accountStatistics.balance + (isCurrentMonth ? incomeDelta - outcomeDelta : 0),
+        return [
+          statisticsMonth,
+          {
+            ...statisticsMonthData,
+            balance: statisticsMonthData.balance + balanceDelta,
+            accounts: {
+              ...statisticsMonthData.accounts,
+              [accountId]: {
+                ...accountStatistics,
+                balance: accountStatistics.balance + incomeDelta - outcomeDelta,
+              },
             },
           },
-        },
-      ];
-    }),
+        ];
+      }),
   );
+
+  statistics[month] = updatedMonthlyStatistics;
 
   const now = new Date().toISOString();
   const updatedStatistics: StatisticsStorage = {
