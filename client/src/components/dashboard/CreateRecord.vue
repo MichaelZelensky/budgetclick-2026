@@ -333,9 +333,3 @@ const saveRecord = async (): Promise<void> => {
   attachments.value = [];
 };
 </script>
-
-<style lang="scss" scoped>
-.title {
-  @apply tw-font-semibold tw-pb-2;
-}
-</style>
