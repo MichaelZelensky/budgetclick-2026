@@ -78,6 +78,15 @@
       </div>
     </div>
 
+    <div v-if="activeTab === 'comment'" class="tw-grid tw-gap-2 tw-pt-2">
+      <LiteTextarea v-model="comment" placeholder="Comment" rows="4" />
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
     <Modal
       v-if="showMonthChangeModal"
       title="Cannot Change Month"
@@ -122,6 +131,7 @@ import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
+import LiteTextarea from "@/components/ui/LiteTextarea.vue";
 import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
 import { dbGetAttachment } from "@/repository/attachment";
 import { updateStatistics } from "@/stats";
@@ -142,7 +152,7 @@ type Attachment = {
   deleted: boolean;
   file?: File;
 };
-type Tab = "main" | "attachments" | "ext";
+type Tab = "main" | "attachments" | "ext" | "comment";
 
 const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 7 * 1024 * 1024;
@@ -155,6 +165,7 @@ const amount = ref("");
 const accountId = ref<string | undefined>();
 const categoryId = ref<string | undefined>();
 const contractorId = ref<string | undefined>();
+const comment = ref("");
 const datetime = ref("");
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
@@ -195,6 +206,7 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
   amount.value = String(transaction.amount);
   categoryId.value = transaction.categoryId ?? "";
   contractorId.value = transaction.contractorId ?? "";
+  comment.value = transaction.comment;
   accountId.value = transaction.accountId;
   const localDatetime = new Date(transaction.datetime);
   localDatetime.setMinutes(
@@ -426,6 +438,7 @@ const saveRecord = async (): Promise<void> => {
     categoryId: categoryId.value,
     contractorId: contractorId.value,
     isActual: isActual.value,
+    comment: comment.value,
   };
 
   await saveChunkData({

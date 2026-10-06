@@ -26,13 +26,23 @@
     >
       Ext
     </button>
+
+    <button
+      type="button"
+      class="tab tab-icon"
+      :class="{ active: modelValue === 'comment' }"
+      @click="modelValue = 'comment'"
+    >
+      <Comment />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import Comment from "@/components/icons/ChatLeftText.vue";
 import Paperclip from "@/components/icons/Paperclip.vue";
 
-type Tab = "main" | "attachments" | "ext";
+type Tab = "main" | "attachments" | "ext" | "comment";
 
 const modelValue = defineModel<Tab>({ default: "main" });
 

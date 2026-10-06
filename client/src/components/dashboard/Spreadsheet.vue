@@ -119,39 +119,40 @@ const selectedTransactions = computed<Transaction[]>(() => {
 const transactions = computed<SpreadsheetRow[]>(() => {
   const accounts = state.referenceData.accounts?.accounts ?? [];
   const allTransactions = selectedTransactions.value;
+  const transactionBalances = new Map<string, number | string>();
+  const balances = new Map<string, number>();
+
+  const sortedTransactions = [...allTransactions].sort((a, b) =>
+    a.datetime.localeCompare(b.datetime),
+  );
+
+  for (const transaction of sortedTransactions) {
+    const month = transaction.datetime.slice(0, 7);
+    const balanceKey = `${transaction.accountId}:${month}`;
+
+    if (!balances.has(balanceKey)) {
+      const startingBalance = state.balances?.balances.find(
+        x => x.month === month && x.account === transaction.accountId,
+      )?.startingBalance;
+
+      if (startingBalance === undefined) {
+        transactionBalances.set(transaction.id, "");
+        continue;
+      }
+
+      balances.set(balanceKey, startingBalance);
+    }
+
+    const balance = balances.get(balanceKey)! +
+      (transaction.direction === "in" ? transaction.amount : -transaction.amount);
+
+    balances.set(balanceKey, balance);
+    transactionBalances.set(transaction.id, balance);
+  }
 
   return allTransactions
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
-      const startingBalance = state.balances?.balances.find(
-        x => x.month === transaction.datetime.slice(0, 7) && x.account === transaction.accountId,
-      )?.startingBalance;
-
-      if (startingBalance === undefined) {
-        return {
-          id: transaction.id,
-          actual: transaction.isActual,
-          direction: transaction.direction,
-          date: transaction.datetime.substring(0, 10),
-          amount: transaction.amount,
-          account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
-          description: transaction.description,
-          balance: "",
-          hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
-        };
-      }
-
-      const balance = allTransactions
-        .filter(
-          x =>
-            x.accountId === transaction.accountId
-            && x.datetime.slice(0, 7) === transaction.datetime.slice(0, 7)
-            && x.datetime <= transaction.datetime,
-        )
-        .reduce(
-          (value, x) => value + (x.direction === "in" ? x.amount : -x.amount),
-          startingBalance,
-        );
 
       return {
         id: transaction.id,
@@ -161,7 +162,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         amount: transaction.amount,
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
-        balance,
+        balance: transactionBalances.get(transaction.id) ?? "",
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
     })
@@ -181,7 +182,9 @@ const onSelectionChange = (ids: string[]): void => {
   const selectedId = ids[0];
 
   const transaction = selectedId
-    ? selectedTransactions.value.find(item => item.id === selectedId) ?? null
+    ? Object.values(state.chunks)
+        .flatMap(chunk => chunk.transactions)
+        .find(item => item.id === selectedId) ?? null
     : null;
 
   emit("selectionChange", transaction);

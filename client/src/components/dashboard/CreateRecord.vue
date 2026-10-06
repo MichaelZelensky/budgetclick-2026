@@ -73,6 +73,15 @@
       </div>
     </div>
 
+    <div v-if="activeTab === 'comment'" class="tw-grid tw-gap-2 tw-pt-2">
+      <LiteTextarea v-model="comment" placeholder="Comment" rows="4" />
+      <div class="tw-flex tw-items-center tw-gap-6">
+        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
+          Save
+        </LiteButton>
+      </div>
+    </div>
+
     <Modal
       v-if="showDuplicateAttachmentModal"
       title="Duplicate Attachment"
@@ -108,6 +117,7 @@ import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
+import LiteTextarea from "@/components/ui/LiteTextarea.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import Modal from "@/components/ui/Modal.vue";
 import RecordTabs from "@/components/dashboard/RecordTabs.vue";
@@ -128,7 +138,7 @@ type Attachment = {
   file: File;
   url: string;
 };
-type Tab = "main" | "attachments" | "ext";
+type Tab = "main" | "attachments" | "ext" | "comment";
 
 const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 7 * 1024 * 1024;
@@ -139,6 +149,7 @@ const accountId = ref<string | undefined>(
 );
 const categoryId = ref<string | undefined>();
 const contractorId = ref<string | undefined>();
+const comment = ref("");
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
@@ -268,6 +279,7 @@ const saveRecord = async (): Promise<void> => {
     categoryId: categoryId.value,
     contractorId: contractorId.value,
     isActual: isActual.value,
+    comment: comment.value,
   };
   const chunk: ChunkStorage = existingChunk ?? {
     metadata: {
@@ -317,6 +329,7 @@ const saveRecord = async (): Promise<void> => {
   isActual.value = true;
   categoryId.value = undefined;
   contractorId.value = undefined;
+  comment.value = "";
   attachments.value = [];
 };
 </script>
