@@ -77,15 +77,24 @@ const selectedTransactions = computed<Transaction[]>(() => {
     .sort(([a], [b]) => a.localeCompare(b));
 
   const currentAndFutureChunks = chunks.filter(([month]) => month >= currentMonth);
-  const currentAndFutureTransactions = currentAndFutureChunks.flatMap(
-    ([, chunk]) => chunk.transactions,
-  );
+  const pastChunks = chunks
+    .filter(([month]) => month < currentMonth)
+    .reverse();
 
-  if (currentAndFutureTransactions.length > 0) {
-    const selectedChunks: typeof chunks = [];
-    let transactionCount = 0;
+  const selectedChunks: typeof chunks = [];
+  let transactionCount = 0;
 
-    for (const chunk of currentAndFutureChunks) {
+  for (const chunk of currentAndFutureChunks) {
+    selectedChunks.push(chunk);
+    transactionCount += chunk[1].transactions.length;
+
+    if (transactionCount >= 100) {
+      break;
+    }
+  }
+
+  if (transactionCount < 100) {
+    for (const chunk of pastChunks) {
       selectedChunks.push(chunk);
       transactionCount += chunk[1].transactions.length;
 
@@ -93,16 +102,11 @@ const selectedTransactions = computed<Transaction[]>(() => {
         break;
       }
     }
-
-    return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
   }
 
-  const pastChunks = chunks
-    .filter(([month]) => month < currentMonth)
-    .reverse();
-
-  const selectedChunks: typeof pastChunks = [];
-  let transactionCount = 0;
+  if (transactionCount > 0) {
+    return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
+  }
 
   for (const chunk of pastChunks) {
     selectedChunks.push(chunk);
