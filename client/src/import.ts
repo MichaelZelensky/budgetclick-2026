@@ -222,19 +222,6 @@ export const importData = async (file: File): Promise<void> => {
     Object.entries(chunks).forEach(([month, chunk]) => updateChunksState(month, chunk));
     await rebuildStatistics();
     await rebuildBalances();
-    await dbSaveOfflineSync({
-      manifest: updatedManifest,
-      objects: {
-        chunks: {},
-        statistics: false,
-        accounts: false,
-        categories: false,
-        contractors: false,
-        rates: false,
-        balances: false,
-        attachments: {},
-      },
-    });
   } finally {
     setLoadingOff(loadingId);
   }
