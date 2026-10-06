@@ -46,10 +46,11 @@ const loadChunks = async (
     let chunk = localChunks[month];
 
     if (chunk?.metadata.version !== entry.version) {
-      chunk = await loadRemoteChunk(entry) ?? undefined;
-      if (chunk === undefined) {
+      const remoteChunk = await loadRemoteChunk(entry);
+      if (remoteChunk === null) {
         continue;
       }
+      chunk = remoteChunk;
       await dbSaveChunk(month, chunk);
     }
 

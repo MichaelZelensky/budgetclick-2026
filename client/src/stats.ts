@@ -163,7 +163,7 @@ export const updateStatistics = async (
     ? undefined
     : currentStatistics.statistics[previousMonth];
 
-  if (existingMonth === undefined && previousStatistics !== undefined) {
+  if (existingMonth === undefined && previousStatistics !== undefined && previousMonth !== undefined) {
     for (const gapMonth of getMonthsBetween(previousMonth, month).slice(1, -1)) {
       currentStatistics.statistics[gapMonth] = {
         income: 0,

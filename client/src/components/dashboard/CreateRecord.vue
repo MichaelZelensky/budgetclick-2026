@@ -74,7 +74,7 @@
     </div>
 
     <div v-if="activeTab === 'comment'" class="tw-grid tw-gap-2 tw-pt-2">
-      <LiteTextarea v-model="comment" placeholder="Comment" rows="4" />
+      <LiteTextarea v-model="comment" placeholder="Comment" :rows="4" />
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
