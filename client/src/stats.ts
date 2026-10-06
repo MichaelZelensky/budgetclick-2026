@@ -24,6 +24,19 @@ const getCurrencyRate = (from: string, to: string, date: string): number => {
   return rate.from === from ? rate.rate : 1 / rate.rate;
 };
 
+const getMonthsBetween = (firstMonth: string, lastMonth: string): string[] => {
+  const months: string[] = [];
+  const date = new Date(`${firstMonth}-01T00:00:00Z`);
+  const lastDate = new Date(`${lastMonth}-01T00:00:00Z`);
+
+  while (date <= lastDate) {
+    months.push(date.toISOString().slice(0, 7));
+    date.setUTCMonth(date.getUTCMonth() + 1);
+  }
+
+  return months;
+};
+
 export const hasMissingCurrencyRates = (): boolean => {
   const state = getState();
   const accounts = state.referenceData.accounts?.accounts ?? [];
@@ -52,8 +65,13 @@ const calculateMonthlyStatistics = (
   const balances = Object.fromEntries(
     accounts.map(account => [account.id, account.currentBalance]),
   );
+  const chunkMonths = Object.keys(chunks).sort();
 
-  for (const month of Object.keys(chunks).sort()) {
+  if (chunkMonths.length === 0) {
+    return statistics;
+  }
+
+  for (const month of getMonthsBetween(chunkMonths[0], chunkMonths[chunkMonths.length - 1])) {
     const chunk = chunks[month];
     const monthlyStatistics: MonthlyStatistics = {
       income: 0,
@@ -71,30 +89,32 @@ const calculateMonthlyStatistics = (
       ),
     };
 
-    for (const transaction of chunk.transactions) {
-      if (transaction.isDeleted) {
-        continue;
-      }
-      const account = accounts.find(x => x.id === transaction.accountId);
-      const accountStatistics = monthlyStatistics.accounts[transaction.accountId];
-      if (account === undefined || accountStatistics === undefined) {
-        continue;
-      }
-      const amount = transaction.amount * getCurrencyRate(
-        account.currency,
-        defaultCurrency,
-        transaction.datetime,
-      );
-      if (transaction.direction === "in") {
-        monthlyStatistics.income += amount;
-        accountStatistics.income += transaction.amount;
-        accountStatistics.balance += transaction.amount;
-        balances[account.id] += transaction.amount;
-      } else {
-        monthlyStatistics.outcome += amount;
-        accountStatistics.outcome += transaction.amount;
-        accountStatistics.balance -= transaction.amount;
-        balances[account.id] -= transaction.amount;
+    if (chunk !== undefined) {
+      for (const transaction of chunk.transactions) {
+        if (transaction.isDeleted) {
+          continue;
+        }
+        const account = accounts.find(x => x.id === transaction.accountId);
+        const accountStatistics = monthlyStatistics.accounts[transaction.accountId];
+        if (account === undefined || accountStatistics === undefined) {
+          continue;
+        }
+        const amount = transaction.amount * getCurrencyRate(
+          account.currency,
+          defaultCurrency,
+          transaction.datetime,
+        );
+        if (transaction.direction === "in") {
+          monthlyStatistics.income += amount;
+          accountStatistics.income += transaction.amount;
+          accountStatistics.balance += transaction.amount;
+          balances[account.id] += transaction.amount;
+        } else {
+          monthlyStatistics.outcome += amount;
+          accountStatistics.outcome += transaction.amount;
+          accountStatistics.balance -= transaction.amount;
+          balances[account.id] -= transaction.amount;
+        }
       }
     }
 
