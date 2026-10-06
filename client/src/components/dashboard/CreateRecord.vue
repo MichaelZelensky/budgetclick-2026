@@ -147,8 +147,8 @@ const amount = ref("");
 const accountId = ref<string | undefined>(
   getState().referenceData.accounts?.accounts[0]?.id,
 );
-const categoryId = ref<string | undefined>();
-const contractorId = ref<string | undefined>();
+const categoryId = ref("");
+const contractorId = ref("");
 const comment = ref("");
 const datetime = ref(new Date().toISOString().slice(0, 16));
 const direction = ref<TransactionDirection>("out");
@@ -327,8 +327,8 @@ const saveRecord = async (): Promise<void> => {
   datetime.value = new Date().toISOString().slice(0, 16);
   direction.value = "out";
   isActual.value = true;
-  categoryId.value = undefined;
-  contractorId.value = undefined;
+  categoryId.value = "";
+  contractorId.value = "";
   comment.value = "";
   attachments.value = [];
 };
