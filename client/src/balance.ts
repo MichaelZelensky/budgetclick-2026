@@ -1,3 +1,4 @@
+import Big from "big.js";
 import { getManifest } from "@/manifest";
 import { getState } from "@/state/state";
 import { loadAllChunks } from "@/sync";
@@ -20,22 +21,39 @@ const calculateBalances = (
     if (transactionMonths.length === 0) {
       return [];
     }
-    let balance = account.currentBalance;
-    return transactionMonths.map(month => {
-      const startingBalance = balance;
-      balance += chunks[month].transactions
-        .filter(transaction => !transaction.isDeleted && transaction.accountId === account.id)
-        .reduce(
-          (value, transaction) =>
-            value + (transaction.direction === "in" ? transaction.amount : -transaction.amount),
-          0,
+    const result = transactionMonths.reduce(
+      (state, month) => {
+        const balance = state.balance.plus(
+          chunks[month].transactions
+            .filter(transaction => !transaction.isDeleted && transaction.accountId === account.id)
+            .reduce(
+              (value, transaction) =>
+                value.plus(
+                  transaction.direction === "in"
+                    ? new Big(String(transaction.amount))
+                    : new Big(String(transaction.amount)).neg(),
+                ),
+              new Big(0),
+            ),
         );
-      return {
-        month,
-        account: account.id,
-        startingBalance,
-      };
-    });
+        return {
+          balance,
+          balances: [
+            ...state.balances,
+            {
+              month,
+              account: account.id,
+              startingBalance: state.balance.toNumber(),
+            },
+          ],
+        };
+      },
+      {
+        balance: new Big(String(account.currentBalance)),
+        balances: [] as Balance[],
+      },
+    );
+    return result.balances;
   });
 };
 
@@ -66,7 +84,9 @@ export const updateBalance = async (
     balance.account === accountId && balance.month > month
       ? {
           ...balance,
-          startingBalance: balance.startingBalance + balanceDelta,
+          startingBalance: new Big(String(balance.startingBalance))
+            .plus(String(balanceDelta))
+            .toNumber(),
         }
       : balance,
   );

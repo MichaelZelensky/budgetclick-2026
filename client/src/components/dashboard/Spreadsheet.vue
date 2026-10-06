@@ -68,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import Big from "big.js";
 import { computed, ref } from "vue";
 import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import { DatagridColumnType } from "@/components/ui/datagrid/Datagrid.types";
@@ -157,7 +158,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
   const accounts = state.referenceData.accounts?.accounts ?? [];
   const allTransactions = selectedTransactions.value;
   const transactionBalances = new Map<string, number | string>();
-  const balances = new Map<string, number>();
+  const balances = new Map<string, Big>();
 
   const sortedTransactions = [...allTransactions].sort((a, b) =>
     a.datetime.localeCompare(b.datetime),
@@ -177,14 +178,17 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         continue;
       }
 
-      balances.set(balanceKey, startingBalance);
+      balances.set(balanceKey, new Big(String(startingBalance)));
     }
 
-    const balance = balances.get(balanceKey)! +
-      (transaction.direction === "in" ? transaction.amount : -transaction.amount);
+    const balance = balances.get(balanceKey)!.plus(
+      transaction.direction === "in"
+        ? new Big(String(transaction.amount))
+        : new Big(String(transaction.amount)).neg(),
+    );
 
     balances.set(balanceKey, balance);
-    transactionBalances.set(transaction.id, balance);
+    transactionBalances.set(transaction.id, balance.toNumber());
   }
 
   return allTransactions
