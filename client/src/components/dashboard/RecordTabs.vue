@@ -35,6 +35,15 @@
     >
       <Comment />
     </button>
+
+    <button
+      v-if="mode === 'edit'"
+      type="button"
+      class="tab new"
+      @click="$emit('new')"
+    >
+      New
+    </button>
   </div>
 </template>
 
@@ -49,6 +58,10 @@ const modelValue = defineModel<Tab>({ default: "main" });
 defineProps<{
   mode: "create" | "edit";
   hasAttachments: boolean;
+}>();
+
+defineEmits<{
+  new: [];
 }>();
 </script>
 
@@ -77,5 +90,9 @@ defineProps<{
 
 .tab-icon.attachment:hover {
   @apply tw-text-sky-400;
+}
+
+.tab.new {
+  @apply tw-ml-auto tw-border-l tw-border-r-0 tw-text-sky-400;
 }
 </style>

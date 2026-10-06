@@ -5,6 +5,7 @@
       mode="edit"
       :has-attachments="attachments.length > 0"
       class="tw--mx-4 tw--mt-4 tw-mb-4"
+      @new="$emit('new')"
     />
 
     <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
@@ -158,6 +159,9 @@ const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 7 * 1024 * 1024;
 const props = defineProps<{
   transaction: Transaction;
+}>();
+const emit = defineEmits<{
+  new: [];
 }>();
 
 const description = ref("");

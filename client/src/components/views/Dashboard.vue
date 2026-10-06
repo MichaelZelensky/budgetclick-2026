@@ -5,7 +5,10 @@
         class="tw-min-w-0 tw-overflow-auto"
         :style="{ width: `${leftWidth}%` }"
       >
-        <Spreadsheet @selection-change="selectedTransaction = $event" />
+        <Spreadsheet
+          :clear-selection="selectionVersion"
+          @selection-change="selectedTransaction = $event"
+        />
       </div>
 
       <div
@@ -21,6 +24,7 @@
           <EditRecord
             v-if="selectedTransaction"
             :transaction="selectedTransaction"
+            @new="selectedTransaction = null; selectionVersion++"
           />
           <CreateRecord v-else />
 
@@ -32,7 +36,10 @@
     <div class="tw-h-full tw-overflow-hidden md:tw-hidden">
       <LiteTabs default-selected="Records">
         <Tab label="Records" padding="none">
-          <Spreadsheet @selection-change="selectedTransaction = $event" />
+          <Spreadsheet
+            :clear-selection="selectionVersion"
+            @selection-change="selectedTransaction = $event"
+          />
         </Tab>
 
         <Tab label="Actions">
@@ -40,6 +47,7 @@
             <EditRecord
               v-if="selectedTransaction"
               :transaction="selectedTransaction"
+              @new="selectedTransaction = null; selectionVersion++"
             />
             <CreateRecord v-else />
 
@@ -64,6 +72,7 @@ import type { Transaction } from "@/types/data/Transaction";
 
 const leftWidth = ref(65);
 const selectedTransaction = ref<Transaction | null>(null);
+const selectionVersion = ref(0);
 
 const resize = (event: MouseEvent) => {
   const width = (event.clientX / window.innerWidth) * 100;

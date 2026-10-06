@@ -12,6 +12,7 @@
       }
     }"
     :single-row-selection="true"
+    :clear-selection="props.clearSelection"
     @selection-change="onSelectionChange"
     class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
   >
@@ -80,6 +81,10 @@ import type { Transaction } from "@/types/data/Transaction";
 
 const emit = defineEmits<{
   selectionChange: [transaction: Transaction | null];
+}>();
+
+const props = defineProps<{
+  clearSelection?: number;
 }>();
 
 type SpreadsheetRow = {

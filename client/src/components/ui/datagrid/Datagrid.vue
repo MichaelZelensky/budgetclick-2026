@@ -255,6 +255,7 @@ const props = defineProps<{
   selectRowCheckbox?: boolean;
   singleRowSelection?: boolean;
   bulkActions?: DatagridBulkAction[];
+  clearSelection?: number;
 }>();
 
 const router = useRouter();
@@ -537,6 +538,8 @@ const headerCheckboxIsIndeterminate = computed(() =>
 const clearSelection = () => {
   selectedRowIdSet.value = new Set<RowId>();
 };
+
+watch(() => props.clearSelection, () => clearSelection());
 
 watch(paginatedRowIdKey, () => clearSelection(), { immediate: true });
 
