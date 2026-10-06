@@ -204,26 +204,46 @@ const displayedTransactions = computed(() => {
   return selectedTransactions.value;
 });
 
-const canLoadEarlier = computed(() => {
-  const manifest = getManifest();
-  const allMonths = Object.keys(manifest.chunks).sort();
-  const earliestTransaction = displayedTransactions.value
+const earliestDisplayedTransaction = computed(() => {
+  return displayedTransactions.value
     .slice()
     .sort((a, b) => a.datetime.localeCompare(b.datetime))[0];
+});
 
-  return earliestTransaction !== undefined &&
-    allMonths.some(month => month < earliestTransaction.datetime.slice(0, 7));
+const latestDisplayedTransaction = computed(() => {
+  return displayedTransactions.value
+    .slice()
+    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];
+});
+
+const canLoadEarlier = computed(() => {
+  const earliestTransaction = earliestDisplayedTransaction.value;
+
+  if (earliestTransaction === undefined) {
+    return false;
+  }
+
+  const month = earliestTransaction.datetime.slice(0, 7);
+  const chunk = state.chunks[month];
+
+  return chunk?.transactions.some(
+    transaction => transaction.datetime < earliestTransaction.datetime,
+  ) || Object.keys(getManifest().chunks).some(item => item < month);
 });
 
 const canLoadLater = computed(() => {
-  const manifest = getManifest();
-  const allMonths = Object.keys(manifest.chunks).sort();
-  const latestTransaction = displayedTransactions.value
-    .slice()
-    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];
+  const latestTransaction = latestDisplayedTransaction.value;
 
-  return latestTransaction !== undefined &&
-    allMonths.some(month => month > latestTransaction.datetime.slice(0, 7));
+  if (latestTransaction === undefined) {
+    return false;
+  }
+
+  const month = latestTransaction.datetime.slice(0, 7);
+  const chunk = state.chunks[month];
+
+  return chunk?.transactions.some(
+    transaction => transaction.datetime > latestTransaction.datetime,
+  ) || Object.keys(getManifest().chunks).some(item => item > month);
 });
 
 const loadEarlier = async (): Promise<void> => {
@@ -232,32 +252,42 @@ const loadEarlier = async (): Promise<void> => {
   }
 
   const manifest = getManifest();
-  const allMonths = Object.keys(manifest.chunks).sort();
-  const earliestTransaction = displayedTransactions.value
-    .slice()
-    .sort((a, b) => a.datetime.localeCompare(b.datetime))[0];
+  const earliestTransaction = earliestDisplayedTransaction.value;
 
   if (earliestTransaction === undefined) {
     return;
   }
 
   const earliestMonth = earliestTransaction.datetime.slice(0, 7);
-  const months = allMonths
-    .filter(month => month < earliestMonth)
-    .reverse();
+  const sameMonthTransactions = (state.chunks[earliestMonth]?.transactions ?? [])
+    .filter(transaction => transaction.datetime < earliestTransaction.datetime)
+    .sort((a, b) => b.datetime.localeCompare(a.datetime));
+
+  const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
+  const newTransactions = sameMonthTransactions
+    .filter(transaction => !existingIds.has(transaction.id))
+    .slice(0, 50);
 
   loadingEarlier.value = true;
   try {
-    await loadMoreTransactionChunks(manifest, months, 50);
+    if (newTransactions.length < 50) {
+      const months = Object.keys(manifest.chunks)
+        .sort()
+        .filter(month => month < earliestMonth)
+        .reverse();
 
-    const loadedTransactions = months
-      .flatMap(month => state.chunks[month]?.transactions ?? [])
-      .sort((a, b) => b.datetime.localeCompare(a.datetime));
+      await loadMoreTransactionChunks(manifest, months, 50 - newTransactions.length);
 
-    const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
-    const newTransactions = loadedTransactions
-      .filter(transaction => !existingIds.has(transaction.id))
-      .slice(0, 50);
+      const loadedTransactions = months
+        .flatMap(month => state.chunks[month]?.transactions ?? [])
+        .sort((a, b) => b.datetime.localeCompare(a.datetime));
+
+      newTransactions.push(
+        ...loadedTransactions
+          .filter(transaction => !existingIds.has(transaction.id))
+          .slice(0, 50 - newTransactions.length),
+      );
+    }
 
     earlierTransactions.value.unshift(...newTransactions);
   } finally {
@@ -271,30 +301,41 @@ const loadLater = async (): Promise<void> => {
   }
 
   const manifest = getManifest();
-  const allMonths = Object.keys(manifest.chunks).sort();
-  const latestTransaction = displayedTransactions.value
-    .slice()
-    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];
+  const latestTransaction = latestDisplayedTransaction.value;
 
   if (latestTransaction === undefined) {
     return;
   }
 
   const latestMonth = latestTransaction.datetime.slice(0, 7);
-  const months = allMonths.filter(month => month > latestMonth);
+  const sameMonthTransactions = (state.chunks[latestMonth]?.transactions ?? [])
+    .filter(transaction => transaction.datetime > latestTransaction.datetime)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+
+  const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
+  const newTransactions = sameMonthTransactions
+    .filter(transaction => !existingIds.has(transaction.id))
+    .slice(0, 50);
 
   loadingLater.value = true;
   try {
-    await loadMoreTransactionChunks(manifest, months, 50);
+    if (newTransactions.length < 50) {
+      const months = Object.keys(manifest.chunks)
+        .sort()
+        .filter(month => month > latestMonth);
 
-    const loadedTransactions = months
-      .flatMap(month => state.chunks[month]?.transactions ?? [])
-      .sort((a, b) => a.datetime.localeCompare(b.datetime));
+      await loadMoreTransactionChunks(manifest, months, 50 - newTransactions.length);
 
-    const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
-    const newTransactions = loadedTransactions
-      .filter(transaction => !existingIds.has(transaction.id))
-      .slice(0, 50);
+      const loadedTransactions = months
+        .flatMap(month => state.chunks[month]?.transactions ?? [])
+        .sort((a, b) => a.datetime.localeCompare(b.datetime));
+
+      newTransactions.push(
+        ...loadedTransactions
+          .filter(transaction => !existingIds.has(transaction.id))
+          .slice(0, 50 - newTransactions.length),
+      );
+    }
 
     laterTransactions.value.push(...newTransactions);
   } finally {
