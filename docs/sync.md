@@ -1,4 +1,4 @@
-# BudgetClick 2026 — Synchronization Specification (Condensed)
+# BudgetClick 2026 â€” Synchronization Specification (Condensed)
 
 ## Principles
 
@@ -61,11 +61,14 @@ Not all historical data is fetched — only what's needed for the first view; re
 
 Transactions are stored in full monthly chunks (never trimmed individually):
 
-1. Load current + future months, chronologically, until ≥100 transactions are loaded.
-2. If current/future months are empty, load past months newest→oldest until ≥20 transactions are loaded.
-3. If fewer transactions exist than the target, load all available applicable chunks.
+1. Load current and future months, chronologically, until up to **100 transactions** are loaded.
+2. If current and future months contain **at least one transaction**, display only those chunks; do not load past months.
+3. If current and future months contain **no transactions**, load past months newestâ†’oldest until up to **100 transactions** are loaded.
+4. If fewer than 100 applicable transactions exist, load all available applicable chunks.
 
-Additional chunks load on-demand when the user navigates or sync requires them.
+The same selection rule is used during existing-storage setup/import and app startup. Missing or outdated chunks needed by the rule are downloaded from remote storage and saved to IndexedDB.
+
+Additional historical chunks load on-demand when the user navigates or sync requires them.
 
 ## Conflict Handling
 

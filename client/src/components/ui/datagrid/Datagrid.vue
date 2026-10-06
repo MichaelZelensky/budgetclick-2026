@@ -420,7 +420,8 @@ const filteredData = computed<DatagridRow[]>(() => {
 
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredData.value.slice(start, start + itemsPerPage.value);
+  const result = filteredData.value.slice(start, start + itemsPerPage.value);
+  return result;
 });
 
 const totalPages = computed(() => Math.ceil(filteredData.value.length / itemsPerPage.value));
@@ -458,7 +459,7 @@ watch(
 
 watch(totalPages, (max) => {
   if (currentPage.value > max) currentPage.value = max || 1;
-});
+}, { immediate: true });
 
 /* ---------- Sort toggle ---------- */
 const sortBy = (key: string) => {

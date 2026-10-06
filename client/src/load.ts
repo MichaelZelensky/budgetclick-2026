@@ -31,6 +31,7 @@ const loadChunks = async (
   manifest: Manifest,
   months: string[],
   limit: number,
+  getTransactionCount = (chunk: ChunkStorage) => chunk.transactions.length,
 ): Promise<Record<string, ChunkStorage>> => {
   const localChunks = await dbGetChunks();
   const chunks: Record<string, ChunkStorage> = {};
@@ -54,7 +55,7 @@ const loadChunks = async (
 
     chunks[month] = chunk;
     updateChunksState(month, chunk);
-    transactionCount += chunk.transactions.length;
+    transactionCount += getTransactionCount(chunk);
 
     if (transactionCount >= limit) {
       break;
@@ -64,22 +65,42 @@ const loadChunks = async (
   return chunks;
 };
 
-const getCurrentMonth = (): string => {
+const getCurrentDate = (): string => {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
 export const loadInitialTransactionChunks = async (
   manifest: Manifest,
 ): Promise<Record<string, ChunkStorage>> => {
-  const currentMonth = getCurrentMonth();
+  const currentDate = getCurrentDate();
+  const currentMonth = currentDate.slice(0, 7);
   const months = Object.keys(manifest.chunks).sort();
   const currentAndFutureMonths = months.filter(month => month >= currentMonth);
-  const currentAndFutureChunks = await loadChunks(manifest, currentAndFutureMonths, 100);
-  const transactionCount = Object.values(currentAndFutureChunks)
+  const currentAndFutureChunks = await loadChunks(
+    manifest,
+    currentAndFutureMonths,
+    100,
+    chunk => chunk.transactions.filter(
+      transaction => transaction.datetime.slice(0, 10) >= currentDate,
+    ).length,
+  );
+  const currentAndFutureTransactionCount = Object.values(currentAndFutureChunks)
+    .reduce(
+      (count, chunk) => count + chunk.transactions.filter(
+        transaction => transaction.datetime.slice(0, 10) >= currentDate,
+      ).length,
+      0,
+    );
+
+  if (currentAndFutureTransactionCount > 0) {
+    return currentAndFutureChunks;
+  }
+
+  const cachedTransactionCount = Object.values(currentAndFutureChunks)
     .reduce((count, chunk) => count + chunk.transactions.length, 0);
 
-  if (transactionCount >= 100) {
+  if (cachedTransactionCount >= 100) {
     return currentAndFutureChunks;
   }
 
@@ -87,7 +108,11 @@ export const loadInitialTransactionChunks = async (
     .filter(month => month < currentMonth)
     .sort()
     .reverse();
-  const pastChunks = await loadChunks(manifest, pastMonths, 100 - transactionCount);
+  const pastChunks = await loadChunks(
+    manifest,
+    pastMonths,
+    100 - cachedTransactionCount,
+  );
 
   return {
     ...pastChunks,

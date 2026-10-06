@@ -105,50 +105,22 @@ const numberFormatter = new Intl.NumberFormat(undefined, {
 });
 
 const selectedTransactions = computed<Transaction[]>(() => {
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const chunks = Object.entries(state.chunks)
-    .sort(([a], [b]) => a.localeCompare(b));
+  const currentDate = new Date();
+  const currentDateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+  const cachedTransactions = Object.values(state.chunks)
+    .flatMap(chunk => chunk.transactions);
 
-  const currentAndFutureChunks = chunks.filter(([month]) => month >= currentMonth);
-  const pastChunks = chunks
-    .filter(([month]) => month < currentMonth)
-    .reverse();
+  const currentAndFutureTransactions = cachedTransactions
+    .filter(transaction => transaction.datetime.slice(0, 10) >= currentDateString)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
 
-  const selectedChunks: typeof chunks = [];
-  let transactionCount = 0;
+  const initialTransactions = currentAndFutureTransactions.length > 0
+    ? currentAndFutureTransactions.slice(0, 100)
+    : cachedTransactions
+        .filter(transaction => transaction.datetime.slice(0, 10) < currentDateString)
+        .sort((a, b) => b.datetime.localeCompare(a.datetime))
+        .slice(0, 100);
 
-  for (const chunk of currentAndFutureChunks) {
-    selectedChunks.push(chunk);
-    transactionCount += chunk[1].transactions.length;
-
-    if (transactionCount >= 100) {
-      break;
-    }
-  }
-
-  if (transactionCount < 100) {
-    for (const chunk of pastChunks) {
-      selectedChunks.push(chunk);
-      transactionCount += chunk[1].transactions.length;
-
-      if (transactionCount >= 100) {
-        break;
-      }
-    }
-  }
-
-  if (transactionCount === 0) {
-    for (const chunk of pastChunks) {
-      selectedChunks.push(chunk);
-      transactionCount += chunk[1].transactions.length;
-
-      if (transactionCount >= 20) {
-        break;
-      }
-    }
-  }
-
-  const initialTransactions = selectedChunks.flatMap(([, chunk]) => chunk.transactions);
   const initialTransactionIds = new Set(initialTransactions.map(transaction => transaction.id));
 
   return [
@@ -194,7 +166,6 @@ const transactions = computed<SpreadsheetRow[]>(() => {
     balances.set(balanceKey, balance);
     transactionBalances.set(transaction.id, balance.toNumber());
   }
-
   return allTransactions
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
