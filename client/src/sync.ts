@@ -90,14 +90,23 @@ const loadInitialTransactionChunks = async (
   const months = Object.keys(manifest.chunks).sort();
   const currentAndFutureMonths = months.filter(month => month >= currentMonth);
   const currentAndFutureChunks = await loadChunks(manifest, currentAndFutureMonths, 100);
-  if (Object.values(currentAndFutureChunks).some(chunk => chunk.transactions.length > 0)) {
+  const transactionCount = Object.values(currentAndFutureChunks)
+    .reduce((count, chunk) => count + chunk.transactions.length, 0);
+
+  if (transactionCount >= 100) {
     return currentAndFutureChunks;
   }
+
   const pastMonths = months
     .filter(month => month < currentMonth)
     .sort()
     .reverse();
-  return loadChunks(manifest, pastMonths, 20);
+  const pastChunks = await loadChunks(manifest, pastMonths, 100 - transactionCount);
+
+  return {
+    ...pastChunks,
+    ...currentAndFutureChunks,
+  };
 };
 
 export const importRemoteData = async (manifest: Manifest): Promise<void> => {
@@ -237,6 +246,66 @@ const synchronizeChunks = async (manifest: Manifest): Promise<void> => {
   }
 };
 
+const loadInitialCachedChunks = async (manifest: Manifest): Promise<void> => {
+  const localChunks = await dbGetChunks();
+  const currentMonth = getCurrentMonth();
+  const months = Object.keys(manifest.chunks).sort();
+  const currentAndFutureMonths = months.filter(month => month >= currentMonth);
+  const pastMonths = months.filter(month => month < currentMonth).reverse();
+  const chunks = { ...localChunks };
+  let transactionCount = 0;
+  let hasCurrentAndFutureTransactions = false;
+
+  for (const month of [...currentAndFutureMonths, ...pastMonths]) {
+    if (transactionCount >= 100) {
+      break;
+    }
+
+    const entry = manifest.chunks[month];
+    if (entry === undefined || entry.version === 0) {
+      continue;
+    }
+
+    let chunk = chunks[month];
+
+    if (chunk === undefined) {
+      const remoteChunk = await loadRemoteObject<ChunkStorage>(
+        entry,
+        validateChunkStorage,
+        "transaction chunk",
+      );
+      if (remoteChunk === null) {
+        continue;
+      }
+      await dbSaveChunk(month, remoteChunk);
+      updateChunksState(month, remoteChunk);
+      chunk = remoteChunk;
+      chunks[month] = remoteChunk;
+    }
+
+    transactionCount += chunk.transactions.length;
+
+    if (month >= currentMonth && chunk.transactions.length > 0) {
+      hasCurrentAndFutureTransactions = true;
+    }
+  }
+
+  if (hasCurrentAndFutureTransactions || transactionCount >= 100) {
+    return;
+  }
+
+  for (const month of pastMonths) {
+    if (transactionCount >= 20) {
+      break;
+    }
+
+    const chunk = chunks[month];
+    if (chunk !== undefined) {
+      transactionCount += chunk.transactions.length;
+    }
+  }
+};
+
 export const loadAllChunks = async (
   manifest: Manifest,
 ): Promise<Record<string, ChunkStorage>> => {
@@ -274,6 +343,7 @@ export const synchronizeRemoteData = async (): Promise<void> => {
     synchronizeStatistics(manifest),
     synchronizeBalances(manifest),
   ]);
+  await loadInitialCachedChunks(manifest);
 };
 
 const synchronizeStatistics = async (manifest: Manifest): Promise<void> => {

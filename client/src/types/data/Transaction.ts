@@ -14,7 +14,7 @@ export type Transaction = Entity & {
   categoryId?: string;
   contractorId?: string;
   description: string;
-  comment: string;
+  comment?: string;
   datetime: string;
   attachments: TransactionAttachment[];
   isActual: boolean;
