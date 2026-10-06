@@ -42,16 +42,40 @@
         </span>
       </div>
     </template>
+
+    <template #customBottomControls>
+      <div class="tw-flex tw-items-center tw-space-x-2">
+        <span>Load more:</span>
+        <button
+          type="button"
+          class="tw-btn"
+          :disabled="!canLoadEarlier || loadingEarlier"
+          @click="loadEarlier"
+        >
+          Earlier
+        </button>
+        <button
+          type="button"
+          class="tw-btn"
+          :disabled="!canLoadLater || loadingLater"
+          @click="loadLater"
+        >
+          Later
+        </button>
+      </div>
+    </template>
   </Datagrid>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
-import { getState } from "@/state/state";
-import type { Transaction } from "@/types/data/Transaction";
 import { DatagridColumnType } from "@/components/ui/datagrid/Datagrid.types";
 import Paperclip from "@/components/icons/Paperclip.vue";
+import { getManifest } from "@/manifest";
+import { loadMoreTransactionChunks } from "@/load";
+import { getState } from "@/state/state";
+import type { Transaction } from "@/types/data/Transaction";
 
 const emit = defineEmits<{
   selectionChange: [transaction: Transaction | null];
@@ -70,6 +94,10 @@ type SpreadsheetRow = {
 };
 
 const state = getState();
+const earlierTransactions = ref<Transaction[]>([]);
+const laterTransactions = ref<Transaction[]>([]);
+const loadingEarlier = ref(false);
+const loadingLater = ref(false);
 
 const selectedTransactions = computed<Transaction[]>(() => {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -104,20 +132,25 @@ const selectedTransactions = computed<Transaction[]>(() => {
     }
   }
 
-  if (transactionCount > 0) {
-    return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
-  }
+  if (transactionCount === 0) {
+    for (const chunk of pastChunks) {
+      selectedChunks.push(chunk);
+      transactionCount += chunk[1].transactions.length;
 
-  for (const chunk of pastChunks) {
-    selectedChunks.push(chunk);
-    transactionCount += chunk[1].transactions.length;
-
-    if (transactionCount >= 20) {
-      break;
+      if (transactionCount >= 20) {
+        break;
+      }
     }
   }
 
-  return selectedChunks.flatMap(([, chunk]) => chunk.transactions);
+  const initialTransactions = selectedChunks.flatMap(([, chunk]) => chunk.transactions);
+  const initialTransactionIds = new Set(initialTransactions.map(transaction => transaction.id));
+
+  return [
+    ...initialTransactions,
+    ...earlierTransactions.value.filter(transaction => !initialTransactionIds.has(transaction.id)),
+    ...laterTransactions.value.filter(transaction => !initialTransactionIds.has(transaction.id)),
+  ];
 });
 
 const transactions = computed<SpreadsheetRow[]>(() => {
@@ -181,6 +214,108 @@ const columns = [
   { key: "balance", label: "Balance", filterable: false, align: "right" as const },
   { key: "account", label: "Account", filterable: true },
 ];
+
+const displayedTransactions = computed(() => {
+  return selectedTransactions.value;
+});
+
+const canLoadEarlier = computed(() => {
+  const manifest = getManifest();
+  const allMonths = Object.keys(manifest.chunks).sort();
+  const earliestTransaction = displayedTransactions.value
+    .slice()
+    .sort((a, b) => a.datetime.localeCompare(b.datetime))[0];
+
+  return earliestTransaction !== undefined &&
+    allMonths.some(month => month < earliestTransaction.datetime.slice(0, 7));
+});
+
+const canLoadLater = computed(() => {
+  const manifest = getManifest();
+  const allMonths = Object.keys(manifest.chunks).sort();
+  const latestTransaction = displayedTransactions.value
+    .slice()
+    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];
+
+  return latestTransaction !== undefined &&
+    allMonths.some(month => month > latestTransaction.datetime.slice(0, 7));
+});
+
+const loadEarlier = async (): Promise<void> => {
+  if (loadingEarlier.value || !canLoadEarlier.value) {
+    return;
+  }
+
+  const manifest = getManifest();
+  const allMonths = Object.keys(manifest.chunks).sort();
+  const earliestTransaction = displayedTransactions.value
+    .slice()
+    .sort((a, b) => a.datetime.localeCompare(b.datetime))[0];
+
+  if (earliestTransaction === undefined) {
+    return;
+  }
+
+  const earliestMonth = earliestTransaction.datetime.slice(0, 7);
+  const months = allMonths
+    .filter(month => month < earliestMonth)
+    .reverse();
+
+  loadingEarlier.value = true;
+  try {
+    await loadMoreTransactionChunks(manifest, months, 50);
+
+    const loadedTransactions = months
+      .flatMap(month => state.chunks[month]?.transactions ?? [])
+      .sort((a, b) => b.datetime.localeCompare(a.datetime));
+
+    const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
+    const newTransactions = loadedTransactions
+      .filter(transaction => !existingIds.has(transaction.id))
+      .slice(0, 50);
+
+    earlierTransactions.value.unshift(...newTransactions);
+  } finally {
+    loadingEarlier.value = false;
+  }
+};
+
+const loadLater = async (): Promise<void> => {
+  if (loadingLater.value || !canLoadLater.value) {
+    return;
+  }
+
+  const manifest = getManifest();
+  const allMonths = Object.keys(manifest.chunks).sort();
+  const latestTransaction = displayedTransactions.value
+    .slice()
+    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];
+
+  if (latestTransaction === undefined) {
+    return;
+  }
+
+  const latestMonth = latestTransaction.datetime.slice(0, 7);
+  const months = allMonths.filter(month => month > latestMonth);
+
+  loadingLater.value = true;
+  try {
+    await loadMoreTransactionChunks(manifest, months, 50);
+
+    const loadedTransactions = months
+      .flatMap(month => state.chunks[month]?.transactions ?? [])
+      .sort((a, b) => a.datetime.localeCompare(b.datetime));
+
+    const existingIds = new Set(selectedTransactions.value.map(transaction => transaction.id));
+    const newTransactions = loadedTransactions
+      .filter(transaction => !existingIds.has(transaction.id))
+      .slice(0, 50);
+
+    laterTransactions.value.push(...newTransactions);
+  } finally {
+    loadingLater.value = false;
+  }
+};
 
 const onSelectionChange = (ids: string[]): void => {
   const selectedId = ids[0];
