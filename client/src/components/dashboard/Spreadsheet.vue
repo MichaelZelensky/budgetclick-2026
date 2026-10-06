@@ -21,7 +21,7 @@
 
     <template #amount="{ item }">
       <span
-        class="tw-block tw-w-full tw-text-right"
+        class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-sm"
         :class="item.direction === 'in' ? 'tw-text-green-700' : ''"
       >
         {{ item.amount }}
@@ -35,7 +35,7 @@
           class="tw-shrink-0"
         />
         <span
-          class="tw-ml-auto tw-text-right"
+          class="tw-ml-auto tw-text-right tw-font-mono !tw-text-xs"
           :class="{ 'tw-text-red-600': Number(item.balance) < 0 }"
         >
           {{ item.balance }}
@@ -87,10 +87,10 @@ type SpreadsheetRow = {
   actual: boolean;
   direction: "in" | "out";
   date: string;
-  amount: number;
+  amount: string;
   account: string;
   description: string;
-  balance: number | string;
+  balance: string;
   hasAttachments: boolean;
 };
 
@@ -99,6 +99,10 @@ const earlierTransactions = ref<Transaction[]>([]);
 const laterTransactions = ref<Transaction[]>([]);
 const loadingEarlier = ref(false);
 const loadingLater = ref(false);
+const numberFormatter = new Intl.NumberFormat(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 const selectedTransactions = computed<Transaction[]>(() => {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -194,16 +198,17 @@ const transactions = computed<SpreadsheetRow[]>(() => {
   return allTransactions
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
+      const balance = transactionBalances.get(transaction.id);
 
       return {
         id: transaction.id,
         actual: transaction.isActual,
         direction: transaction.direction,
         date: transaction.datetime.substring(0, 10),
-        amount: transaction.amount,
+        amount: numberFormatter.format(transaction.amount),
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
-        balance: transactionBalances.get(transaction.id) ?? "",
+        balance: typeof balance === "number" ? numberFormatter.format(balance) : "",
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
     })
