@@ -24,6 +24,11 @@
         >
       </li>
       <li>
+        <a href="#import-export" @click.prevent="scrollTo('import-export')"
+          >Import and export</a
+        >
+      </li>
+      <li>
         <a href="#statistics" @click.prevent="scrollTo('statistics')"
           >Statistics</a
         >
@@ -38,7 +43,7 @@
       </li>
     </ul>
 
-    <h2 id="client-id">Client ID</h2>
+    <h2 id="client-id" class="tw-mt-8">Client ID</h2>
 
     <p>
       Your Client ID identifies this application installation for
@@ -52,12 +57,9 @@
       the same Client ID in <router-link to="/settings">Settings</router-link> to restore this client identity.
     </p>
 
-    <h2 id="storage">Storage</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
 
-    <p>
-      BudgetClick stores your data in an S3-compatible storage bucket that you
-      configure yourself. BudgetClick does not own or manage your storage.
-    </p>
+    <h2 id="storage" class="tw-mt-8">Storage</h2>
 
     <h3>1. Create a bucket</h3>
 
@@ -138,7 +140,9 @@
       the bucket according to its public policy.
     </p>
 
-    <h2 id="encryption-passphrase">Encryption passphrase</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="encryption-passphrase" class="tw-mt-8">Encryption passphrase</h2>
 
     <p>
       BudgetClick encrypts all user data before it is uploaded to storage. Your
@@ -183,7 +187,9 @@
       sensitive and should be protected like the passphrase.
     </p>
 
-    <h2 id="offline-use">Offline use</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="offline-use" class="tw-mt-8">Offline use</h2>
 
     <p>
       BudgetClick is a Progressive Web App (PWA). Installing it allows the
@@ -239,7 +245,65 @@
       </p>
     </InlineAlert>
 
-    <h2 id="statistics">Statistics</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="import-export" class="tw-mt-8">Import and export</h2>
+
+    <p>
+      BudgetClick can export your data to a ZIP file and import it later. This
+      allows you to create an independent backup or move your data to another
+      BudgetClick installation.
+    </p>
+
+    <h3>Export</h3>
+
+    <p>
+      Open <router-link to="/settings">Settings</router-link> and choose
+      <strong>Export</strong>.
+    </p>
+
+    <p>
+      You can choose whether to include attachments. Without attachments, the
+      export contains your accounts, categories, contractors, currency rates,
+      and transactions. When attachments are included, their files are added
+      to the export as well.
+    </p>
+
+    <p>
+      The exported ZIP file is not encrypted. Store it securely and do not share
+      it with others.
+    </p>
+
+    <h3>Import</h3>
+
+    <p>
+      Open <router-link to="/settings">Settings</router-link>, choose
+      <strong>Import</strong>, and select a BudgetClick export ZIP file.
+    </p>
+
+    <InlineAlert variant="warning">
+      <p>
+        Import replaces the current data. Existing accounts, categories,
+        contractors, rates, transactions, and related remote data are removed
+        before the imported data is stored.
+      </p>
+    </InlineAlert>
+
+    <p>
+      Import does not restore the exported Client ID, storage path, or
+      encryption passphrase. The imported data is stored using the current
+      BudgetClick storage and client configuration.
+    </p>
+
+    <p>
+      If the export contains attachments, they are restored together with the
+      corresponding transactions. An export made without attachments cannot
+      restore attachment files.
+    </p>
+
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="statistics" class="tw-mt-8">Statistics</h2>
 
     <p>
       Statistics are derived from transaction history and contain aggregated
@@ -258,7 +322,9 @@
       <router-link to="/">Dashboard</router-link>.
     </p>
 
-    <h2 id="balances">Balances</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="balances" class="tw-mt-8">Balances</h2>
 
     <p>
       Balances are derived from the account starting balance and transaction
@@ -286,7 +352,9 @@
       transaction.
     </p>
 
-    <h2 id="currency-rates">Currency Rates</h2>
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="currency-rates" class="tw-mt-8">Currency Rates</h2>
 
     <p>
       <router-link to="/rates">Currency rates</router-link> are used to calculate total statistics in the default
@@ -310,6 +378,8 @@
       When statistics are recalculated, total statistics use the current default
       currency. The default currency can be changed in <router-link to="/settings">Settings</router-link>.
     </p>
+
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
   </main>
 </template>
 
@@ -319,5 +389,9 @@ import RefreshIcon from "@/components/icons/Refresh.vue";
 
 const scrollTo = (id: string): void => {
   document.getElementById(id)?.scrollIntoView();
+};
+
+const scrollToTop = (): void => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 </script>
