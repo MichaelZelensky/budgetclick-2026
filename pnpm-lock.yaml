@@ -48,6 +48,9 @@ importers:
         specifier: ^7.4.1
         version: 7.4.1
     devDependencies:
+      '@types/big.js':
+        specifier: ^6.2.2
+        version: 6.2.2
       '@types/node':
         specifier: ^26.1.2
         version: 26.2.0
@@ -1159,6 +1162,9 @@ packages:
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     resolution: {integrity: sha512-/67zpWDBLV+oYAEL682s1ktXL0HgqX76f6gaVGkGnVZlBbm1zd0v4Bz8MFF2GGhoX9rvfq3KSQHubFHwa6w6/Q==}
     engines: {node: '>=12'}
+
+  '@types/big.js@6.2.2':
+    resolution: {integrity: sha512-e2cOW9YlVzFY2iScnGBBkplKsrn2CsObHQ2Hiw4V1sSyiGbgWL8IyqE3zFi1Pt5o1pdAtYkDAIsF3KKUPjdzaA==}
 
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
@@ -4240,6 +4246,8 @@ snapshots:
       json5: 2.2.3
       magic-string: 0.30.21
       string.prototype.matchall: 4.0.12
+
+  '@types/big.js@6.2.2': {}
 
   '@types/body-parser@1.19.6':
     dependencies:

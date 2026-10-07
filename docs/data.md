@@ -14,6 +14,16 @@ Every persisted object carries a schema version, used by local and remote migrat
 - **Account:** owns many Transactions.
 - **Category / Contractor:** referenced by many Transactions.
 
+## Date and Time
+
+All persisted date/time values (`createdAt`, `updatedAt`, `datetime`, etc.) are stored as UTC timestamps in ISO 8601 format.
+
+Date/time entered or created by the user is interpreted as local time and converted to UTC before storage.
+
+Date/time displayed in the UI is converted from UTC to the browser's local timezone.
+
+Calendar dates and months used for user-facing transaction grouping are determined from the local timezone, not by slicing the stored UTC timestamp.
+
 ## Attachments
 
 An Attachment is identified by an 8-character identifier and stored independently from transactions. Transactions store attachment references containing the attachment ID and, when removed, a deletion tombstone.

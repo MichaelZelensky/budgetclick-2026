@@ -144,6 +144,7 @@ import Modal from "@/components/ui/Modal.vue";
 import RecordTabs from "@/components/dashboard/RecordTabs.vue";
 import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
+import { getLocalDatetime, getLocalMonth } from "@/utils/date";
 
 type Attachment = {
   id: string;
@@ -212,11 +213,7 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
   contractorId.value = transaction.contractorId ?? "";
   comment.value = transaction.comment ?? "";
   accountId.value = transaction.accountId;
-  const localDatetime = new Date(transaction.datetime);
-  localDatetime.setMinutes(
-    localDatetime.getMinutes() - localDatetime.getTimezoneOffset(),
-  );
-  datetime.value = localDatetime.toISOString().slice(0, 16);
+  datetime.value = getLocalDatetime(transaction.datetime);
   direction.value = transaction.direction;
   isActual.value = transaction.isActual;
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
@@ -382,8 +379,8 @@ const saveRecord = async (): Promise<void> => {
     throw new Error("Datetime must be valid");
   }
 
-  const month = originalTransaction.value.datetime.slice(0, 7);
-  const updatedMonth = transactionDatetime.toISOString().slice(0, 7);
+  const month = getLocalMonth(originalTransaction.value.datetime);
+  const updatedMonth = getLocalMonth(transactionDatetime.toISOString());
 
   if (updatedMonth !== month) {
     showMonthChangeModal.value = true;

@@ -130,6 +130,7 @@ import type { Transaction, TransactionDirection } from "@/types/data/Transaction
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
 import { encodeBlob } from "@/utils/data";
+import { getLocalDatetime, getLocalMonth } from "@/utils/date";
 
 type Attachment = {
   id: string;
@@ -150,7 +151,7 @@ const accountId = ref<string | undefined>(
 const categoryId = ref("");
 const contractorId = ref("");
 const comment = ref("");
-const datetime = ref(new Date().toISOString().slice(0, 16));
+const datetime = ref(getLocalDatetime(new Date().toISOString()));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showDuplicateAttachmentModal = ref(false);
@@ -259,9 +260,9 @@ const saveRecord = async (): Promise<void> => {
     throw new Error("Required fields are missing");
   }
 
-  const now = new Date().toISOString();
   const transactionDatetime = new Date(datetime.value);
-  const month = transactionDatetime.toISOString().slice(0, 7);
+  const now = transactionDatetime.toISOString();
+  const month = getLocalMonth(datetime.value);
   const existingChunk = getState().chunks[month];
   const transaction: Transaction = {
     id: generateEntityId("t"),
@@ -272,7 +273,7 @@ const saveRecord = async (): Promise<void> => {
     amount: Number(amount.value),
     accountId: accountId.value,
     description: description.value.trim(),
-    datetime: transactionDatetime.toISOString(),
+    datetime: now,
     attachments: attachments.value.map(attachment => ({
       id: attachment.id,
     })),
@@ -324,7 +325,7 @@ const saveRecord = async (): Promise<void> => {
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
   description.value = "";
   amount.value = "";
-  datetime.value = new Date().toISOString().slice(0, 16);
+  datetime.value = getLocalDatetime(new Date().toISOString());
   direction.value = "out";
   isActual.value = true;
   categoryId.value = "";

@@ -99,6 +99,23 @@ type SpreadsheetRow = {
   hasAttachments: boolean;
 };
 
+const getLocalDate = (datetime: string): string => {
+  const date = new Date(datetime);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const getLocalMonth = (datetime: string): string => {
+  const date = new Date(datetime);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+};
+
 const state = getState();
 const earlierTransactions = ref<Transaction[]>([]);
 const laterTransactions = ref<Transaction[]>([]);
@@ -116,13 +133,13 @@ const selectedTransactions = computed<Transaction[]>(() => {
     .flatMap(chunk => chunk.transactions);
 
   const currentAndFutureTransactions = cachedTransactions
-    .filter(transaction => transaction.datetime.slice(0, 10) >= currentDateString)
+    .filter(transaction => getLocalDate(transaction.datetime) >= currentDateString)
     .sort((a, b) => a.datetime.localeCompare(b.datetime));
 
   const initialTransactions = currentAndFutureTransactions.length > 0
     ? currentAndFutureTransactions.slice(0, 100)
     : cachedTransactions
-        .filter(transaction => transaction.datetime.slice(0, 10) < currentDateString)
+        .filter(transaction => getLocalDate(transaction.datetime) < currentDateString)
         .sort((a, b) => b.datetime.localeCompare(a.datetime))
         .slice(0, 100);
 
@@ -146,7 +163,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
   );
 
   for (const transaction of sortedTransactions) {
-    const month = transaction.datetime.slice(0, 7);
+    const month = getLocalMonth(transaction.datetime);
     const balanceKey = `${transaction.accountId}:${month}`;
 
     if (!balances.has(balanceKey)) {
@@ -180,7 +197,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         id: transaction.id,
         actual: transaction.isActual,
         direction: transaction.direction,
-        date: transaction.datetime.substring(0, 10),
+        date: getLocalDate(transaction.datetime),
         amount: numberFormatter.format(transaction.amount),
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
@@ -223,7 +240,7 @@ const canLoadEarlier = computed(() => {
     return false;
   }
 
-  const month = earliestTransaction.datetime.slice(0, 7);
+  const month = getLocalMonth(earliestTransaction.datetime);
   const chunk = state.chunks[month];
 
   return chunk?.transactions.some(
@@ -238,7 +255,7 @@ const canLoadLater = computed(() => {
     return false;
   }
 
-  const month = latestTransaction.datetime.slice(0, 7);
+  const month = getLocalMonth(latestTransaction.datetime);
   const chunk = state.chunks[month];
 
   return chunk?.transactions.some(
@@ -258,7 +275,7 @@ const loadEarlier = async (): Promise<void> => {
     return;
   }
 
-  const earliestMonth = earliestTransaction.datetime.slice(0, 7);
+  const earliestMonth = getLocalMonth(earliestTransaction.datetime);
   const sameMonthTransactions = (state.chunks[earliestMonth]?.transactions ?? [])
     .filter(transaction => transaction.datetime < earliestTransaction.datetime)
     .sort((a, b) => b.datetime.localeCompare(a.datetime));
@@ -307,7 +324,7 @@ const loadLater = async (): Promise<void> => {
     return;
   }
 
-  const latestMonth = latestTransaction.datetime.slice(0, 7);
+  const latestMonth = getLocalMonth(latestTransaction.datetime);
   const sameMonthTransactions = (state.chunks[latestMonth]?.transactions ?? [])
     .filter(transaction => transaction.datetime > latestTransaction.datetime)
     .sort((a, b) => a.datetime.localeCompare(b.datetime));
