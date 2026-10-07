@@ -266,7 +266,6 @@ describe("sync", () => {
     mockedDbSaveChunk.mockResolvedValue();
     mockedDbSaveStatistics.mockResolvedValue();
   });
-
   describe("importRemoteData", () => {
     it("imports reference data and transaction chunks", async () => {
       const currentMonth = getCurrentMonth();
@@ -286,6 +285,13 @@ describe("sync", () => {
       const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
+
+      chunk.transactions = chunk.transactions.map((transaction, index) => ({
+        ...transaction,
+        datetime: `2026-10-0${index + 1}T00:00:00`,
+      }));
+
+      mockedDbGetChunks.mockResolvedValue({});
 
       mockedGetFile.mockImplementation(async key => {
         const values: Record<string, ArrayBuffer> = {
@@ -367,7 +373,7 @@ describe("sync", () => {
       expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
-      expect(mockedGetFile).toHaveBeenCalledTimes(7);
+      expect(mockedGetFile).toHaveBeenCalledTimes(8);
       expect(getState().referenceData.accounts).toStrictEqual(accounts);
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
