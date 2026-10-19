@@ -97,6 +97,26 @@
     </Modal>
 
     <Modal
+      v-if="showOversizedModal"
+      title="Large files"
+      primary-button-label="Close"
+      @ok="closeOversizedModal"
+      @cancel="closeOversizedModal"
+      @close="closeOversizedModal"
+    >
+      <p>
+        Some files are too large to be uploaded to the storage. Empty placeholders were uploaded instead.
+        Upload these files to the storage manually, following the same folder structure as in the zip.
+      </p>
+
+      <p>
+        <a :href="oversizedUrl ?? undefined" download="budgetclick-large-files.zip">
+          Download zip
+        </a>
+      </p>
+    </Modal>
+
+    <Modal
       v-if="showExportModal"
       title="Export Data"
       primary-button-label="Export"
@@ -140,6 +160,8 @@ const error = ref<string | null>(null);
 const showClientIdModal = ref(false);
 const showImportModal = ref(false);
 const showExportModal = ref(false);
+const showOversizedModal = ref(false);
+const oversizedUrl = ref<string | null>(null);
 const includeAttachments = ref(true);
 const importInput = ref<HTMLInputElement | null>(null);
 const importFile = ref<File | null>(null);
@@ -213,6 +235,14 @@ const cancelImport = () => {
   importFile.value = null;
 };
 
+const closeOversizedModal = () => {
+  showOversizedModal.value = false;
+  if (oversizedUrl.value) {
+    URL.revokeObjectURL(oversizedUrl.value);
+  }
+  oversizedUrl.value = null;
+};
+
 const confirmImport = async () => {
   const file = importFile.value;
   cancelImport();
@@ -222,8 +252,12 @@ const confirmImport = async () => {
 
   try {
     error.value = null;
-    await importData(file);
+    const oversizedBlob = await importData(file);
     settings.defaultCurrency = getSettings().defaultCurrency;
+    if (oversizedBlob) {
+      oversizedUrl.value = URL.createObjectURL(oversizedBlob);
+      showOversizedModal.value = true;
+    }
   } catch (errorValue) {
     error.value = errorValue instanceof Error ? errorValue.message : "Failed to import data";
   }

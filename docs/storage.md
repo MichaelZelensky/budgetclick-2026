@@ -119,6 +119,7 @@ The attachment object is then encrypted and stored under its attachment ID.
 - **Reference objects:** relatively static data (accounts, categories, contractors), synced independently of transactions.
 - **Monthly chunks:** primary sync unit; each holds metadata + transaction records. The month comes from the manifest entry, not duplicated in the chunk.
 - **Attachments:** encrypted JSON objects stored using their attachment ID as the object key. They have no metadata, version, or manifest entry. The `type` field preserves the MIME type required to recreate the browser Blob.
+- **File size limit:** Every storage object must be no larger than 5 MB, including monthly chunks and attachments. This limitation comes from AWS Lambda's request payload limit and can be removed by using a custom web server instead of Lambda.
 
 # Metadata & Versioning
 

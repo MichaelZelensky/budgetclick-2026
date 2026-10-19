@@ -1,4 +1,4 @@
-import { strFromU8, unzipSync } from "fflate";
+import { strFromU8, unzipSync, zipSync } from "fflate";
 import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
@@ -17,7 +17,8 @@ import type { ExportData } from "@/types/ExportData";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { rebuildBalances } from "@/balance";
 import { rebuildStatistics } from "@/stats";
-import { listRawFiles, putFile, removeRawFile } from "@/storage";
+import { isFileTooLargeError, listRawFiles, putFile, removeRawFile } from "@/storage";
+import { encryptData } from "@/encryption/encryption";
 import { encodeBlob, encodeData } from "@/utils/data";
 import { generateObjectKey } from "@/utils/key";
 import { getSettings, updateSettings } from "@/state/settings";
@@ -36,6 +37,17 @@ const createMetadata = (clientId: string): StorageMetadata => {
 
 const toPlain = <T>(data: T): T => {
   return JSON.parse(JSON.stringify(data));
+};
+
+const uploadFiles = async (uploads: Array<() => Promise<void>>): Promise<void> => {
+  const batchSize = 5;
+  const batches = Array.from(
+    { length: Math.ceil(uploads.length / batchSize) },
+    (_, index) => uploads.slice(index * batchSize, (index + 1) * batchSize),
+  );
+  for (const batch of batches) {
+    await Promise.all(batch.map(upload => upload()));
+  }
 };
 
 const parseData = (files: Record<string, Uint8Array>): ExportData => {
@@ -84,7 +96,7 @@ const getChunks = (transactions: Transaction[], clientId: string): Record<string
   );
 };
 
-export const importData = async (file: File): Promise<void> => {
+export const importData = async (file: File): Promise<Blob | null> => {
   const loadingId = setLoadingOn();
   try {
     const files = unzipSync(new Uint8Array(await file.arrayBuffer()));
@@ -166,10 +178,10 @@ export const importData = async (file: File): Promise<void> => {
       ),
     };
     const remoteFiles = await listRawFiles();
-    await Promise.all(
+    await uploadFiles(
       remoteFiles
         .filter(key => key !== "manifest" && key !== "salt")
-        .map(key => removeRawFile(key)),
+        .map(key => () => removeRawFile(key)),
     );
     await clearData();
     resetStateData();
@@ -202,17 +214,30 @@ export const importData = async (file: File): Promise<void> => {
       dbSaveRates(rates),
       ...Object.entries(chunks).map(([month, chunk]) => dbSaveChunk(month, chunk)),
     ]);
-    await Promise.all([
-      putFile(objectKeys.accounts, encodeData(accounts)),
-      putFile(objectKeys.categories, encodeData(categories)),
-      putFile(objectKeys.contractors, encodeData(contractors)),
-      putFile(objectKeys.rates, encodeData(rates)),
-      ...Object.entries(chunks).map(([month, chunk]) =>
-        putFile(objectKeys.chunks[month], encodeData(chunk)),
-      ),
-      ...Object.entries(attachments).map(([id, attachment]) =>
-        putFile(id, encodeData(attachment)),
-      ),
+    const oversizedFiles: Record<string, Uint8Array> = {};
+    await uploadFiles([
+      ...[
+        [objectKeys.accounts, accounts],
+        [objectKeys.categories, categories],
+        [objectKeys.contractors, contractors],
+        [objectKeys.rates, rates],
+        ...Object.entries(chunks).map(([month, chunk]) => [objectKeys.chunks[month], chunk]),
+        ...Object.entries(attachments).map(([id, attachment]) => [id, attachment]),
+      ].map(([key, value]) => async () => {
+        const body = encodeData(value);
+        try {
+          await putFile(key as string, body);
+        } catch (error) {
+          const attachment = attachments[key as string];
+          if (!isFileTooLargeError(error) || attachment === undefined) {
+            throw error;
+          }
+          const encrypted = await encryptData(body);
+          oversizedFiles[`${(key as string)[0]}/${key}`] = encrypted;
+          console.debug(`Import oversized: ${key}, name=${attachment.name}, file=${files[`attachments/${key}-${attachment.name}`]?.byteLength} bytes, envelope=${body.byteLength} bytes, encrypted=${encrypted.byteLength} bytes (${(encrypted.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+          await putFile(key as string, encodeData({ ...attachment, data: encodeBlob(new ArrayBuffer(0)) }));
+        }
+      }),
     ]);
     await saveManifest(updatedManifest);
     updateReferenceDataState(ReferenceDataKey.Accounts, accounts);
@@ -222,6 +247,7 @@ export const importData = async (file: File): Promise<void> => {
     Object.entries(chunks).forEach(([month, chunk]) => updateChunksState(month, chunk));
     await rebuildStatistics();
     await rebuildBalances();
+    return Object.keys(oversizedFiles).length > 0 ? new Blob([zipSync(oversizedFiles)], { type: "application/zip" }) : null;
   } finally {
     setLoadingOff(loadingId);
   }

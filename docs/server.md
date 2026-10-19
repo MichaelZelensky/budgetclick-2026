@@ -132,6 +132,9 @@ budgetclick-storage-list
 budgetclick-storage-delete
 ```
 
+* Increase timeout to 30s.
+* Set memory allcation to 512Mb for put function. This is required for file upload.
+
 ---
 
 ## 5. Configure the handler

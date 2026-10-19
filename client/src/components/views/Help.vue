@@ -140,6 +140,14 @@
       the bucket according to its public policy.
     </p>
 
+    <InlineAlert variant="warning">
+      <p>
+        Each storage object, including monthly transaction chunks and
+        attachments, must not exceed 5 MB. Large attachments or months with many
+        transactions may need to be reduced or split.
+      </p>
+    </InlineAlert>
+
     <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
 
     <h2 id="encryption-passphrase" class="tw-mt-8">Encryption passphrase</h2>
@@ -240,8 +248,8 @@
 
       <p>
         Keep your Client ID, storage location, encryption passphrase, and
-        recovery information available. BudgetClick cannot recover them if they
-        are lost.
+        recovery information available. BudgetClick cannot recover them if
+        they are lost.
       </p>
     </InlineAlert>
 

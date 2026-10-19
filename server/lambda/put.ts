@@ -4,7 +4,7 @@ type LambdaResponse = {
   body: string;
 };
 
-const MAX_BODY_SIZE = 10 * 1024 * 1024; //10 MB
+const MAX_BODY_SIZE = 4.5 * 1024 * 1024; //4.5 MB
 
 const getStorageUrl = (storagePath: string, key: string) => {
   const baseUrl = new URL(storagePath);

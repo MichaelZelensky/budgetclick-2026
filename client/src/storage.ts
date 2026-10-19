@@ -16,6 +16,18 @@ export const isFileNotFoundError = (error: unknown): error is FileNotFoundError 
   return error instanceof Error && error.name === "FileNotFoundError";
 };
 
+export type FileTooLargeError = Error & { name: "FileTooLargeError" };
+
+export const createFileTooLargeError = (key: string): FileTooLargeError => {
+  const error = new Error(`File too large: ${key}`) as FileTooLargeError;
+  error.name = "FileTooLargeError";
+  return error;
+};
+
+export const isFileTooLargeError = (error: unknown): error is FileTooLargeError => {
+  return error instanceof Error && error.name === "FileTooLargeError";
+};
+
 const getStoragePath = (): string => {
   return getSettings().storage;
 };
@@ -68,6 +80,9 @@ export const putRawFile = async (key: string, body: Uint8Array): Promise<void> =
     },
     body: getArrayBuffer(body),
   });
+  if (response.status === 413) {
+    throw createFileTooLargeError(key);
+  }
   if (!response.ok) {
     throw new Error(`Failed to put file (${response.status})`);
   }

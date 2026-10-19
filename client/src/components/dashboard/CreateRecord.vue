@@ -96,7 +96,7 @@
       @close="showAttachmentSizeModal = false"
       @ok="showAttachmentSizeModal = false"
     >
-      Attachments must be smaller than 7 MB.
+      Attachments must be smaller than 3 MB.
     </Modal>
     <Modal
       v-if="showRemoveAttachmentModal"
@@ -142,7 +142,7 @@ type Attachment = {
 type Tab = "main" | "attachments" | "ext" | "comment";
 
 const activeTab = ref<Tab>("main");
-const maxAttachmentSize = 7 * 1024 * 1024;
+const maxAttachmentSize = 3 * 1024 * 1024;
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
