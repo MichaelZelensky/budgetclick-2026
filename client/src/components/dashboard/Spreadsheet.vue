@@ -154,15 +154,13 @@ const selectedTransactions = computed<Transaction[]>(() => {
 
 const transactions = computed<SpreadsheetRow[]>(() => {
   const accounts = state.referenceData.accounts?.accounts ?? [];
-  const allTransactions = selectedTransactions.value;
+  const allTransactions = [...selectedTransactions.value].sort((a, b) =>
+    a.datetime.localeCompare(b.datetime),
+  );
   const transactionBalances = new Map<string, number | string>();
   const balances = new Map<string, Big>();
 
-  const sortedTransactions = [...allTransactions].sort((a, b) =>
-    a.datetime.localeCompare(b.datetime),
-  );
-
-  for (const transaction of sortedTransactions) {
+  for (const transaction of allTransactions) {
     const month = getLocalMonth(transaction.datetime);
     const balanceKey = `${transaction.accountId}:${month}`;
 
@@ -192,7 +190,6 @@ const transactions = computed<SpreadsheetRow[]>(() => {
     .map(transaction => {
       const account = accounts.find(x => x.id === transaction.accountId);
       const balance = transactionBalances.get(transaction.id);
-
       return {
         id: transaction.id,
         actual: transaction.isActual,
@@ -204,8 +201,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         balance: typeof balance === "number" ? numberFormatter.format(balance) : "",
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
-    })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    });
 });
 
 const columns = [
