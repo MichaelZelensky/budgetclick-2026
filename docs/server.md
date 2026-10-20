@@ -314,7 +314,7 @@ Deploy.
 Add:
 
 ```text
-DELETE /budgetclick-storage/delete
+DELETE /budgetclick-storage/del
 ```
 
 Connect it to:
@@ -450,7 +450,7 @@ Be careful not to use:
 Add behavior:
 
 ```text
-/budgetclick-storage/delete
+/budgetclick-storage/del
 ```
 
 Configure:
@@ -584,7 +584,7 @@ curl -i \
 ```bash
 curl -i \
   -X DELETE \
-  "https://liteed.com/budgetclick-storage/delete" \
+  "https://liteed.com/budgetclick-storage/del" \
   -H "X-Storage-Path: https://bucket.s3.us-east-1.amazonaws.com/" \
   -H "X-Storage-Key: test"
 ```

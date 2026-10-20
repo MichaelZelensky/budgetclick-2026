@@ -6,7 +6,7 @@
     "putUrl": "https://liteed.com/budgetclick-storage/put",
     "getUrl": "https://liteed.com/budgetclick-storage/get",
     "listUrl": "https://liteed.com/budgetclick-storage/list",
-    "deleteUrl": "https://liteed.com/budgetclick-storage/delete"
+    "deleteUrl": "https://liteed.com/budgetclick-storage/del"
   },
   "kdf": {
     "algorithm": "PBKDF2",
