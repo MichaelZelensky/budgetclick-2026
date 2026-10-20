@@ -159,8 +159,11 @@ const transactions = computed<SpreadsheetRow[]>(() => {
   );
   const transactionBalances = new Map<string, number | string>();
   const balances = new Map<string, Big>();
-
-  for (const transaction of allTransactions) {
+  const chunkTransactions = Object.values(state.chunks)
+    .flatMap(chunk => chunk.transactions)
+    .sort((a, b) => a.datetime.localeCompare(b.datetime));
+    
+  for (const transaction of chunkTransactions) {
     const month = getLocalMonth(transaction.datetime);
     const balanceKey = `${transaction.accountId}:${month}`;
 
