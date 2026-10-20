@@ -18,3 +18,5 @@ util/concat-out/*
 !util/concat-out/.gitkeep
 
 llm.patch
+
+*.tmp
