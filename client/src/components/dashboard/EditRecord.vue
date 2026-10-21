@@ -11,7 +11,7 @@
 
     <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
-        <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
+        <LiteInputField v-model="amount" type="number" :allow-negative="false" required />
         <LiteSelect v-model="accountId" :options="accountOptions" title="Account" disabled />
       </div>
 
