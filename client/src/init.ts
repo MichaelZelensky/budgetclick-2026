@@ -1,6 +1,6 @@
 ﻿import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
-import { initializeLogger } from "@/logger";
+import { initializeLogger, logger } from "@/logger";
 import { LogLevel } from "@/types/Logger";
 import { initializeDatabase } from "@/database";
 import { initializeConfig } from "@/state/config";
@@ -29,10 +29,18 @@ export const initializeApplication = async () => {
   if (!encryptionInitialized) {
     return;
   }
-  const manifestInitialized = await initializeManifest();
-  if (manifestInitialized) {
+  try {
+    const manifestInitialized = await initializeManifest();
+    if (manifestInitialized) {
+      await initializeData();
+      await synchronizeOfflineData();
+      await synchronizeRemoteData();
+    }
+  } catch (error) {
+    if (!(error instanceof TypeError && error.message === "Failed to fetch")) {
+      throw error;
+    }
+    logger.warn("Initialize manifest failed; continuing with local data", error);
     await initializeData();
-    await synchronizeOfflineData();
-    await synchronizeRemoteData();
   }
 };

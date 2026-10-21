@@ -9,6 +9,8 @@ import { generateObjectKey } from "@/utils/key";
 
 export const manifestKey = "manifest";
 
+const cachedManifestKey = "budgetclick.manifest";
+
 const validateManifestData = (value: unknown): Manifest => {
   if (!validateManifest(value)) {
     const errors = validateManifest.errors
@@ -17,6 +19,22 @@ const validateManifestData = (value: unknown): Manifest => {
     throw new Error(`Invalid manifest\n${errors}`);
   }
   return value;
+};
+
+const getCachedManifest = (): Manifest | null => {
+  const cachedManifest = localStorage.getItem(cachedManifestKey);
+  if (cachedManifest === null) {
+    return null;
+  }
+  try {
+    return validateManifestData(JSON.parse(cachedManifest));
+  } catch {
+    return null;
+  }
+};
+
+const cacheManifest = (manifest: Manifest): void => {
+  localStorage.setItem(cachedManifestKey, JSON.stringify(manifest));
 };
 
 export const createManifest = (clientId: string): Manifest => {
@@ -78,12 +96,20 @@ export const initializeManifest = async (): Promise<boolean> => {
   try {
     const body = await getFile(manifestKey);
     const manifest = validateManifestData(decodeData<Manifest>(body));
+    cacheManifest(manifest);
     getState().manifest = structuredClone(manifest);
     return true;
   } catch (error) {
     if (isFileNotFoundError(error)) {
       getState().manifest = null;
       return false;
+    }
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      const manifest = getCachedManifest();
+      if (manifest !== null) {
+        getState().manifest = structuredClone(manifest);
+        return true;
+      }
     }
     throw error;
   }
@@ -105,6 +131,7 @@ export const saveManifest = async (manifest: Manifest): Promise<void> => {
     ...offlineSync,
     manifest: validatedManifest,
   });
+  cacheManifest(validatedManifest);
   getState().manifest = structuredClone(validatedManifest);
 };
 
