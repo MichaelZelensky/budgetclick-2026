@@ -167,9 +167,9 @@ describe("transactions CRUD", () => {
     const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("Groceries");
-    await inputs[1].setValue("42.5");
-    await inputs[2].setValue("2026-08-25T10:30");
+    await inputs[0].setValue("42.5"); // Amount
+    await inputs[1].setValue("Groceries"); // Description
+    await inputs[2].setValue("2026-08-25T10:30"); // Datetime
 
     await findSaveButton(wrapper)?.trigger("click");
 
@@ -206,8 +206,8 @@ describe("transactions CRUD", () => {
     const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("Salary");
-    await inputs[1].setValue("2500");
+    await inputs[0].setValue("2500");
+    await inputs[1].setValue("Salary");
     await inputs[2].setValue("2026-08-25T10:30");
 
     const actualToggle = findToggle(wrapper, "Actual");
@@ -267,8 +267,8 @@ describe("transactions CRUD", () => {
     const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("Coffee");
-    await inputs[1].setValue("5");
+    await inputs[0].setValue("5");
+    await inputs[1].setValue("Coffee");
     await inputs[2].setValue("2026-08-25T09:00");
 
     await findSaveButton(wrapper)?.trigger("click");
@@ -290,8 +290,8 @@ describe("transactions CRUD", () => {
     const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("Coffee");
-    await inputs[1].setValue("5");
+    await inputs[0].setValue("5");
+    await inputs[1].setValue("Coffee");
     await inputs[2].setValue("2026-08-25T09:00");
 
     await findSaveButton(wrapper)?.trigger("click");
@@ -343,8 +343,8 @@ describe("transactions CRUD", () => {
     await flushPromises();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("Updated description");
-    await inputs[1].setValue("75");
+    await inputs[0].setValue("75");
+    await inputs[1].setValue("Updated description");
     await inputs[2].setValue("2026-08-15T12:30");
 
     const actualToggle = findToggle(wrapper, "Actual");

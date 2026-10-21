@@ -12,7 +12,7 @@
     <button
       type="button"
       class="tab tab-icon"
-      :class="{ active: modelValue === 'attachments', attachment: hasAttachments }"
+      :class="{ active: modelValue === 'attachments', hightlight: hasAttachments }"
       @click="modelValue = 'attachments'"
     >
       <Paperclip />
@@ -30,7 +30,7 @@
     <button
       type="button"
       class="tab tab-icon"
-      :class="{ active: modelValue === 'comment' }"
+      :class="{ active: modelValue === 'comment', hightlight: hasComment }"
       @click="modelValue = 'comment'"
     >
       <Comment />
@@ -55,10 +55,17 @@ type Tab = "main" | "attachments" | "ext" | "comment";
 
 const modelValue = defineModel<Tab>({ default: "main" });
 
-defineProps<{
-  mode: "create" | "edit";
-  hasAttachments: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    mode: "create" | "edit";
+    hasAttachments?: boolean;
+    hasComment?: boolean;
+  }>(),
+  {
+    hasAttachments: false,
+    hasComment: false,
+  },
+);
 
 defineEmits<{
   new: [];
@@ -84,11 +91,11 @@ defineEmits<{
   @apply tw-flex tw-items-center tw-justify-center tw-px-2;
 }
 
-.tab-icon.attachment {
+.tab-icon.hightlight {
   @apply tw-text-sky-600;
 }
 
-.tab-icon.attachment:hover {
+.tab-icon.hightlight:hover {
   @apply tw-text-sky-400;
 }
 

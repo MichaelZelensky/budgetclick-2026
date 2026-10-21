@@ -8,12 +8,12 @@
     />
 
     <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
-      <LiteInputField v-model="description" placeholder="Description" required />
-
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
         <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
         <LiteSelect v-model="accountId" :options="accountOptions" title="Account" />
       </div>
+
+      <LiteInputField v-model="description" placeholder="Description" required />
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 

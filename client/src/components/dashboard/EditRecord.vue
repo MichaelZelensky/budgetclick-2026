@@ -4,17 +4,18 @@
       v-model="activeTab"
       mode="edit"
       :has-attachments="attachments.length > 0"
+      :has-comment="!!comment"
       class="tw--mx-4 tw--mt-4 tw-mb-4"
       @new="$emit('new')"
     />
 
     <div v-if="activeTab === 'main'" class="tw-grid tw-gap-1">
-      <LiteInputField v-model="description" placeholder="Description" required />
-
       <div class="tw-grid tw-grid-cols-2 tw-gap-2">
         <LiteInputField v-model="amount" type="number" placeholder="Amount" required />
         <LiteSelect v-model="accountId" :options="accountOptions" title="Account" disabled />
       </div>
+
+      <LiteInputField v-model="description" placeholder="Description" required />
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
