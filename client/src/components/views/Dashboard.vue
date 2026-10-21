@@ -1,5 +1,6 @@
+
 <template>
-  <main class="tw-h-full tw-min-h-0">
+  <main class="tw-flex tw-h-full tw-min-h-0 tw-flex-col">
     <div class="tw-hidden tw-h-full tw-min-h-0 md:tw-flex">
       <div
         class="tw-min-w-0 tw-overflow-auto"
@@ -33,7 +34,7 @@
       </div>
     </div>
 
-    <div class="tw-h-full tw-overflow-hidden md:tw-hidden">
+    <div class="tw-flex tw-h-full tw-min-h-0 tw-flex-1 tw-overflow-hidden md:tw-hidden">
       <LiteTabs default-selected="Records">
         <Tab label="Records" padding="none">
           <Spreadsheet

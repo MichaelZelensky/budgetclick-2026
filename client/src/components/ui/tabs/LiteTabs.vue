@@ -1,6 +1,7 @@
+
 <template>
-  <div>
-    <ul>
+  <div class="tw-flex tw-h-full tw-min-h-0 tw-w-full tw-flex-col">
+    <ul class="tw-shrink-0">
       <li
         v-for="label in tabLabels"
         :key="label"

@@ -1,6 +1,8 @@
+
 <template>
   <div
     v-show="label === selectedLabel"
+    class="tw-min-h-0 tw-flex-1 tw-overflow-auto"
     :class="{ 'tw-p-4': padding === 'default' }"
   >
     <slot />

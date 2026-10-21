@@ -712,9 +712,10 @@ tbody tr.selected td {
 }
 
 .bottom-controls {
-  @apply tw-flex tw-justify-end tw-items-center tw-mt-3 tw-space-x-4;
+  @apply tw-flex tw-flex-wrap tw-justify-end tw-items-center tw-mt-3 tw-gap-x-4 tw-gap-y-2;
   @apply tw-text-zinc-400;
 }
+
 
 .select-cell { @apply tw-px-2; }
 

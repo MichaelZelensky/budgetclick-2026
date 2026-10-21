@@ -1,9 +1,14 @@
+
 <template>
-  <div class="tw-flex tw-h-screen tw-flex-col">
+  <div class="tw-flex tw-h-[100dvh] tw-flex-col">
     <Header />
     <main
-      class="tw-min-h-0 tw-flex-1 tw-overflow-y-auto"
-      :class="{ 'tw-px-4 tw-pt-2 tw-pb-8': !isDashboard }"
+      class="tw-min-h-0 tw-flex-1"
+      :class="[
+        isDashboard
+          ? 'tw-overflow-hidden'
+          : 'tw-overflow-y-auto tw-px-4 tw-pt-2 tw-pb-8',
+      ]"
     >
       <RouterView />
     </main>
