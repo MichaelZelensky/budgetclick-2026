@@ -143,7 +143,7 @@
     <InlineAlert variant="warning">
       <p>
         Each storage object, including monthly transaction chunks and
-        attachments, must not exceed 5 MB. Large attachments or months with many
+        attachments, must not exceed 3 MB. Large attachments or months with many
         transactions may need to be reduced or split.
       </p>
     </InlineAlert>
