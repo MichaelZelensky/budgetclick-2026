@@ -4,8 +4,8 @@
 
     <p>{{ account.description }}</p>
     <p>{{ account.currency }}</p>
-    <p>Starting balance: {{ account.currentBalance }}</p>
-    <p>Current balance: {{ currentBalance }}</p>
+    <p>Starting balance: {{ formatNumber(account.currentBalance) }}</p>
+    <p>Current balance: {{ formatNumber(currentBalance) }}</p>
 
     <ButtonGroup>
       <LiteButton @click="edit">
@@ -25,6 +25,7 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
 import { ensureBalanceData, getCurrentBalance } from "@/balance";
+import { formatNumber } from "@/utils/number";
 
 const route = useRoute();
 const router = useRouter();

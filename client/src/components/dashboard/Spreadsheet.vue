@@ -78,6 +78,7 @@ import { getManifest } from "@/manifest";
 import { loadMoreTransactionChunks } from "@/load";
 import { getState } from "@/state/state";
 import type { Transaction } from "@/types/data/Transaction";
+import { formatNumber } from "@/utils/number";
 
 const emit = defineEmits<{
   selectionChange: [transaction: Transaction | null];
@@ -121,10 +122,6 @@ const earlierTransactions = ref<Transaction[]>([]);
 const laterTransactions = ref<Transaction[]>([]);
 const loadingEarlier = ref(false);
 const loadingLater = ref(false);
-const numberFormatter = new Intl.NumberFormat(undefined, {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 const selectedTransactions = computed<Transaction[]>(() => {
   const currentDate = new Date();
@@ -198,10 +195,10 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         actual: transaction.isActual,
         direction: transaction.direction,
         date: getLocalDate(transaction.datetime),
-        amount: numberFormatter.format(transaction.amount),
+        amount: formatNumber(transaction.amount),
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
-        balance: typeof balance === "number" ? numberFormatter.format(balance) : "",
+        balance: typeof balance === "number" ? formatNumber(balance) : "",
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
     });
