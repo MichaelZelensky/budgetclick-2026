@@ -20,6 +20,12 @@
       <span v-if="item.actual" class="tw-text-green-500">✓</span>
     </template>
 
+    <template #date="{ item }">
+      <span :class="{ 'tw-text-red-600': !item.actual && !!item.date && item.date < currentDate }">
+        {{ item.date }}
+      </span>
+    </template>
+
     <template #amount="{ item }">
       <span
         class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-sm"
@@ -117,6 +123,7 @@ const getLocalMonth = (datetime: string): string => {
   return `${year}-${month}`;
 };
 
+const currentDate = getLocalDate(new Date().toISOString());
 const state = getState();
 const earlierTransactions = ref<Transaction[]>([]);
 const laterTransactions = ref<Transaction[]>([]);
