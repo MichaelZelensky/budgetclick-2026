@@ -5,6 +5,7 @@
     <p>{{ account.description }}</p>
     <p>{{ account.currency }}</p>
     <p>Starting balance: {{ account.currentBalance }}</p>
+    <p>Current balance: {{ currentBalance }}</p>
 
     <ButtonGroup>
       <LiteButton @click="edit">
@@ -18,10 +19,12 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
+import { ensureBalanceData, getCurrentBalance } from "@/balance";
 
 const route = useRoute();
 const router = useRouter();
@@ -36,6 +39,13 @@ const account = accountsStorage.accounts.find(x => x.id === route.params.id);
 if (!account) {
   throw new Error("Account not found");
 }
+
+const currentBalance = ref(account.currentBalance);
+
+onMounted(async () => {
+  await ensureBalanceData();
+  currentBalance.value = getCurrentBalance(account.id);
+});
 
 const edit = () => {
   router.push(`/accounts/${account.id}/edit`);

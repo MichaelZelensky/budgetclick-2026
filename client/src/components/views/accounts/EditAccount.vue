@@ -1,3 +1,4 @@
+
 <template>
   <main>
     <h1>Edit Account</h1>
@@ -19,12 +20,21 @@
 
     <label>
       Starting balance
-      <LiteInputField v-model="currentBalance" type="number" />
+      <LiteInputField v-model="startingBalance" type="number" />
     </label>
 
-    <InlineAlert v-if="currentBalance !== account.currentBalance" variant="warning" class="tw-mb-4">
+    <InlineAlert v-if="Number(startingBalance) !== account.currentBalance" variant="warning" class="tw-mb-4">
       Changing the starting balance requires statistics recalculation to correct account transaction balances.
     </InlineAlert>
+
+    <label>
+      Current balance
+      <LiteInputField v-model="targetBalance" type="number" />
+    </label>
+
+    <p class="tw-mb-4 tw-text-sm tw-text-zinc-500">
+      This target balance corrects the account balance by adding an income or outcome transaction dated today, at the current time.
+    </p>
 
     <ButtonGroup>
       <LiteButton @click="save">
@@ -38,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import InlineAlert from "@/components/ui/InlineAlert.vue";
@@ -47,6 +57,11 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import { getState } from "@/state/state";
 import { saveReferenceData } from "@/data-flow";
 import { ReferenceDataKey } from "@/types/AppState";
+import { createTransaction } from "@/transaction";
+import { getCurrentBalance, rebuildBalances } from "@/balance";
+import { rebuildStatistics } from "@/stats";
+import Big from "big.js";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 const route = useRoute();
 const router = useRouter();
@@ -65,22 +80,62 @@ if (!account) {
 const name = ref(account.name);
 const description = ref(account.description);
 const currency = ref(account.currency);
-const currentBalance = ref(account.currentBalance);
+const startingBalance = ref(String(account.currentBalance));
+const targetBalance = ref(String(account.currentBalance));
 
-const save = async () => {
-  await saveReferenceData({
-    key: ReferenceDataKey.Accounts,
-    data: {
-      ...accountsStorage,
-      accounts: accountsStorage.accounts.map(x => x.id === account.id ? {
-        ...account,
-        name: name.value,
-        description: description.value,
-        currentBalance: currentBalance.value,
-        updatedAt: new Date().toISOString(),
-      } : x),
-    },
-  });
+onMounted(() => {
+  targetBalance.value = String(getCurrentBalance(account.id));
+});
+
+const save = async (): Promise<void> => {
+  if (startingBalance.value === "" || targetBalance.value === "") {
+    throw new Error("Starting balance and current balance are required");
+  }
+
+  const target = Number(targetBalance.value);
+
+  if (!Number.isFinite(target)) {
+    throw new Error("Current balance must be a valid number");
+  }
+
+  const startingBalanceChanged = Number(startingBalance.value) !== account.currentBalance;
+
+  const loadingId = setLoadingOn();
+  try {
+    await saveReferenceData({
+      key: ReferenceDataKey.Accounts,
+      data: {
+        ...accountsStorage,
+        accounts: accountsStorage.accounts.map(x => x.id === account.id ? {
+          ...account,
+          name: name.value,
+          description: description.value,
+          currentBalance: Number(startingBalance.value),
+          updatedAt: new Date().toISOString(),
+        } : x),
+      },
+    });
+
+    if (startingBalanceChanged) {
+      await rebuildStatistics();
+      await rebuildBalances();
+    }
+
+    const difference = new Big(String(target)).minus(String(getCurrentBalance(account.id)));
+
+    if (!difference.eq(0)) {
+      await createTransaction({
+        direction: difference.gt(0) ? "in" : "out",
+        amount: Number(difference.abs().toString()),
+        accountId: account.id,
+        description: "Account balance correction",
+        datetime: new Date().toISOString(),
+      });
+    }
+  } finally {
+    setLoadingOff(loadingId);
+  }
+
   router.push(`/accounts/${account.id}`);
 };
 

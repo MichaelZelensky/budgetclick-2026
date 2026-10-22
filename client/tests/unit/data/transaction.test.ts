@@ -295,6 +295,7 @@ describe("transactions CRUD", () => {
     await inputs[2].setValue("2026-08-25T09:00");
 
     await findSaveButton(wrapper)?.trigger("click");
+    await flushPromises();
     await nextTick();
 
     const updatedInputs = wrapper.findAll("input");

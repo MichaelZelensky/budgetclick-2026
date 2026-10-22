@@ -1,3 +1,4 @@
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
@@ -7,9 +8,30 @@ import { saveReferenceData } from "@/data-flow";
 import { initializeState, getState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
 import validateAccount from "@/validators/default/Account.js";
+import { createTransaction } from "@/transaction";
+import { getCurrentBalance, rebuildBalances } from "@/balance";
+import { rebuildStatistics } from "@/stats";
 
 vi.mock("@/data-flow", () => ({
   saveReferenceData: vi.fn(),
+}));
+
+vi.mock("@/transaction", () => ({
+  createTransaction: vi.fn(),
+}));
+
+vi.mock("@/balance", () => ({
+  getCurrentBalance: vi.fn(),
+  rebuildBalances: vi.fn(),
+}));
+
+vi.mock("@/stats", () => ({
+  rebuildStatistics: vi.fn(),
+}));
+
+vi.mock("@/state/loading", () => ({
+  setLoadingOn: vi.fn(() => "loading-id"),
+  setLoadingOff: vi.fn(),
 }));
 
 const createTestRouter = () => createRouter({
@@ -128,6 +150,10 @@ describe("accounts CRUD", () => {
     };
 
     vi.clearAllMocks();
+    vi.mocked(getCurrentBalance).mockReturnValue(1000);
+    vi.mocked(createTransaction).mockResolvedValue();
+    vi.mocked(rebuildBalances).mockResolvedValue();
+    vi.mocked(rebuildStatistics).mockResolvedValue();
   });
 
   it("creates valid account data", async () => {
@@ -165,7 +191,7 @@ describe("accounts CRUD", () => {
     expect(account.updatedAt).toEqual(expect.any(String));
   });
 
-  it("updates account data with valid entity data", async () => {
+  it("updates account data and corrects the current balance", async () => {
     const account = {
       id: "account-123",
       name: "Cash",
@@ -182,13 +208,17 @@ describe("accounts CRUD", () => {
       accounts: [account],
     };
 
+    vi.mocked(getCurrentBalance)
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(2500);
+
     const wrapper = await mountEditAccount(account.id);
     const inputs = wrapper.findAll("input");
 
     await inputs[0].setValue("Bank");
     await inputs[1].setValue("Bank account");
-    await inputs[2].setValue("USD");
     await inputs[3].setValue("2500");
+    await inputs[4].setValue("2000");
 
     await wrapper.find("button").trigger("click");
 
@@ -214,5 +244,42 @@ describe("accounts CRUD", () => {
     });
 
     expect(updatedAccount.updatedAt).not.toBe(account.updatedAt);
+    expect(rebuildStatistics).toHaveBeenCalledOnce();
+    expect(rebuildBalances).toHaveBeenCalledOnce();
+    expect(createTransaction).toHaveBeenCalledWith({
+      direction: "out",
+      amount: 500,
+      accountId: account.id,
+      description: "Account balance correction",
+      datetime: expect.any(String),
+    });
+  });
+
+  it("does not create a correction transaction when the target balance matches", async () => {
+    const account = {
+      id: "account-123",
+      name: "Cash",
+      description: "Cash account",
+      currency: "USD",
+      currentBalance: 1000,
+      createdAt: "2026-08-23T00:00:00.000Z",
+      updatedAt: "2026-08-23T00:00:00.000Z",
+      isDeleted: false,
+    };
+
+    getState().referenceData.accounts = {
+      ...getState().referenceData.accounts!,
+      accounts: [account],
+    };
+
+    const wrapper = await mountEditAccount(account.id);
+    const inputs = wrapper.findAll("input");
+
+    await inputs[4].setValue("1000");
+    await wrapper.find("button").trigger("click");
+
+    expect(createTransaction).not.toHaveBeenCalled();
+    expect(rebuildStatistics).not.toHaveBeenCalled();
+    expect(rebuildBalances).not.toHaveBeenCalled();
   });
 });

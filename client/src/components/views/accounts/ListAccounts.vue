@@ -28,20 +28,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import { getState } from "@/state/state";
+import { ensureBalanceData, getCurrentBalance } from "@/balance";
 
 const router = useRouter();
-const accounts = computed(() => getState().referenceData.accounts?.accounts ?? []);
+
+onMounted(async () => {
+  await ensureBalanceData();
+});
+
+const accounts = computed(() =>
+  (getState().referenceData.accounts?.accounts ?? []).map(account => ({
+    ...account,
+    currentAccountBalance: getCurrentBalance(account.id),
+  })),
+);
 
 const columns = [
   { key: "name", label: "Name", filterable: true },
   { key: "description", label: "Description", filterable: true },
   { key: "currency", label: "Currency", filterable: true },
   { key: "currentBalance", label: "Starting balance", filterable: true },
+  { key: "currentAccountBalance", label: "Current balance", filterable: true },
   { key: "actions", label: "Actions" },
 ];
 

@@ -6,6 +6,7 @@ import type { Balance } from "@/types/data/Balance";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 import { saveBalancesData } from "@/data-flow";
+import { rebuildStatistics } from "@/stats";
 
 const calculateBalances = (
   chunks: Record<string, ChunkStorage>,
@@ -55,6 +56,49 @@ const calculateBalances = (
     );
     return result.balances;
   });
+};
+
+export const getCurrentBalance = (accountId: string): number => {
+  const state = getState();
+  const account = state.referenceData.accounts?.accounts.find(
+    x => x.id === accountId,
+  );
+
+  if (account === undefined) {
+    throw new Error(`Account not found: ${accountId}`);
+  }
+
+  const now = new Date().toISOString();
+
+  return Object.values(state.chunks)
+    .flatMap(chunk => chunk.transactions)
+  .filter(
+    transaction =>
+      !transaction.isDeleted
+      && transaction.isActual
+      && transaction.accountId === accountId
+      && transaction.datetime <= now,
+  )
+    .reduce(
+      (balance, transaction) =>
+        balance.plus(
+          transaction.direction === "in"
+            ? new Big(String(transaction.amount))
+            : new Big(String(transaction.amount)).neg(),
+        ),
+      new Big(String(account.currentBalance)),
+    )
+    .toNumber();
+};
+
+export const ensureBalanceData = async (): Promise<void> => {
+  if (getState().statistics === null) {
+    await rebuildStatistics();
+  }
+
+  if (getState().balances === null) {
+    await rebuildBalances();
+  }
 };
 
 export const updateBalance = async (
