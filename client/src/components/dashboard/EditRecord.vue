@@ -146,6 +146,7 @@ import RecordTabs from "@/components/dashboard/RecordTabs.vue";
 import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
 import { getLocalDatetime, getLocalMonth } from "@/utils/date";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 type Attachment = {
   id: string;
@@ -373,109 +374,99 @@ const saveRecord = async (): Promise<void> => {
   ) {
     throw new Error("Required fields are missing");
   }
-
-  const transactionDatetime = new Date(datetime.value);
-
-  if (Number.isNaN(transactionDatetime.getTime())) {
-    throw new Error("Datetime must be valid");
-  }
-
-  const month = getLocalMonth(originalTransaction.value.datetime);
-  const updatedMonth = getLocalMonth(transactionDatetime.toISOString());
-
-  if (updatedMonth !== month) {
-    showMonthChangeModal.value = true;
-    return;
-  }
-
-  const chunk = getState().chunks[month];
-
-  if (!chunk) {
-    throw new Error(`Chunk not found: ${month}`);
-  }
-
-  for (const attachment of attachments.value) {
-    if (attachment.file !== undefined && !attachment.deleted) {
-      await saveAttachment(attachment.id, {
-        name: attachment.name,
-        type: attachment.type,
-        data: encodeBlob(await attachment.file.arrayBuffer()),
-      });
+  const loadingId = setLoadingOn();
+  try {
+    const transactionDatetime = new Date(datetime.value);
+    if (Number.isNaN(transactionDatetime.getTime())) {
+      throw new Error("Datetime must be valid");
     }
+    const month = getLocalMonth(originalTransaction.value.datetime);
+    const updatedMonth = getLocalMonth(transactionDatetime.toISOString());
+    if (updatedMonth !== month) {
+      showMonthChangeModal.value = true;
+      return;
+    }
+    const chunk = getState().chunks[month];
+    if (!chunk) {
+      throw new Error(`Chunk not found: ${month}`);
+    }
+    for (const attachment of attachments.value) {
+      if (attachment.file !== undefined && !attachment.deleted) {
+        await saveAttachment(attachment.id, {
+          name: attachment.name,
+          type: attachment.type,
+          data: encodeBlob(await attachment.file.arrayBuffer()),
+        });
+      }
+    }
+    const updatedAttachments = [
+      ...originalTransaction.value.attachments
+        .filter(attachment =>
+          attachments.value.some(item => item.id === attachment.id && item.deleted)
+        )
+        .map(attachment => ({
+          ...attachment,
+          isDeleted: true as const,
+        })),
+      ...attachments.value
+        .filter(attachment =>
+          !attachment.deleted
+          && !originalTransaction.value.attachments.some(item => item.id === attachment.id)
+        )
+        .map(attachment => ({
+          id: attachment.id,
+        })),
+      ...originalTransaction.value.attachments
+        .filter(attachment =>
+          !attachment.isDeleted
+          && attachments.value.some(item => item.id === attachment.id && !item.deleted)
+        ),
+    ];
+    const updatedTransaction: Transaction = {
+      ...originalTransaction.value,
+      updatedAt: new Date().toISOString(),
+      direction: direction.value,
+      amount: Number(amount.value),
+      accountId: originalTransaction.value.accountId,
+      description: description.value.trim(),
+      datetime: transactionDatetime.toISOString(),
+      attachments: updatedAttachments,
+      categoryId: categoryId.value,
+      contractorId: contractorId.value,
+      isActual: isActual.value,
+      comment: comment.value,
+    };
+    await saveChunkData({
+      key: month,
+      data: {
+        ...chunk,
+        transactions: chunk.transactions.map(transaction =>
+          transaction.id === originalTransaction.value.id
+            ? updatedTransaction
+            : transaction
+        ),
+      },
+    });
+    await updateStatistics(
+      month,
+      originalTransaction.value.accountId,
+      (updatedTransaction.direction === "in" ? updatedTransaction.amount : 0) -
+        (originalTransaction.value.direction === "in" ? originalTransaction.value.amount : 0),
+      (updatedTransaction.direction === "out" ? updatedTransaction.amount : 0) -
+        (originalTransaction.value.direction === "out" ? originalTransaction.value.amount : 0),
+    );
+    const balanceDelta = (transaction: Transaction): number =>
+      transaction.direction === "in" ? transaction.amount : -transaction.amount;
+    await updateBalance(
+      month,
+      originalTransaction.value.accountId,
+      balanceDelta(updatedTransaction) - balanceDelta(originalTransaction.value),
+    );
+    originalTransaction.value = updatedTransaction;
+  } finally {
+    setLoadingOff(loadingId);
   }
-
-  const updatedAttachments = [
-    ...originalTransaction.value.attachments
-      .filter(attachment =>
-        attachments.value.some(item => item.id === attachment.id && item.deleted)
-      )
-      .map(attachment => ({
-        ...attachment,
-        isDeleted: true as const,
-      })),
-    ...attachments.value
-      .filter(attachment =>
-        !attachment.deleted
-        && !originalTransaction.value.attachments.some(item => item.id === attachment.id)
-      )
-      .map(attachment => ({
-        id: attachment.id,
-      })),
-    ...originalTransaction.value.attachments
-      .filter(attachment =>
-        !attachment.isDeleted
-        && attachments.value.some(item => item.id === attachment.id && !item.deleted)
-      ),
-  ];
-
-  const updatedTransaction: Transaction = {
-    ...originalTransaction.value,
-    updatedAt: new Date().toISOString(),
-    direction: direction.value,
-    amount: Number(amount.value),
-    accountId: originalTransaction.value.accountId,
-    description: description.value.trim(),
-    datetime: transactionDatetime.toISOString(),
-    attachments: updatedAttachments,
-    categoryId: categoryId.value,
-    contractorId: contractorId.value,
-    isActual: isActual.value,
-    comment: comment.value,
-  };
-
-  await saveChunkData({
-    key: month,
-    data: {
-      ...chunk,
-      transactions: chunk.transactions.map(transaction =>
-        transaction.id === originalTransaction.value.id
-          ? updatedTransaction
-          : transaction
-      ),
-    },
-  });
-
-  await updateStatistics(
-    month,
-    originalTransaction.value.accountId,
-    (updatedTransaction.direction === "in" ? updatedTransaction.amount : 0) -
-      (originalTransaction.value.direction === "in" ? originalTransaction.value.amount : 0),
-    (updatedTransaction.direction === "out" ? updatedTransaction.amount : 0) -
-      (originalTransaction.value.direction === "out" ? originalTransaction.value.amount : 0),
-  );
-
-  const balanceDelta = (transaction: Transaction): number =>
-    transaction.direction === "in" ? transaction.amount : -transaction.amount;
-
-  await updateBalance(
-    month,
-    originalTransaction.value.accountId,
-    balanceDelta(updatedTransaction) - balanceDelta(originalTransaction.value),
-  );
-
-  originalTransaction.value = updatedTransaction;
-};
-</script>
+};</script>
 
 <style lang="scss" scoped>
 .title {

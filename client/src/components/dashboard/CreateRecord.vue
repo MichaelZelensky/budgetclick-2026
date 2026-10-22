@@ -131,6 +131,7 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
 import { encodeBlob } from "@/utils/data";
 import { getLocalDatetime, getLocalMonth } from "@/utils/date";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 type Attachment = {
   id: string;
@@ -259,69 +260,72 @@ const saveRecord = async (): Promise<void> => {
   ) {
     throw new Error("Required fields are missing");
   }
-
-  const transactionDatetime = new Date(datetime.value);
-  const now = transactionDatetime.toISOString();
-  const month = getLocalMonth(datetime.value);
-  const existingChunk = getState().chunks[month];
-  const transaction: Transaction = {
-    id: generateEntityId("t"),
-    createdAt: now,
-    updatedAt: now,
-    isDeleted: false,
-    direction: direction.value,
-    amount: Number(amount.value),
-    accountId: accountId.value,
-    description: description.value.trim(),
-    datetime: now,
-    attachments: attachments.value.map(attachment => ({
-      id: attachment.id,
-    })),
-    categoryId: categoryId.value,
-    contractorId: contractorId.value,
-    isActual: isActual.value,
-    comment: comment.value,
-  };
-  const chunk: ChunkStorage = existingChunk ?? {
-    metadata: {
-      schemaVersion: 1,
-      version: 0,
+  const loadingId = setLoadingOn();
+  try {
+    const transactionDatetime = new Date(datetime.value);
+    const now = transactionDatetime.toISOString();
+    const month = getLocalMonth(datetime.value);
+    const existingChunk = getState().chunks[month];
+    const transaction: Transaction = {
+      id: generateEntityId("t"),
       createdAt: now,
       updatedAt: now,
-      updatedBy: getState().settings?.clientId ?? "-",
-    },
-    transactions: [],
-  };
-
-  for (const attachment of attachments.value) {
-    await saveAttachment(attachment.id, {
-      name: attachment.name,
-      type: attachment.type,
-      data: encodeBlob(await attachment.file.arrayBuffer()),
+      isDeleted: false,
+      direction: direction.value,
+      amount: Number(amount.value),
+      accountId: accountId.value,
+      description: description.value.trim(),
+      datetime: now,
+      attachments: attachments.value.map(attachment => ({
+        id: attachment.id,
+      })),
+      categoryId: categoryId.value,
+      contractorId: contractorId.value,
+      isActual: isActual.value,
+      comment: comment.value,
+    };
+    const chunk: ChunkStorage = existingChunk ?? {
+      metadata: {
+        schemaVersion: 1,
+        version: 0,
+        createdAt: now,
+        updatedAt: now,
+        updatedBy: getState().settings?.clientId ?? "-",
+      },
+      transactions: [],
+    };
+    for (const attachment of attachments.value) {
+      await saveAttachment(attachment.id, {
+        name: attachment.name,
+        type: attachment.type,
+        data: encodeBlob(await attachment.file.arrayBuffer()),
+      });
+    }
+    await saveChunkData({
+      key: month,
+      data: {
+        ...chunk,
+        transactions: [...chunk.transactions, transaction],
+      },
     });
+    await updateStatistics(
+      month,
+      transaction.accountId,
+      transaction.direction === "in" ? transaction.amount : 0,
+      transaction.direction === "out" ? transaction.amount : 0,
+    );
+    await updateBalance(
+      month,
+      transaction.accountId,
+      transaction.direction === "in" ? transaction.amount : -transaction.amount,
+    );
+    resetForm();
+  } finally {
+    setLoadingOff(loadingId);
   }
+};
 
-  await saveChunkData({
-    key: month,
-    data: {
-      ...chunk,
-      transactions: [...chunk.transactions, transaction],
-    },
-  });
-
-  await updateStatistics(
-    month,
-    transaction.accountId,
-    transaction.direction === "in" ? transaction.amount : 0,
-    transaction.direction === "out" ? transaction.amount : 0,
-  );
-
-  await updateBalance(
-    month,
-    transaction.accountId,
-    transaction.direction === "in" ? transaction.amount : -transaction.amount,
-  );
-
+const resetForm = () => {
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
   description.value = "";
   amount.value = "";
@@ -332,5 +336,5 @@ const saveRecord = async (): Promise<void> => {
   contractorId.value = "";
   comment.value = "";
   attachments.value = [];
-};
+}
 </script>
