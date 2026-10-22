@@ -1,4 +1,3 @@
-
 <template>
   <DashboardWidget>
     <RecordTabs
@@ -19,7 +18,7 @@
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
       <div class="tw-flex tw-items-center tw-gap-6">
-        <LiteToggle v-model="isActual">
+        <LiteToggle v-model="isActual" :disabled="isFutureDate">
           Actual
         </LiteToggle>
 
@@ -53,7 +52,7 @@
             {{ attachment.name }}
           </a>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
-            Ã—
+            ×
           </button>
         </div>
       </div>
@@ -113,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
@@ -131,6 +130,7 @@ import { generateEntityId } from "@/utils/entity";
 import { encodeBlob } from "@/utils/data";
 import { getLocalDatetime } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { isFutureDate as checkFutureDate } from "@/utils/date";
 
 type Attachment = {
   id: string;
@@ -159,6 +159,14 @@ const showAttachmentSizeModal = ref(false);
 const showRemoveAttachmentModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
+
+const isFutureDate = computed(() => checkFutureDate(datetime.value));
+
+watch(isFutureDate, value => {
+  if (value) {
+    isActual.value = false;
+  }
+});
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -281,7 +289,7 @@ const saveRecord = async (): Promise<void> => {
       })),
       categoryId: categoryId.value,
       contractorId: contractorId.value,
-      isActual: isActual.value,
+      isActual: isFutureDate.value ? false : isActual.value,
       comment: comment.value,
     });
 

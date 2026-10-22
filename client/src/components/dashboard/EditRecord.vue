@@ -20,7 +20,7 @@
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
       <div class="tw-flex tw-items-center tw-gap-6">
-        <LiteToggle v-model="isActual">
+        <LiteToggle v-model="isActual" :disabled="isFutureDate">
           Actual
         </LiteToggle>
 
@@ -147,6 +147,7 @@ import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
 import { getLocalDatetime, getLocalMonth } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { isFutureDate as checkFutureDate } from "@/utils/date";
 
 type Attachment = {
   id: string;
@@ -183,6 +184,14 @@ const showRemoveAttachmentModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const originalTransaction = ref(props.transaction);
 const attachments = ref<Attachment[]>([]);
+
+const isFutureDate = computed(() => checkFutureDate(datetime.value));
+
+watch(isFutureDate, value => {
+  if (value) {
+    isActual.value = false;
+  }
+});
 
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
@@ -433,7 +442,7 @@ const saveRecord = async (): Promise<void> => {
       attachments: updatedAttachments,
       categoryId: categoryId.value,
       contractorId: contractorId.value,
-      isActual: isActual.value,
+      isActual: isFutureDate.value ? false : isActual.value,
       comment: comment.value,
     };
     await saveChunkData({

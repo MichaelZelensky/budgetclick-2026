@@ -16,3 +16,15 @@ export const getLocalMonth = (datetime: string): string => {
 
   return `${year}-${month}`;
 };
+
+export const isFutureDate = (datetime: string): boolean => {
+  const date = new Date(datetime);
+  const today = new Date();
+
+  return date.getFullYear() > today.getFullYear()
+    || (date.getFullYear() === today.getFullYear()
+      && date.getMonth() > today.getMonth())
+    || (date.getFullYear() === today.getFullYear()
+      && date.getMonth() === today.getMonth()
+      && date.getDate() > today.getDate());
+};
