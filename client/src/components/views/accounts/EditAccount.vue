@@ -82,9 +82,11 @@ const description = ref(account.description);
 const currency = ref(account.currency);
 const startingBalance = ref(String(account.currentBalance));
 const targetBalance = ref(String(account.currentBalance));
+const initialCurrentBalance = ref(account.currentBalance);
 
 onMounted(() => {
-  targetBalance.value = String(getCurrentBalance(account.id));
+  initialCurrentBalance.value = getCurrentBalance(account.id);
+  targetBalance.value = String(initialCurrentBalance.value);
 });
 
 const save = async (): Promise<void> => {
@@ -99,6 +101,7 @@ const save = async (): Promise<void> => {
   }
 
   const startingBalanceChanged = Number(startingBalance.value) !== account.currentBalance;
+  const currentBalanceChanged = !new Big(String(target)).eq(String(initialCurrentBalance.value));
 
   const loadingId = setLoadingOn();
   try {
@@ -121,16 +124,18 @@ const save = async (): Promise<void> => {
       await rebuildBalances();
     }
 
-    const difference = new Big(String(target)).minus(String(getCurrentBalance(account.id)));
+    if (currentBalanceChanged) {
+      const difference = new Big(String(target)).minus(String(getCurrentBalance(account.id)));
 
-    if (!difference.eq(0)) {
-      await createTransaction({
-        direction: difference.gt(0) ? "in" : "out",
-        amount: Number(difference.abs().toString()),
-        accountId: account.id,
-        description: "Account balance correction",
-        datetime: new Date().toISOString(),
-      });
+      if (!difference.eq(0)) {
+        await createTransaction({
+          direction: difference.gt(0) ? "in" : "out",
+          amount: Number(difference.abs().toString()),
+          accountId: account.id,
+          description: "Account balance correction",
+          datetime: new Date().toISOString(),
+        });
+      }
     }
   } finally {
     setLoadingOff(loadingId);
