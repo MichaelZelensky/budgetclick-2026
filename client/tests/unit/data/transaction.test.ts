@@ -30,14 +30,14 @@ const createInputStub = () => ({
       :value="modelValue"
       @input="$emit(
         'update:modelValue',
-        type === 'number' ? Number($event.target.value) : $event.target.value
+        type === 'number' ? $event.target.value : $event.target.value
       )"
     />
   `,
 });
 
 const createToggleStub = () => ({
-  props: ["modelValue"],
+  props: ["modelValue", "disabled"],
   emits: ["update:modelValue"],
   template: `
     <label>
@@ -45,6 +45,7 @@ const createToggleStub = () => ({
       <input
         type="checkbox"
         :checked="modelValue"
+        :disabled="disabled"
         @change="$emit('update:modelValue', $event.target.checked)"
       />
     </label>
@@ -59,12 +60,34 @@ const createGlobalStubs = () => ({
     template: "<div />",
   },
   LiteToggle: createToggleStub(),
+  LiteTextarea: {
+    props: ["modelValue"],
+    emits: ["update:modelValue"],
+    template: "<textarea :value=\"modelValue\" @input=\"$emit('update:modelValue', $event.target.value)\" />",
+  },
   LiteButton: {
     emits: ["click"],
     template: `
       <button @click="$emit('click')">
         <slot />
       </button>
+    `,
+  },
+  RecordTabs: {
+    props: ["modelValue"],
+    emits: ["update:modelValue"],
+    template: "<div />",
+  },
+  Modal: {
+    props: ["title", "secondaryButtonLabel"],
+    emits: ["close", "ok", "cancel"],
+    template: `
+      <div role="dialog">
+        <h2>{{ title }}</h2>
+        <slot />
+        <button @click="$emit('ok')">OK</button>
+        <button v-if="secondaryButtonLabel" @click="$emit('cancel')">Cancel</button>
+      </div>
     `,
   },
   ButtonGroup: {
@@ -167,11 +190,12 @@ describe("transactions CRUD", () => {
     const wrapper = mountCreateRecord();
     const inputs = wrapper.findAll("input");
 
-    await inputs[0].setValue("42.5"); // Amount
-    await inputs[1].setValue("Groceries"); // Description
-    await inputs[2].setValue("2026-08-25T10:30"); // Datetime
+    await inputs[0].setValue("42.5");
+    await inputs[1].setValue("Groceries");
+    await inputs[2].setValue("2026-08-25T10:30");
 
     await findSaveButton(wrapper)?.trigger("click");
+    await flushPromises();
 
     expect(saveChunkData).toHaveBeenCalledOnce();
 
@@ -225,6 +249,7 @@ describe("transactions CRUD", () => {
     await incomeToggle?.setValue(true);
 
     await findSaveButton(wrapper)?.trigger("click");
+    await flushPromises();
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
     const transaction = call.data.transactions[0];
@@ -272,6 +297,7 @@ describe("transactions CRUD", () => {
     await inputs[2].setValue("2026-08-25T09:00");
 
     await findSaveButton(wrapper)?.trigger("click");
+    await flushPromises();
 
     const call = vi.mocked(saveChunkData).mock.calls[0][0];
 
@@ -305,6 +331,15 @@ describe("transactions CRUD", () => {
     expect(updatedInputs[2].element.value).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
     );
+  });
+
+  it("shows required-fields modal when saving an empty form", async () => {
+    const wrapper = mountCreateRecord();
+
+    await findSaveButton(wrapper)?.trigger("click");
+
+    expect(wrapper.find('[role="dialog"]').text()).toContain("Required Fields");
+    expect(saveChunkData).not.toHaveBeenCalled();
   });
 
   it("updates an existing transaction", async () => {
@@ -359,6 +394,7 @@ describe("transactions CRUD", () => {
     await incomeToggle?.setValue(true);
 
     await findSaveButton(wrapper)?.trigger("click");
+    await flushPromises();
 
     expect(saveAttachment).not.toHaveBeenCalled();
     expect(saveChunkData).toHaveBeenCalledOnce();

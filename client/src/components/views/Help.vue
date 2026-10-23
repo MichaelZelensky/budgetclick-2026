@@ -24,6 +24,11 @@
         >
       </li>
       <li>
+        <a href="#creating-record" @click.prevent="scrollTo('creating-record')"
+          >Creating a record</a
+        >
+      </li>
+      <li>
         <a href="#import-export" @click.prevent="scrollTo('import-export')"
           >Import and export</a
         >
@@ -252,6 +257,105 @@
         they are lost.
       </p>
     </InlineAlert>
+
+    <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
+
+    <h2 id="creating-record" class="tw-mt-8">Creating a record</h2>
+
+    <p>
+      Open the <router-link to="/">Dashboard</router-link> and use the record
+      creation form. The form is divided into four tabs: Main, Attachments,
+      additional fields, and Comment. You can save the record from any tab.
+    </p>
+
+    <h3>Main fields</h3>
+
+    <ul class="tw-list-disc tw-pl-5">
+      <li>
+        <strong>Amount</strong> — the transaction amount. Enter zero or a
+        positive number. The amount cannot be negative.
+      </li>
+      <li>
+        <strong>Account</strong> — the account associated with the transaction.
+        The first available account is selected by default.
+      </li>
+      <li>
+        <strong>Description</strong> — a short description of the transaction,
+        such as "Groceries" or "Coffee".
+      </li>
+      <li>
+        <strong>Date and time</strong> — when the transaction occurred. The
+        initial value is the current local date and time.
+      </li>
+      <li>
+        <strong>Actual</strong> — indicates whether the transaction is actual.
+        It is automatically disabled for future dates, and a future-dated
+        transaction cannot be marked as actual.
+      </li>
+      <li>
+        <strong>Income</strong> — switch this on for income. Leave it off for
+        expenses, which are the default.
+      </li>
+    </ul>
+
+    <h3>Additional fields</h3>
+
+    <ul class="tw-list-disc tw-pl-5">
+      <li>
+        <strong>Category</strong> — optionally classify the transaction using
+        one of your categories.
+      </li>
+      <li>
+        <strong>Contractor</strong> — optionally select the person, company, or
+        other party associated with the transaction.
+      </li>
+      <li>
+        <strong>Comment</strong> — optionally add additional notes.
+      </li>
+    </ul>
+
+    <h3>Attachments</h3>
+
+    <p>
+      Add files such as receipts, invoices, or other supporting documents.
+      Multiple attachments are supported. Each attachment must be no larger
+      than 3 MB. Duplicate attachments with the same filename and file type
+      cannot be added to the same new record.
+    </p>
+
+    <h3>Required fields</h3>
+
+    <p>
+      A normal transaction requires <strong>Amount</strong>,
+      <strong>Description</strong>, and <strong>Date and time</strong>.
+      Account selection is also necessary to save the transaction, so make sure
+      an account is available.
+    </p>
+
+    <p>
+      Category, Contractor, Comment, and Attachments are optional for a normal
+      transaction.
+    </p>
+
+    <p>
+      If the required transaction fields are incomplete and no document has
+      been attached, BudgetClick asks you to complete the required fields.
+    </p>
+
+    <p>
+      You can also save a document without entering a normal transaction. Add
+      at least one attachment and leave both Amount and Description empty.
+      When prompted to confirm, choose to save the document only. BudgetClick
+      creates a record with amount <strong>0</strong>, a description based on
+      the first attachment's filename (for example, <code>File: receipt.pdf</code>),
+      and the current date and time.
+    </p>
+
+    <p>
+      If only some of the required transaction fields are missing, the record
+      cannot be saved as a normal transaction. Complete the missing fields or
+      use the document-only option when both Amount and Description are empty.
+    </p>
 
     <p><a href="#" @click.prevent="scrollToTop">Back to top</a></p>
 

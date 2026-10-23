@@ -30,8 +30,8 @@ export const createTransaction = async (
     throw new Error("Datetime must be valid");
   }
 
-  if (!Number.isFinite(input.amount) || input.amount <= 0) {
-    throw new Error("Transaction amount must be greater than zero");
+  if (!Number.isFinite(input.amount) || input.amount < 0) {
+    throw new Error("Transaction amount must be a positive number");
   }
 
   const now = transactionDatetime.toISOString();

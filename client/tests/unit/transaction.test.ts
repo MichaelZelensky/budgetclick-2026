@@ -1,4 +1,3 @@
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTransaction } from "@/transaction";
 import { saveChunkData } from "@/data-flow";
@@ -21,13 +20,11 @@ vi.mock("@/stats", () => ({
 describe("createTransaction", () => {
   beforeEach(() => {
     initializeState();
-
     getState().settings = {
       schemaVersion: 1,
       storage: "-",
       clientId: "client-123",
     };
-
     vi.clearAllMocks();
     vi.mocked(saveChunkData).mockResolvedValue();
     vi.mocked(updateBalance).mockResolvedValue();
@@ -82,14 +79,35 @@ describe("createTransaction", () => {
     );
   });
 
-  it("rejects invalid transaction amounts", async () => {
-    await expect(createTransaction({
+  it("allows zero transaction amounts", async () => {
+    await createTransaction({
       direction: "in",
       amount: 0,
       accountId: "account-1",
-      description: "Invalid",
+      description: "File: receipt.pdf",
       datetime: "2026-08-25T10:30:00.000Z",
-    })).rejects.toThrow("Transaction amount must be greater than zero");
+    });
+
+    expect(saveChunkData).toHaveBeenCalledOnce();
+
+    const call = vi.mocked(saveChunkData).mock.calls[0][0];
+
+    expect(call.data.transactions[0]).toMatchObject({
+      amount: 0,
+      description: "File: receipt.pdf",
+    });
+  });
+
+  it("rejects negative and non-finite transaction amounts", async () => {
+    for (const amount of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      await expect(createTransaction({
+        direction: "in",
+        amount,
+        accountId: "account-1",
+        description: "Invalid",
+        datetime: "2026-08-25T10:30:00.000Z",
+      })).rejects.toThrow("Transaction amount must be a positive number");
+    }
 
     expect(saveChunkData).not.toHaveBeenCalled();
   });

@@ -83,6 +83,24 @@
     </div>
 
     <Modal
+      v-if="showRequiredFieldsModal"
+      title="Required Fields"
+      @close="showRequiredFieldsModal = false"
+      @ok="showRequiredFieldsModal = false"
+    >
+      Enter Amount, Description, and Date, or upload a document.
+    </Modal>
+    <Modal
+      v-if="showDocumentOnlyModal"
+      title="Save Document Only"
+      secondary-button-label="Cancel"
+      @close="showDocumentOnlyModal = false"
+      @cancel="showDocumentOnlyModal = false"
+      @ok="confirmSaveDocumentOnly"
+    >
+      Amount and Description are missing. Save only the document?
+    </Modal>
+    <Modal
       v-if="showDuplicateAttachmentModal"
       title="Duplicate Attachment"
       @close="showDuplicateAttachmentModal = false"
@@ -157,6 +175,8 @@ const isActual = ref(true);
 const showDuplicateAttachmentModal = ref(false);
 const showAttachmentSizeModal = ref(false);
 const showRemoveAttachmentModal = ref(false);
+const showRequiredFieldsModal = ref(false);
+const showDocumentOnlyModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
 
@@ -259,12 +279,40 @@ const confirmRemoveAttachment = (): void => {
 };
 
 const saveRecord = async (): Promise<void> => {
-  if (
-    description.value.trim() === ""
-    || amount.value === ""
-    || accountId.value === undefined
-    || datetime.value === ""
-  ) {
+  const hasAmount = String(amount.value).trim() !== "";
+  const hasDescription = description.value.trim() !== "";
+  const hasDate = datetime.value.trim() !== "";
+  const hasDocument = attachments.value.length > 0;
+  const hasTransactionFields = hasAmount && hasDescription && hasDate;
+
+  if (!hasTransactionFields && !hasDocument) {
+    showRequiredFieldsModal.value = true;
+    return;
+  }
+
+  if (!hasTransactionFields && hasDocument) {
+    if (!hasAmount && !hasDescription) {
+      showDocumentOnlyModal.value = true;
+      return;
+    }
+
+    showRequiredFieldsModal.value = true;
+    return;
+  }
+
+  await persistRecord();
+};
+
+const confirmSaveDocumentOnly = async (): Promise<void> => {
+  showDocumentOnlyModal.value = false;
+  amount.value = "0";
+  description.value = `File: ${attachments.value[0].name}`;
+  datetime.value = getLocalDatetime(new Date().toISOString());
+  await persistRecord();
+};
+
+const persistRecord = async (): Promise<void> => {
+  if (accountId.value === undefined) {
     throw new Error("Required fields are missing");
   }
 
