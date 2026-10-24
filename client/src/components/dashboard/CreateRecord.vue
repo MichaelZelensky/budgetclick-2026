@@ -111,7 +111,6 @@
       <LiteButton
         v-if="pendingOversizedImage"
         @click="editOversizedImage"
-        variant="primary"
       >
         Edit image
       </LiteButton>
@@ -131,7 +130,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
@@ -147,10 +145,9 @@ import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { TransactionDirection } from "@/types/data/Transaction";
 import { generateEntityId } from "@/utils/entity";
 import { encodeBlob } from "@/utils/data";
-import { getLocalDatetime } from "@/utils/date";
+import { getLocalDatetime, isFutureDate as checkFutureDate } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import { isFutureDate as checkFutureDate } from "@/utils/date";
-import { startImageEditor } from "@/state/imageEditor";
+import { useRecordAttachments } from "@/components/composables/useRecordAttachments";
 
 type Attachment = {
   id: string;
@@ -161,10 +158,7 @@ type Attachment = {
 };
 type Tab = "main" | "attachments" | "ext" | "comment";
 
-const router = useRouter();
 const activeTab = ref<Tab>("main");
-const maxAttachmentSize = 3 * 1024 * 1024;
-const supportedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"];
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
@@ -176,14 +170,34 @@ const comment = ref("");
 const datetime = ref(getLocalDatetime(new Date().toISOString()));
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
-const showDuplicateAttachmentModal = ref(false);
-const showAttachmentSizeModal = ref(false);
 const showRemoveAttachmentModal = ref(false);
 const showRequiredFieldsModal = ref(false);
 const showDocumentOnlyModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
-const pendingOversizedImage = ref<File | undefined>();
+
+const {
+  showDuplicateAttachmentModal,
+  showAttachmentSizeModal,
+  pendingOversizedImage,
+  closeAttachmentSizeModal,
+  editOversizedImage,
+  selectAttachments,
+} = useRecordAttachments<Attachment>({
+  attachments,
+  createAttachment: file => ({
+    id: generateEntityId("f").slice(2),
+    name: file.name,
+    type: file.type,
+    file,
+    url: URL.createObjectURL(file),
+  }),
+  isDuplicate: (attachment, file) =>
+    attachment.name === file.name && attachment.type === file.type,
+  onAttachmentAdded: () => {
+    activeTab.value = "attachments";
+  },
+});
 
 const isFutureDate = computed(() => checkFutureDate(datetime.value));
 
@@ -218,106 +232,6 @@ const contractorOptions = computed<Option[]>(() => [
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
-};
-
-const acceptEditedImage = (file: File): void => {
-  const duplicate = attachments.value.some(
-    attachment => attachment.name === file.name && attachment.type === file.type,
-  );
-
-  if (duplicate) {
-    showDuplicateAttachmentModal.value = true;
-    return;
-  }
-
-  attachments.value = [
-    ...attachments.value,
-    {
-      id: generateEntityId("f").slice(2),
-      name: file.name,
-      type: file.type,
-      file,
-      url: URL.createObjectURL(file),
-    },
-  ];
-
-  activeTab.value = "attachments";
-};
-
-const closeAttachmentSizeModal = (): void => {
-  showAttachmentSizeModal.value = false;
-  pendingOversizedImage.value = undefined;
-};
-
-const editOversizedImage = (): void => {
-  if (pendingOversizedImage.value === undefined) {
-    return;
-  }
-
-  const file = pendingOversizedImage.value;
-  showAttachmentSizeModal.value = false;
-  pendingOversizedImage.value = undefined;
-  startImageEditor(
-    file,
-    router.currentRoute.value.fullPath,
-    acceptEditedImage,
-  );
-  void router.push("/editor");
-};
-
-const selectAttachments = (event: Event): void => {
-  const input = event.target as HTMLInputElement;
-
-  if (input.files === null) {
-    return;
-  }
-
-  const selectedFiles = Array.from(input.files);
-  const oversizedImages = selectedFiles.filter(
-    file => file.size > maxAttachmentSize && supportedImageTypes.includes(file.type),
-  );
-
-  const hasOversizedNonImage = selectedFiles.some(
-    file => file.size > maxAttachmentSize && !supportedImageTypes.includes(file.type),
-  );
-
-  const selectedAttachments = selectedFiles.filter(file => {
-    if (file.size > maxAttachmentSize) {
-      return false;
-    }
-
-    const duplicate = attachments.value.some(
-      attachment => attachment.name === file.name && attachment.type === file.type,
-    );
-
-    if (duplicate) {
-      showDuplicateAttachmentModal.value = true;
-    }
-
-    return !duplicate;
-  });
-
-  attachments.value = [
-    ...attachments.value,
-    ...selectedAttachments.map(file => ({
-      id: generateEntityId("f").slice(2),
-      name: file.name,
-      type: file.type,
-      file,
-      url: URL.createObjectURL(file),
-    })),
-  ];
-
-  if (hasOversizedNonImage) {
-    showAttachmentSizeModal.value = true;
-  }
-
-  if (oversizedImages.length > 0) {
-    pendingOversizedImage.value = oversizedImages[0];
-    showAttachmentSizeModal.value = true;
-  }
-
-  input.value = "";
 };
 
 const requestRemoveAttachment = (id: string): void => {
