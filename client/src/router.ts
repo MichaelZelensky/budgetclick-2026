@@ -9,6 +9,10 @@ export const router = createRouter({
       component: () => import("@/components/views/Dashboard.vue"),
     },
     {
+      path: "/editor",
+      component: () => import("@/components/views/ImageEditor.vue"),
+    },
+    {
       path: "/accounts",
       component: () => import("@/components/views/accounts/ListAccounts.vue"),
     },

@@ -10,7 +10,12 @@
           : 'tw-overflow-y-auto tw-px-4 tw-pt-2 tw-pb-8',
       ]"
     >
-      <RouterView />
+      <RouterView v-slot="{ Component, route }">
+        <KeepAlive>
+          <component :is="Component" v-if="route.path !== '/editor'" />
+        </KeepAlive>
+        <component :is="Component" v-if="route.path === '/editor'" />
+      </RouterView>
     </main>
     <Footer />
     <SpinnerOverlay />

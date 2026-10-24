@@ -14,21 +14,18 @@
       </div>
 
       <LiteInputField v-model="description" placeholder="Description" required />
-
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteToggle v-model="isActual" :disabled="isFutureDate">
           Actual
         </LiteToggle>
-
         <LiteToggle
           :model-value="direction === 'in'"
           @update:model-value="setIncome"
         >
           Income
         </LiteToggle>
-
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
         </LiteButton>
@@ -36,11 +33,7 @@
     </div>
 
     <div v-if="activeTab === 'attachments'" class="tw-grid tw-gap-2 tw-pt-2">
-      <input
-        type="file"
-        multiple
-        @change="selectAttachments"
-      />
+      <input type="file" multiple @change="selectAttachments" />
 
       <div v-if="attachments.length > 0" class="tw-grid tw-gap-1">
         <div
@@ -111,10 +104,17 @@
     <Modal
       v-if="showAttachmentSizeModal"
       title="Attachment Too Large"
-      @close="showAttachmentSizeModal = false"
-      @ok="showAttachmentSizeModal = false"
+      @close="closeAttachmentSizeModal"
+      @ok="closeAttachmentSizeModal"
     >
       Attachments must be smaller than 3 MB.
+      <LiteButton
+        v-if="pendingOversizedImage"
+        @click="editOversizedImage"
+        variant="primary"
+      >
+        Edit image
+      </LiteButton>
     </Modal>
     <Modal
       v-if="showRemoveAttachmentModal"
@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
@@ -149,6 +150,7 @@ import { encodeBlob } from "@/utils/data";
 import { getLocalDatetime } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { isFutureDate as checkFutureDate } from "@/utils/date";
+import { startImageEditor } from "@/state/imageEditor";
 
 type Attachment = {
   id: string;
@@ -159,8 +161,10 @@ type Attachment = {
 };
 type Tab = "main" | "attachments" | "ext" | "comment";
 
+const router = useRouter();
 const activeTab = ref<Tab>("main");
 const maxAttachmentSize = 3 * 1024 * 1024;
+const supportedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"];
 const description = ref("");
 const amount = ref("");
 const accountId = ref<string | undefined>(
@@ -179,6 +183,7 @@ const showRequiredFieldsModal = ref(false);
 const showDocumentOnlyModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const attachments = ref<Attachment[]>([]);
+const pendingOversizedImage = ref<File | undefined>();
 
 const isFutureDate = computed(() => checkFutureDate(datetime.value));
 
@@ -215,6 +220,51 @@ const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
 };
 
+const acceptEditedImage = (file: File): void => {
+  const duplicate = attachments.value.some(
+    attachment => attachment.name === file.name && attachment.type === file.type,
+  );
+
+  if (duplicate) {
+    showDuplicateAttachmentModal.value = true;
+    return;
+  }
+
+  attachments.value = [
+    ...attachments.value,
+    {
+      id: generateEntityId("f").slice(2),
+      name: file.name,
+      type: file.type,
+      file,
+      url: URL.createObjectURL(file),
+    },
+  ];
+
+  activeTab.value = "attachments";
+};
+
+const closeAttachmentSizeModal = (): void => {
+  showAttachmentSizeModal.value = false;
+  pendingOversizedImage.value = undefined;
+};
+
+const editOversizedImage = (): void => {
+  if (pendingOversizedImage.value === undefined) {
+    return;
+  }
+
+  const file = pendingOversizedImage.value;
+  showAttachmentSizeModal.value = false;
+  pendingOversizedImage.value = undefined;
+  startImageEditor(
+    file,
+    router.currentRoute.value.fullPath,
+    acceptEditedImage,
+  );
+  void router.push("/editor");
+};
+
 const selectAttachments = (event: Event): void => {
   const input = event.target as HTMLInputElement;
 
@@ -222,9 +272,17 @@ const selectAttachments = (event: Event): void => {
     return;
   }
 
-  const selectedAttachments = Array.from(input.files).filter(file => {
+  const selectedFiles = Array.from(input.files);
+  const oversizedImages = selectedFiles.filter(
+    file => file.size > maxAttachmentSize && supportedImageTypes.includes(file.type),
+  );
+
+  const hasOversizedNonImage = selectedFiles.some(
+    file => file.size > maxAttachmentSize && !supportedImageTypes.includes(file.type),
+  );
+
+  const selectedAttachments = selectedFiles.filter(file => {
     if (file.size > maxAttachmentSize) {
-      showAttachmentSizeModal.value = true;
       return false;
     }
 
@@ -249,6 +307,15 @@ const selectAttachments = (event: Event): void => {
       url: URL.createObjectURL(file),
     })),
   ];
+
+  if (hasOversizedNonImage) {
+    showAttachmentSizeModal.value = true;
+  }
+
+  if (oversizedImages.length > 0) {
+    pendingOversizedImage.value = oversizedImages[0];
+    showAttachmentSizeModal.value = true;
+  }
 
   input.value = "";
 };
