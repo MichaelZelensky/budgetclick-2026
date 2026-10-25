@@ -1,674 +1,87 @@
 # BudgetClick Storage Lambdas
 
-Serverless storage proxy functions for BudgetClick.
-
-## Files
+Serverless storage proxy for BudgetClick. The browser calls `https://liteed.com/budgetclick-storage/...`
 
 ```text
-server/
-  put.ts
-  get.ts
-  list.ts
-  delete.ts
+PWA → CloudFront (liteed.com) → API Gateway HTTP API → Lambda → user-owned S3
 ```
 
-The browser accesses the functions through:
+The Lambdas don't own user data and use no AWS credentials for the user's bucket.
 
-```text
-https://liteed.com/budgetclick-storage/...
-```
+## Source and build
 
-The architecture is:
+Files: `server/put.ts`, `get.ts`, `list.ts`, `delete.ts`. Each exports `handler`, so the Lambda handler is `index.handler`.
 
-```text
-BudgetClick PWA
-      │
-      ▼
-CloudFront
-liteed.com
-      │
-      ▼
-API Gateway HTTP API
-      │
-      ▼
-AWS Lambda
-      │
-      ▼
-User-owned S3 storage
-```
-
-The Lambda functions do not own the user's data and do not use AWS credentials to access the user's bucket.
-
----
-
-## 1. Lambda source files
-
-The four functions are:
-
-```text
-server/put.ts
-server/get.ts
-server/list.ts
-server/delete.ts
-```
-
-Each function exports:
-
-```text
-handler
-```
-
-The Lambda handler is therefore:
-
-```text
-index.handler
-```
-
----
-
-## 2. package.json requirement
-
-**Every Lambda function must have its own `package.json`.**
-
-The package file must contain:
+Each Lambda needs its own `package.json` (compiled code is CommonJS):
 
 ```json
-{
-  "type": "commonjs"
-}
+{ "type": "commonjs" }
 ```
 
-This is required because the compiled Lambda code uses CommonJS.
+Build with the VS Code task `[Dev] Build Server Lambdas`. Output goes to `server/dist/` (`put.js`, `get.js`, `list.js`, `delete.js`).
 
----
+## Lambda setup (repeat for each function)
 
-## 3. Build the Lambda functions
+1. **Console → Lambda → Create function → Author from scratch**, current Node.js runtime, default architecture. Names: `budgetclick-storage-put`, `-get`, `-list`, `-delete`.
+2. Set timeout to 30s. Set memory to 512MB.
+3. **Runtime settings → Edit**: handler `index.handler`.
+4. In the inline editor, paste the full contents of the matching `server/dist/*.js` into `index.js`, and create `package.json` with the content above. The code view should contain only `index.js` and `package.json`.
+5. Click **Deploy**.
 
-Use the VS Code task:
+## API Gateway
 
-```text
-[Dev] Build Server Lambdas
-```
+Create an **HTTP API** (CloudFront provides the public URL, so the API endpoint isn't used directly). Add these routes, each integrated with its Lambda, and deploy:
 
-The compiled files are written to:
+| Route | Lambda |
+|---|---|
+| `PUT /budgetclick-storage/put` | `budgetclick-storage-put` |
+| `GET /budgetclick-storage/get` | `budgetclick-storage-get` |
+| `GET /budgetclick-storage/list` | `budgetclick-storage-list` |
+| `DELETE /budgetclick-storage/del` | `budgetclick-storage-delete` |
 
-```text
-server/dist/
-```
+## CloudFront (existing `liteed.com` distribution)
 
-Expected output:
+1. Add an origin for each API pointing to its **API Gateway invoke domain** (e.g. `xxxxxxxxxx.execute-api.us-east-1.amazonaws.com`), never directly to Lambda.
+2. Create origin request policy `BudgetClickStorage`. Forward headers `X-Storage-Path`, `X-Storage-Key`, `Content-Type`. Forward no cookies and no query strings. (CloudFront doesn't forward custom headers by default.)
+3. Add a behavior per route, using the matching origin and the `BudgetClickStorage` policy:
+   * `/budgetclick-storage/put`: allow `PUT`
+   * `/budgetclick-storage/get`: allow `GET`
+   * `/budgetclick-storage/list`: allow `GET` (watch the spelling: not `strorage`)
+   * `/budgetclick-storage/del`: allow `DELETE`
+4. Wait for the distribution to finish deploying. No invalidation is needed.
 
-```text
-server/dist/
-  put.js
-  get.js
-  list.js
-  delete.js
-```
+## Testing
 
-The compiled files are used as the Lambda `index.js` code.
-# AWS Lambda setup
-
-Repeat the following procedure for each function.
-
-## 4. Create a Lambda function
-
-Open:
-
-**AWS Console → Lambda → Functions → Create function**
-
-Choose:
-
-* **Author from scratch**
-* Current Node.js runtime
-* Default architecture
-
-Create the appropriate function:
-
-```text
-budgetclick-storage-put
-budgetclick-storage-get
-budgetclick-storage-list
-budgetclick-storage-delete
-```
-
-* Increase timeout to 30s.
-* Set memory allcation to 512Mb for put function. This is required for file upload.
-
----
-
-## 5. Configure the handler
-
-After creating the function, open:
-
-**Runtime settings → Edit**
-
-Set:
-
-```text
-Handler:
-index.handler
-```
-
-Save.
-
----
-
-## 6. Add the Lambda code
-
-The Lambda code can be entered directly in the AWS Lambda inline editor.
-
-Build the project locally first:
-
-```text
-[Dev] Build Server Lambdas
-```
-
-Then open the corresponding compiled file from:
-
-```text
-server/dist/
-```
-
-For each Lambda, copy the **entire contents** of the compiled file into the AWS Lambda editor.
-
-Use:
-
-```text
-put.js    → index.js
-get.js    → index.js
-list.js   → index.js
-delete.js → index.js
-```
-
-In the AWS Lambda editor, the file must therefore be named:
-
-```text
-index.js
-```
-
----
-
-## 7. Add package.json
-
-In the Lambda inline editor, create a new file:
-
-```text
-package.json
-```
-
-Put exactly:
-
-```json
-{
-  "type": "commonjs"
-}
-```
-
-Each Lambda function must have its own `package.json`.
-
-The final Lambda code view should contain:
-
-```text
-index.js
-package.json
-```
-
-For example, the PUT Lambda contains:
-
-```text
-index.js       ← contents of server/dist/put.js
-package.json   ← {"type":"commonjs"}
-```
-
-The GET, LIST, and DELETE Lambdas are configured the same way using their corresponding compiled files.
-
----
-
-## 8. Deploy the Lambda
-
-After copying the code and creating `package.json`, click:
-
-**Deploy**
-
-in the AWS Lambda editor.
-
-Repeat for all four functions.
-
----
-
-# API Gateway
-
-## 9. Create the HTTP API
-
-Open:
-
-**API Gateway → Create API**
-
-Choose:
-
-**HTTP API**
-
-Create an API for the BudgetClick storage functions.
-
-The API Gateway endpoint itself is not used directly by the application. CloudFront provides the public `liteed.com` URL.
-
----
-
-## 10. Add the PUT route
-
-Add:
-
-```text
-PUT /budgetclick-storage/put
-```
-
-Create an integration with:
-
-```text
-budgetclick-storage-put
-```
-
-Deploy the API.
-
----
-
-## 11. Add the GET route
-
-Add:
-
-```text
-GET /budgetclick-storage/get
-```
-
-Connect it to:
-
-```text
-budgetclick-storage-get
-```
-
-Deploy.
-
----
-
-## 12. Add the LIST route
-
-Add:
-
-```text
-GET /budgetclick-storage/list
-```
-
-Connect it to:
-
-```text
-budgetclick-storage-list
-```
-
-Deploy.
-
----
-
-## 13. Add the DELETE route
-
-Add:
-
-```text
-DELETE /budgetclick-storage/del
-```
-
-Connect it to:
-
-```text
-budgetclick-storage-delete
-```
-
-Deploy.
-
----
-
-# CloudFront
-
-The existing `liteed.com` CloudFront distribution is used for the storage API.
-
-## 14. Add API Gateway origins
-
-For each API, add an origin pointing to the corresponding **API Gateway invoke domain**.
-
-Do **not** point the CloudFront origin directly to Lambda.
-
-The origin is the API Gateway hostname shown by AWS, for example:
-
-```text
-xxxxxxxxxx.execute-api.us-east-1.amazonaws.com
-```
-
----
-
-## 15. Create the storage origin request policy
-
-The storage API requires these headers:
-
-```text
-X-Storage-Path
-X-Storage-Key
-Content-Type
-```
-
-Use the CloudFront origin request policy:
-
-```text
-BudgetClickStorage
-```
-
-Configure it to forward:
-
-### Headers
-
-```text
-X-Storage-Key
-X-Storage-Path
-Content-Type
-```
-
-### Cookies
-
-Do not forward cookies.
-
-### Query strings
-
-Do not forward query strings.
-
-This policy is required because CloudFront does not automatically forward arbitrary custom headers.
-
----
-
-# CloudFront behaviors
-
-## 16. PUT
-
-Add behavior:
-
-```text
-/budgetclick-storage/put
-```
-
-Configure:
-
-* Origin: API Gateway PUT origin
-* Allowed methods: include `PUT`
-* Origin request policy: `BudgetClickStorage`
-
----
-
-## 17. GET
-
-Add behavior:
-
-```text
-/budgetclick-storage/get
-```
-
-Configure:
-
-* Origin: API Gateway GET origin
-* Allowed methods: `GET`
-* Origin request policy: `BudgetClickStorage`
-
----
-
-## 18. LIST
-
-Add behavior:
-
-```text
-/budgetclick-storage/list
-```
-
-Configure:
-
-* Origin: API Gateway LIST origin
-* Allowed methods: `GET`
-* Origin request policy: `BudgetClickStorage`
-
-The correct path is:
-
-```text
-/budgetclick-storage/list
-```
-
-Be careful not to use:
-
-```text
-/budgetclick-strorage/list
-```
-
----
-
-## 19. DELETE
-
-Add behavior:
-
-```text
-/budgetclick-storage/del
-```
-
-Configure:
-
-* Origin: API Gateway DELETE origin
-* Allowed methods: include `DELETE`
-* Origin request policy: `BudgetClickStorage`
-
----
-
-## 20. CloudFront deployment
-
-Wait for the CloudFront distribution to finish deploying after changing origins or behaviors.
-
-A CloudFront invalidation is **not required** for these routing configuration changes.
-
----
-
-# Testing
-
-The complete request path is:
-
-```text
-curl
-  ↓
-liteed.com
-  ↓
-CloudFront
-  ↓
-API Gateway
-  ↓
-Lambda
-  ↓
-S3
-```
-
-## 21. Test LIST
-
-Use the actual S3 bucket URL:
+Use your real bucket URL, such as `https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/`.
 
 ```bash
-curl -i \
-  "https://liteed.com/budgetclick-storage/list" \
-  -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/"
+H='X-Storage-Path: https://bucket.s3.us-east-1.amazonaws.com/'
+U=https://liteed.com/budgetclick-storage
+
+curl -i "$U/list" -H "$H"                                   # LIST: 200 + JSON array of keys
+curl -i -X PUT "$U/put" -H "$H" -H "X-Storage-Key: test" \
+  -H "Content-Type: application/octet-stream" --data-binary @test.bin
+curl -i "$U/get" -H "$H" -H "X-Storage-Key: test"
+curl -i -X DELETE "$U/del" -H "$H" -H "X-Storage-Key: test"
 ```
 
-A successful response is HTTP `200` with a JSON array.
+LIST troubleshooting:
 
-For example:
+* `"Storage path is required"`: `X-Storage-Path` wasn't forwarded, so check the origin request policy.
+* `"Storage path and key are required"`: the request hit the wrong Lambda (e.g. PUT), so check the behavior and origin.
+* `Storage request failed (404)`: `X-Storage-Path` points to the wrong bucket.
 
-```json
-[
-  "154f08f7",
-  "326bc294",
-  "6d223q6f",
-  "861c43c4",
-  "a028ea09",
-  "c3504f34",
-  "c75ac123",
-  "f698f706",
-  "manifest",
-  "salt"
-]
-```
+## Storage and API
 
-If the response is:
+The Lambdas access the user's own S3-compatible bucket, which must allow GET, PUT, LIST, and DELETE (see `docs/storage.md`). The storage URL goes in the `X-Storage-Path` header and the object key in `X-Storage-Key`. Headers are used intentionally instead of a JSON body.
 
-```json
-{
-  "error": "Storage path is required"
-}
-```
-
-the request reached the LIST Lambda, but `X-Storage-Path` was not forwarded.
-
-Check the CloudFront origin request policy.
-
-If the response is:
-
-```json
-{
-  "error": "Storage path and key are required"
-}
-```
-
-the request is reaching the wrong Lambda/origin, such as the PUT Lambda.
-
-Check the CloudFront behavior and origin.
-
-If the response is:
-
-```text
-Storage request failed (404)
-```
-
-verify that `X-Storage-Path` points to the correct bucket.
-
----
-
-## 22. Test PUT
-
-Create a small test file and run:
-
-```bash
-curl -i \
-  -X PUT \
-  "https://liteed.com/budgetclick-storage/put" \
-  -H "X-Storage-Path: https://bucket.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: test" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary "@test.bin"
-```
-
-Replace the bucket URL with the actual S3 storage path.
-
----
-
-## 23. Test GET
-
-```bash
-curl -i \
-  "https://liteed.com/budgetclick-storage/get" \
-  -H "X-Storage-Path: https://bucket.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: test"
-```
-
----
-
-## 24. Test DELETE
-
-```bash
-curl -i \
-  -X DELETE \
-  "https://liteed.com/budgetclick-storage/del" \
-  -H "X-Storage-Path: https://bucket.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: test"
-```
-
----
-
-# User S3 storage
-
-The Lambda functions access the user's own S3-compatible bucket.
-
-For example:
-
-```text
-https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/
-```
-
-No AWS credentials are required by the Lambda functions.
-
-The bucket must allow the operations required by BudgetClick:
-
-```text
-GET
-PUT
-LIST
-DELETE
-```
-
-The bucket configuration is documented separately in `docs/storage.md`.
-
----
-
-# Storage API headers
-
-The storage path is supplied through:
-
-```text
-X-Storage-Path
-```
-
-The object key is supplied through:
-
-```text
-X-Storage-Key
-```
-
-For example:
-
-```text
-X-Storage-Path:
-https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/
-
-X-Storage-Key:
-manifest
-```
-
-The API intentionally uses headers rather than a JSON request body for these values.
-
----
-
-# Lambda security
-
-The Lambda functions are storage proxies, not general-purpose HTTP proxies.
-
-They must validate the supplied storage URL before making an outbound request.
-
-Only supported HTTPS S3 endpoints are accepted.
-
-The storage key must also be validated before being used in a storage request.
-
-No arbitrary URL fetching should be possible through these functions.
-
-The Lambda functions do not authenticate users or provide ownership controls. The user's S3 bucket is the actual storage authority.
-
----
 ## Security
 
-The storage path is user-controlled and untrusted; the Lambda must validate the requested location and key before any operation. BudgetClick data is encrypted before it's stored remotely.
+* The storage path and key are user-controlled and untrusted. Validate both before any request.
+* Accept only supported HTTPS S3 endpoints. No arbitrary URL fetching.
+* The Lambdas don't authenticate users. The user's S3 bucket is the storage authority.
+* BudgetClick data is encrypted before remote storage.
 
 ## Local development
 
-For local development, the storage functions can use a local filesystem instead of S3.
-
-The local storage server uses the `storage/` directory relative to the current working directory.
-
-Run it from the VS Code task: `[Dev] Run Local Storage Server`.
-
-The local storage directory acts as the local equivalent of the user's remote S3 storage.
+Storage functions can use the local filesystem (`storage/` in the working directory) instead of S3. Run the VS Code task `[Dev] Run Local Storage Server`.
