@@ -35,6 +35,15 @@
     </div>
 
     <Modal
+      v-if="showPastPlannedModal"
+      title="Planned transactions in the past"
+      primary-button-label="OK"
+      @ok="confirmPastPlanned"
+    >
+      There are planned transaction in the past (not actual). They will be excluded from calculation.
+    </Modal>
+
+    <Modal
       v-if="showMissingRatesModal"
       title="Missing currency rates"
       primary-button-label="Ok"
@@ -63,7 +72,7 @@ import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import RefreshIcon from "@/components/icons/Refresh.vue";
 import Modal from "@/components/ui/Modal.vue";
-import { hasMissingCurrencyRates, rebuildStatistics } from "@/stats";
+import { hasMissingCurrencyRates, hasPastPlannedTransactions, rebuildStatistics } from "@/stats";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import { rebuildBalances } from "@/balance";
@@ -113,6 +122,7 @@ const selectedYear = ref(String(currentYear));
 const selectedAccount = ref("total");
 const selectedMetric = ref<StatisticsMetric>("balance");
 const showMissingRatesModal = ref(false);
+const showPastPlannedModal = ref(false);
 
 const state = getState();
 
@@ -213,6 +223,19 @@ const chartOptions = {
 };
 
 const recalculate = async (): Promise<void> => {
+  if (hasPastPlannedTransactions()) {
+    showPastPlannedModal.value = true;
+    return;
+  }
+  await recalculateData();
+};
+
+const confirmPastPlanned = async (): Promise<void> => {
+  showPastPlannedModal.value = false;
+  await recalculateData();
+};
+
+const recalculateData = async (): Promise<void> => {
   if (hasMissingCurrencyRates()) {
     showMissingRatesModal.value = true;
     return;

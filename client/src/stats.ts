@@ -37,6 +37,19 @@ const getMonthsBetween = (firstMonth: string, lastMonth: string): string[] => {
   return months;
 };
 
+export const hasPastPlannedTransactions = (): boolean => {
+  const now = Date.now();
+
+  return Object.values(getState().chunks)
+    .flatMap(chunk => chunk.transactions)
+    .some(
+      transaction =>
+        !transaction.isDeleted
+        && !transaction.isActual
+        && new Date(transaction.datetime).getTime() <= now,
+    );
+};
+
 export const hasMissingCurrencyRates = (): boolean => {
   const state = getState();
   const accounts = state.referenceData.accounts?.accounts ?? [];
@@ -66,6 +79,7 @@ const calculateMonthlyStatistics = (
     accounts.map(account => [account.id, account.currentBalance]),
   );
   const chunkMonths = Object.keys(chunks).sort();
+  const now = Date.now();
 
   if (chunkMonths.length === 0) {
     return statistics;
@@ -91,7 +105,10 @@ const calculateMonthlyStatistics = (
 
     if (chunk !== undefined) {
       for (const transaction of chunk.transactions) {
-        if (transaction.isDeleted) {
+        if (
+          transaction.isDeleted
+          || (!transaction.isActual && new Date(transaction.datetime).getTime() <= now)
+        ) {
           continue;
         }
         const account = accounts.find(x => x.id === transaction.accountId);

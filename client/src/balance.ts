@@ -13,10 +13,14 @@ const calculateBalances = (
 ): Balance[] => {
   const accounts = getState().referenceData.accounts?.accounts ?? [];
   const months = Object.keys(chunks).sort();
+  const now = Date.now();
   return accounts.flatMap(account => {
     const transactionMonths = months.filter(month =>
       chunks[month].transactions.some(
-        transaction => !transaction.isDeleted && transaction.accountId === account.id,
+        transaction =>
+          !transaction.isDeleted
+          && transaction.accountId === account.id
+          && (transaction.isActual || new Date(transaction.datetime).getTime() > now),
       ),
     );
     if (transactionMonths.length === 0) {
@@ -26,7 +30,12 @@ const calculateBalances = (
       (state, month) => {
         const balance = state.balance.plus(
           chunks[month].transactions
-            .filter(transaction => !transaction.isDeleted && transaction.accountId === account.id)
+            .filter(
+              transaction =>
+                !transaction.isDeleted
+                && transaction.accountId === account.id
+                && (transaction.isActual || new Date(transaction.datetime).getTime() > now),
+            )
             .reduce(
               (value, transaction) =>
                 value.plus(
@@ -68,17 +77,17 @@ export const getCurrentBalance = (accountId: string): number => {
     throw new Error(`Account not found: ${accountId}`);
   }
 
-  const now = new Date().toISOString();
+  const now = Date.now();
 
   return Object.values(state.chunks)
     .flatMap(chunk => chunk.transactions)
-  .filter(
-    transaction =>
-      !transaction.isDeleted
-      && transaction.isActual
-      && transaction.accountId === accountId
-      && transaction.datetime <= now,
-  )
+    .filter(
+      transaction =>
+        !transaction.isDeleted
+        && transaction.isActual
+        && transaction.accountId === accountId
+        && new Date(transaction.datetime).getTime() <= now,
+    )
     .reduce(
       (balance, transaction) =>
         balance.plus(
@@ -115,13 +124,19 @@ export const updateBalance = async (
   const existingBalance = currentBalances?.balances.find(
     balance => balance.account === accountId && balance.month === month,
   );
+  const now = Date.now();
   const startingBalance = existingBalance?.startingBalance
     ?? Object.entries(getState().chunks)
       .filter(([chunkMonth]) => chunkMonth < month)
       .reduce(
         (balance, [, chunk]) =>
           chunk.transactions
-            .filter(transaction => !transaction.isDeleted && transaction.accountId === accountId)
+            .filter(
+              transaction =>
+                !transaction.isDeleted
+                && transaction.accountId === accountId
+                && (transaction.isActual || new Date(transaction.datetime).getTime() > now),
+            )
             .reduce(
               (value, transaction) =>
                 value.plus(
@@ -153,13 +168,12 @@ export const updateBalance = async (
         }
       : balance,
   );
-  const now = new Date().toISOString();
   const updatedBalances: BalanceStorage = {
     metadata: {
       schemaVersion: currentBalances?.metadata.schemaVersion ?? 1,
       version: (currentBalances?.metadata.version ?? 0) + 1,
-      createdAt: currentBalances?.metadata.createdAt ?? now,
-      updatedAt: now,
+      createdAt: currentBalances?.metadata.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       updatedBy: getState().settings?.clientId ?? "-",
     },
     balances,
