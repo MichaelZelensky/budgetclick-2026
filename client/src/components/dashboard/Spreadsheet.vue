@@ -166,30 +166,30 @@ const transactions = computed<SpreadsheetRow[]>(() => {
   const chunkTransactions = Object.values(state.chunks)
     .flatMap(chunk => chunk.transactions)
     .sort((a, b) => a.datetime.localeCompare(b.datetime));
-    
+
+  const currentDateTime = new Date().toISOString();
   for (const transaction of chunkTransactions) {
     const month = getLocalMonth(transaction.datetime);
     const balanceKey = `${transaction.accountId}:${month}`;
-
     if (!balances.has(balanceKey)) {
       const startingBalance = state.balances?.balances.find(
         x => x.month === month && x.account === transaction.accountId,
       )?.startingBalance;
-
       if (startingBalance === undefined) {
         transactionBalances.set(transaction.id, "");
         continue;
       }
-
       balances.set(balanceKey, new Big(String(startingBalance)));
     }
-
+    const isPastOrPresent = transaction.datetime <= currentDateTime;
+    if (isPastOrPresent && !transaction.isActual) {
+      continue;
+    }
     const balance = balances.get(balanceKey)!.plus(
       transaction.direction === "in"
         ? new Big(String(transaction.amount))
         : new Big(String(transaction.amount)).neg(),
     );
-
     balances.set(balanceKey, balance);
     transactionBalances.set(transaction.id, balance.toNumber());
   }
