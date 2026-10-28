@@ -1,5 +1,6 @@
 ﻿import { createRouter, createWebHashHistory } from "vue-router";
 import { getRequiredSetupRoute } from "@/setup";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -115,7 +116,14 @@ export const router = createRouter({
   ],
 });
 
+let routeLoadingId: string | null = null;
+
 router.beforeEach(async to => {
+  if (routeLoadingId !== null) {
+    setLoadingOff(routeLoadingId);
+  }
+  routeLoadingId = setLoadingOn();
+
   if (to.path === "/help") {
     return true;
   }
@@ -130,4 +138,18 @@ router.beforeEach(async to => {
     return requiredRoute;
   }
   return true;
+});
+
+router.afterEach(() => {
+  if (routeLoadingId !== null) {
+    setLoadingOff(routeLoadingId);
+    routeLoadingId = null;
+  }
+});
+
+router.onError(() => {
+  if (routeLoadingId !== null) {
+    setLoadingOff(routeLoadingId);
+    routeLoadingId = null;
+  }
 });
