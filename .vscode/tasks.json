@@ -2,11 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "[PWA] Deploy to Production",
+      "label": "[PWA] Deploy to liteed.com (test)",
       "type": "shell",
       "command": "bash",
       "args": [
-        "./util/deploy.sh1"
+        "./util/deploy.sh1",
+        "test"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "[PWA] Deploy to budgetclick.com (prod)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "./util/deploy.sh1",
+        "prod"
       ],
       "problemMatcher": []
     },
