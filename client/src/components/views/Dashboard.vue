@@ -63,10 +63,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
 
-import CreateRecord from "@/components/dashboard/CreateRecord.vue";
-import EditRecord from "@/components/dashboard/EditRecord.vue";
-import Spreadsheet from "@/components/dashboard/Spreadsheet.vue";
-import Statistics from "@/components/dashboard/Statistics.vue";
+import CreateRecord from "@/components/views/dashboard/CreateRecord.vue";
+import EditRecord from "@/components/views/dashboard/EditRecord.vue";
+import Spreadsheet from "@/components/views/dashboard/Spreadsheet.vue";
+import Statistics from "@/components/views/dashboard/Statistics.vue";
 import LiteTabs from "@/components/ui/tabs/LiteTabs.vue";
 import Tab from "@/components/ui/tabs/Tab.vue";
 import type { Transaction } from "@/types/data/Transaction";

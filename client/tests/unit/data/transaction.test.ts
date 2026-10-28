@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import CreateRecord from "@/components/dashboard/CreateRecord.vue";
-import EditRecord from "@/components/dashboard/EditRecord.vue";
+import CreateRecord from "@/components/views/dashboard/CreateRecord.vue";
+import EditRecord from "@/components/views/dashboard/EditRecord.vue";
 import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
 import { dbGetAttachment } from "@/repository/attachment";
 import { getState, initializeState } from "@/state/state";

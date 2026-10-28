@@ -68,7 +68,7 @@ import {
   LinearScale,
   Tooltip,
 } from "chart.js";
-import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
+import DashboardWidget from "@/components/views/dashboard/DashboardWidget.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import RefreshIcon from "@/components/icons/Refresh.vue";
 import Modal from "@/components/ui/Modal.vue";

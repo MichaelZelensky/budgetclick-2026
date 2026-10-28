@@ -130,14 +130,14 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
+import DashboardWidget from "@/components/views/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
 import LiteTextarea from "@/components/ui/LiteTextarea.vue";
 import LiteToggle from "@/components/ui/LiteToggle.vue";
 import Modal from "@/components/ui/Modal.vue";
-import RecordTabs from "@/components/dashboard/RecordTabs.vue";
+import RecordTabs from "@/components/views/dashboard/RecordTabs.vue";
 import { saveAttachment } from "@/data-flow";
 import { createTransaction } from "@/transaction";
 import { getState } from "@/state/state";

@@ -131,7 +131,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import DashboardWidget from "@/components/dashboard/DashboardWidget.vue";
+import DashboardWidget from "@/components/views/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
 import LiteSelect from "@/components/ui/lite-select/LiteSelect.vue";
@@ -145,7 +145,7 @@ import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import Modal from "@/components/ui/Modal.vue";
-import RecordTabs from "@/components/dashboard/RecordTabs.vue";
+import RecordTabs from "@/components/views/dashboard/RecordTabs.vue";
 import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
 import { getLocalDatetime, getLocalMonth, isFutureDate as checkFutureDate } from "@/utils/date";
