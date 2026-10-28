@@ -11,10 +11,9 @@
       ]"
     >
       <RouterView v-slot="{ Component, route }">
-        <KeepAlive>
-          <component :is="Component" v-if="route.path !== '/editor'" />
+        <KeepAlive :exclude="['ImageEditor']">
+          <component :is="Component" :key="route.path" />
         </KeepAlive>
-        <component :is="Component" v-if="route.path === '/editor'" />
       </RouterView>
     </main>
     <Footer />
