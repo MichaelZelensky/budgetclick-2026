@@ -135,6 +135,9 @@ const selectedTransactions = computed<Transaction[]>(() => {
   const currentDateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
   const cachedTransactions = Object.values(state.chunks)
     .flatMap(chunk => chunk.transactions);
+  const cachedTransactionsById = new Map(
+    cachedTransactions.map(transaction => [transaction.id, transaction]),
+  );
 
   const currentAndFutureTransactions = cachedTransactions
     .filter(transaction => getLocalDate(transaction.datetime) >= currentDateString)
@@ -151,8 +154,16 @@ const selectedTransactions = computed<Transaction[]>(() => {
 
   return [
     ...initialTransactions,
-    ...earlierTransactions.value.filter(transaction => !initialTransactionIds.has(transaction.id)),
-    ...laterTransactions.value.filter(transaction => !initialTransactionIds.has(transaction.id)),
+    ...earlierTransactions.value
+      .map(transaction => cachedTransactionsById.get(transaction.id))
+      .filter((transaction): transaction is Transaction =>
+        transaction !== undefined && !initialTransactionIds.has(transaction.id)
+      ),
+    ...laterTransactions.value
+      .map(transaction => cachedTransactionsById.get(transaction.id))
+      .filter((transaction): transaction is Transaction =>
+        transaction !== undefined && !initialTransactionIds.has(transaction.id)
+      ),
   ];
 });
 
