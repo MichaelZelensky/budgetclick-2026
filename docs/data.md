@@ -10,9 +10,26 @@ Every persisted object carries a schema version, used by local and remote migrat
 
 # Relationships
 
-- **Transaction:** belongs to one Account and one Category, optionally one Contractor, may reference multiple Attachments.
+- **Transaction:** belongs to one Account and one Category, optionally one Contractor, may reference multiple Attachments, and may reference a Recurrence.
 - **Account:** owns many Transactions.
 - **Category / Contractor:** referenced by many Transactions.
+- **Recurrence:** defines a recurring transaction plan and owns generated planned transactions.
+
+## Recurrences
+
+Recurrences are persisted entities stored separately from transactions.
+
+A recurrence contains the transaction fields, frequency, interval, start date, end date, and frequency-specific rules. Start and end dates are local calendar dates in `YYYY-MM-DD` format. The end date is inclusive.
+
+Supported frequencies: daily, weekly, monthly, and annually. The interval specifies the number of frequency units between occurrences. Weekly rules support multiple weekdays (`0` = Sunday through `6` = Saturday). Monthly rules support either a specific day of the month or one ordinal weekday (first, second, third, fourth, or last). Annual rules use the configured month and the day from the start date.
+
+For monthly dates that do not exist in a given month, the last day of that month is used. Annual recurrences on February 29 occur only in leap years.
+
+Saving a recurrence generates planned transactions from the first matching occurrence on or after the start date through the end date, inclusive. Generated transactions reference the recurrence using `recurrenceId` and participate in planned-transaction calculations.
+
+When recurrence rules are edited, actual transactions remain unchanged; existing planned transactions linked to the recurrence are deleted and regenerated. When a recurrence is deleted, its planned transactions are deleted and actual transactions are preserved with their `recurrenceId` removed.
+
+Schema validation checks field types and constraints. Custom validation checks business rules, including date ranges and consistency between frequency and frequency-specific fields.
 
 ## Date and Time
 
@@ -23,6 +40,8 @@ Date/time entered or created by the user is interpreted as local time and conver
 Date/time displayed in the UI is converted from UTC to the browser's local timezone.
 
 Calendar dates and months used for user-facing transaction grouping are determined from the local timezone, not by slicing the stored UTC timestamp.
+
+Recurrence calculations use local calendar dates.
 
 ## Attachments
 
@@ -112,7 +131,7 @@ Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local c
 | Account               | `a_`   | `a_Qw82NdXa` |
 | Category              | `c_`   | `c_Fd91LpRt` |
 | Contractor            | `o_`   | `o_Xy82LmQa` |
-| Recurrence *(future)* | `r_`   | `r_Cv62NdQa` |
+| Recurrence            | `r_`   | `r_Cv62NdQa` |
 
 Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key.
 
@@ -124,7 +143,7 @@ Prefixes are globally unique, permanent, and every future entity type gets its o
 
 # Future Compatibility
 
-Schema must support new entities without redesigning existing ones: assets, liabilities, investments, exchange rates, bank connections, secrets, recurrences — introduced as new entities whenever possible.
+Schema must support new entities without redesigning existing ones: assets, liabilities, investments, exchange rates, bank connections, secrets, and other future entities — introduced as new entities whenever possible.
 
 # Open Decisions
 
