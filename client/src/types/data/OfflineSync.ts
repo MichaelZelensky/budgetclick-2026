@@ -9,7 +9,8 @@ export type OfflineSync = {
     categories: boolean;
     contractors: boolean;
     rates: boolean;
+    recurrences: boolean;
     balances: boolean;
     attachments: Record<string, boolean>;
   };
-}
+};

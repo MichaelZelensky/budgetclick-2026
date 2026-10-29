@@ -5,6 +5,7 @@ import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
+import type { RecurrencesStorage } from "@/types/storage/RecurrencesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 import type { BalanceStorage } from "@/types/storage/BalanceStorage";
@@ -19,6 +20,7 @@ export type AppState = {
     categories: CategoriesStorage | null;
     contractors: ContractorsStorage | null;
     rates: CurrencyRatesStorage | null;
+    recurrences: RecurrencesStorage | null;
   };
   chunks: Record<string, ChunkStorage>;
   statistics: StatisticsStorage | null;
@@ -30,6 +32,7 @@ export enum ReferenceDataKey {
   Categories = "categories",
   Contractors = "contractors",
   Rates = "rates",
+  Recurrences = "recurrences",
 }
 
 export type ReferenceDataTypes = {
@@ -37,4 +40,5 @@ export type ReferenceDataTypes = {
   [ReferenceDataKey.Categories]: CategoriesStorage;
   [ReferenceDataKey.Contractors]: ContractorsStorage;
   [ReferenceDataKey.Rates]: CurrencyRatesStorage;
+  [ReferenceDataKey.Recurrences]: RecurrencesStorage;
 };

@@ -18,4 +18,5 @@ export type Transaction = Entity & {
   datetime: string;
   attachments: TransactionAttachment[];
   isActual: boolean;
+  recurrenceId?: string;
 };
