@@ -4,6 +4,7 @@ import { migrate as migrateV3 } from "@/migrations/003/migration";
 import { migrate as migrateV4 } from "@/migrations/004/migration";
 import { migrate as migrateV5 } from "@/migrations/005/migration";
 import { migrate as migrateV6 } from "@/migrations/006/migration";
+import { migrate as migrateV7 } from "@/migrations/007/migration";
 
 export const migrations = [
   { version: 1, migrate: migrateV1 },
@@ -12,4 +13,5 @@ export const migrations = [
   { version: 4, migrate: migrateV4 },
   { version: 5, migrate: migrateV5 },
   { version: 6, migrate: migrateV6 },
+  { version: 7, migrate: migrateV7 },
 ];

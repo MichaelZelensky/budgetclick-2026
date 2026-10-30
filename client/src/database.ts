@@ -2,7 +2,7 @@ import { migrate } from "@/migrations/migrate";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 const databaseName = "budgetclick";
-const databaseVersion = 6;
+const databaseVersion = 7;
 const databaseState = {
   database: null as IDBDatabase | null,
 };
