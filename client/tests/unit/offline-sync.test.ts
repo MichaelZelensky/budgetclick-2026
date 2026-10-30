@@ -11,6 +11,7 @@ import { dbGetAccounts } from "@/repository/account";
 import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
+import { dbGetRecurrences } from "@/repository/recurrence";
 import { putFile } from "@/storage";
 import { encodeData } from "@/utils/data";
 import { manifestKey } from "@/manifest";
@@ -59,6 +60,10 @@ vi.mock("@/repository/rates", () => ({
   dbGetRates: vi.fn(),
 }));
 
+vi.mock("@/repository/recurrence", () => ({
+  dbGetRecurrences: vi.fn(),
+}));
+
 vi.mock("@/storage", () => ({
   putFile: vi.fn(),
 }));
@@ -95,6 +100,10 @@ const createManifest = (): Manifest => ({
       objectKey: "rates",
       version: 1,
     },
+    recurrences: {
+      objectKey: "recurrences",
+      version: 1,
+    },
   },
   chunks: {
     "2026-09": {
@@ -128,6 +137,7 @@ const createOfflineSync = (): OfflineSync => ({
     categories: false,
     contractors: false,
     rates: false,
+    recurrences: false,
     balances: false,
     attachments: {},
   },
@@ -146,6 +156,7 @@ describe("offline-sync", () => {
     vi.mocked(dbGetCategories).mockResolvedValue([]);
     vi.mocked(dbGetContractors).mockResolvedValue([]);
     vi.mocked(dbGetRates).mockResolvedValue([]);
+    vi.mocked(dbGetRecurrences).mockResolvedValue([]);
     vi.mocked(dbGetChunks).mockResolvedValue({});
     vi.mocked(dbGetStatistics).mockResolvedValue(null);
     vi.mocked(dbGetBalances).mockResolvedValue(null);
@@ -284,6 +295,7 @@ describe("offline-sync", () => {
     offlineSync.objects.categories = true;
     offlineSync.objects.contractors = true;
     offlineSync.objects.rates = true;
+    offlineSync.objects.recurrences = true;
     offlineSync.objects.chunks["2026-09"] = true;
     offlineSync.objects.statistics = true;
     offlineSync.objects.balances = true;
@@ -302,6 +314,7 @@ describe("offline-sync", () => {
     vi.mocked(dbGetCategories).mockResolvedValue(["categories"]);
     vi.mocked(dbGetContractors).mockResolvedValue(["contractors"]);
     vi.mocked(dbGetRates).mockResolvedValue(["rates"]);
+    vi.mocked(dbGetRecurrences).mockResolvedValue(["recurrences"]);
     vi.mocked(dbGetChunks).mockResolvedValue({
       "2026-09": {
         metadata: {
@@ -333,6 +346,7 @@ describe("offline-sync", () => {
       "categories",
       "contractors",
       "rates",
+      "recurrences",
       "chunk-2026-09",
       "statistics",
       "balances",
@@ -620,58 +634,58 @@ describe("offline-sync", () => {
   });
 
   it("continues synchronizing dependents when a prerequisite fails", async () => {
-  getState().isOnline = true;
+    getState().isOnline = true;
 
-  const manifest = createManifest();
-  const offlineSync = createOfflineSync();
+    const manifest = createManifest();
+    const offlineSync = createOfflineSync();
 
-  offlineSync.manifest = manifest;
-  offlineSync.objects.accounts = true;
-  offlineSync.objects.chunks["2026-09"] = true;
-  offlineSync.objects.statistics = true;
-  offlineSync.objects.balances = true;
+    offlineSync.manifest = manifest;
+    offlineSync.objects.accounts = true;
+    offlineSync.objects.chunks["2026-09"] = true;
+    offlineSync.objects.statistics = true;
+    offlineSync.objects.balances = true;
 
-  let currentOfflineSync = offlineSync;
+    let currentOfflineSync = offlineSync;
 
-  vi.mocked(dbGetOfflineSync).mockImplementation(
-    async () => currentOfflineSync,
-  );
+    vi.mocked(dbGetOfflineSync).mockImplementation(
+      async () => currentOfflineSync,
+    );
 
-  vi.mocked(dbSaveOfflineSync).mockImplementation(async value => {
-    currentOfflineSync = value;
+    vi.mocked(dbSaveOfflineSync).mockImplementation(async value => {
+      currentOfflineSync = value;
+    });
+
+    vi.mocked(dbGetAccounts).mockResolvedValue([{ id: "account-1" }]);
+    vi.mocked(dbGetChunks).mockResolvedValue({
+      "2026-09": [{ id: "transaction-1" }],
+    });
+    vi.mocked(dbGetStatistics).mockResolvedValue({
+      "2026-09": {},
+    });
+    vi.mocked(dbGetBalances).mockResolvedValue({
+      "2026-09": {},
+    });
+
+    vi.mocked(putFile)
+      .mockRejectedValueOnce(new Error("Storage unavailable"))
+      .mockResolvedValue();
+
+    await synchronizeOfflineData();
+
+    expect(putFile).toHaveBeenCalledWith(
+      "accounts",
+      [{ id: "account-1" }],
+    );
+
+    expect(currentOfflineSync.objects.accounts).toBe(true);
+    expect(currentOfflineSync.objects.chunks["2026-09"]).toBe(false);
+    expect(currentOfflineSync.objects.statistics).toBe(false);
+    expect(currentOfflineSync.objects.balances).toBe(false);
+
+    expect(dbGetChunks).toHaveBeenCalledTimes(1);
+    expect(dbGetStatistics).toHaveBeenCalledTimes(1);
+    expect(dbGetBalances).toHaveBeenCalledTimes(1);
   });
-
-  vi.mocked(dbGetAccounts).mockResolvedValue([{ id: "account-1" }]);
-  vi.mocked(dbGetChunks).mockResolvedValue({
-    "2026-09": [{ id: "transaction-1" }],
-  });
-  vi.mocked(dbGetStatistics).mockResolvedValue({
-    "2026-09": {},
-  });
-  vi.mocked(dbGetBalances).mockResolvedValue({
-    "2026-09": {},
-  });
-
-  vi.mocked(putFile)
-    .mockRejectedValueOnce(new Error("Storage unavailable"))
-    .mockResolvedValue();
-
-  await synchronizeOfflineData();
-
-  expect(putFile).toHaveBeenCalledWith(
-    "accounts",
-    [{ id: "account-1" }],
-  );
-
-  expect(currentOfflineSync.objects.accounts).toBe(true);
-  expect(currentOfflineSync.objects.chunks["2026-09"]).toBe(false);
-  expect(currentOfflineSync.objects.statistics).toBe(false);
-  expect(currentOfflineSync.objects.balances).toBe(false);
-
-  expect(dbGetChunks).toHaveBeenCalledTimes(1);
-  expect(dbGetStatistics).toHaveBeenCalledTimes(1);
-  expect(dbGetBalances).toHaveBeenCalledTimes(1);
-});
 
   it("retries pending data on the next synchronization", async () => {
     getState().isOnline = true;

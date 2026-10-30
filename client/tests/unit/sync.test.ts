@@ -4,6 +4,7 @@ import { dbGetBalances, dbSaveBalances } from "@/repository/balance";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetRates, dbSaveRates } from "@/repository/rates";
+import { dbGetRecurrences, dbSaveRecurrences } from "@/repository/recurrence";
 import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
 import { dbGetStatistics, dbSaveStatistics } from "@/repository/statistics";
 import { getManifest } from "@/manifest";
@@ -20,6 +21,11 @@ const balancesMocks = vi.hoisted(() => ({
 const ratesMocks = vi.hoisted(() => ({
   dbGetRates: vi.fn(),
   dbSaveRates: vi.fn(),
+}));
+
+const recurrenceMocks = vi.hoisted(() => ({
+  dbGetRecurrences: vi.fn(),
+  dbSaveRecurrences: vi.fn(),
 }));
 
 vi.mock("@/repository/account", () => ({
@@ -40,6 +46,8 @@ vi.mock("@/repository/contractor", () => ({
 }));
 
 vi.mock("@/repository/rates", () => ratesMocks);
+
+vi.mock("@/repository/recurrence", () => recurrenceMocks);
 
 vi.mock("@/repository/transaction", () => ({
   dbGetChunks: vi.fn(),
@@ -75,6 +83,10 @@ vi.mock("@/validators/default/CurrencyRatesStorage.js", () => ({
   default: vi.fn(() => true),
 }));
 
+vi.mock("@/validators/default/RecurrencesStorage.js", () => ({
+  default: vi.fn(() => true),
+}));
+
 vi.mock("@/validators/default/ChunkStorage.js", () => ({
   default: vi.fn(() => true),
 }));
@@ -97,6 +109,8 @@ const mockedDbGetContractors = vi.mocked(dbGetContractors);
 const mockedDbSaveContractors = vi.mocked(dbSaveContractors);
 const mockedDbGetRates = vi.mocked(ratesMocks.dbGetRates);
 const mockedDbSaveRates = vi.mocked(ratesMocks.dbSaveRates);
+const mockedDbGetRecurrences = vi.mocked(recurrenceMocks.dbGetRecurrences);
+const mockedDbSaveRecurrences = vi.mocked(recurrenceMocks.dbSaveRecurrences);
 const mockedDbGetChunks = vi.mocked(dbGetChunks);
 const mockedDbSaveChunk = vi.mocked(dbSaveChunk);
 const mockedDbGetStatistics = vi.mocked(dbGetStatistics);
@@ -130,6 +144,10 @@ const createManifest = (): Manifest => ({
     },
     rates: {
       objectKey: "rates-key",
+      version: 2,
+    },
+    recurrences: {
+      objectKey: "recurrences-key",
       version: 2,
     },
   },
@@ -211,6 +229,17 @@ const createRates = (version: number) => ({
   rates: [],
 });
 
+const createRecurrences = (version: number) => ({
+  metadata: {
+    schemaVersion: 1,
+    version,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    updatedBy: "client-123",
+  },
+  recurrences: [],
+});
+
 const createChunk = (version: number, transactions = [{}]) => ({
   metadata: {
     schemaVersion: 1,
@@ -251,6 +280,8 @@ describe("sync", () => {
     mockedDbSaveContractors.mockReset();
     mockedDbGetRates.mockReset();
     mockedDbSaveRates.mockReset();
+    mockedDbGetRecurrences.mockReset();
+    mockedDbSaveRecurrences.mockReset();
     mockedDbGetChunks.mockReset();
     mockedDbSaveChunk.mockReset();
     mockedDbGetStatistics.mockReset();
@@ -263,9 +294,11 @@ describe("sync", () => {
     mockedDbSaveCategories.mockResolvedValue();
     mockedDbSaveContractors.mockResolvedValue();
     mockedDbSaveRates.mockResolvedValue();
+    mockedDbSaveRecurrences.mockResolvedValue();
     mockedDbSaveChunk.mockResolvedValue();
     mockedDbSaveStatistics.mockResolvedValue();
   });
+
   describe("importRemoteData", () => {
     it("imports reference data and transaction chunks", async () => {
       const currentMonth = getCurrentMonth();
@@ -282,6 +315,7 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const recurrences = createRecurrences(2);
       const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
@@ -299,6 +333,7 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "recurrences-key": encode(recurrences),
           "balances-key": encode(balances),
           [`chunk-${currentMonth}`]: encode(chunk),
           "statistics-key": encode(statistics),
@@ -313,6 +348,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveRecurrences).toHaveBeenCalledWith(recurrences);
       expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith(currentMonth, chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
@@ -321,6 +357,7 @@ describe("sync", () => {
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
       expect(getState().referenceData.rates).toStrictEqual(rates);
+      expect(getState().referenceData.recurrences).toStrictEqual(recurrences);
       expect(getState().chunks[currentMonth]).toStrictEqual(chunk);
       expect(getState().balances).toStrictEqual(balances);
       expect(getState().statistics).toStrictEqual(statistics);
@@ -334,6 +371,7 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const recurrences = createRecurrences(2);
       const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
@@ -344,6 +382,7 @@ describe("sync", () => {
       mockedDbGetCategories.mockResolvedValue(createCategories(1));
       mockedDbGetContractors.mockResolvedValue(createContractors(1));
       mockedDbGetRates.mockResolvedValue(createRates(1));
+      mockedDbGetRecurrences.mockResolvedValue(createRecurrences(1));
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(1),
       });
@@ -355,6 +394,7 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "recurrences-key": encode(recurrences),
           "balances-key": encode(balances),
           "chunk-2026-09": encode(chunk),
           "statistics-key": encode(statistics),
@@ -370,14 +410,16 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveRecurrences).toHaveBeenCalledWith(recurrences);
       expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
-      expect(mockedGetFile).toHaveBeenCalledTimes(8);
+      expect(mockedGetFile).toHaveBeenCalledTimes(9);
       expect(getState().referenceData.accounts).toStrictEqual(accounts);
       expect(getState().referenceData.categories).toStrictEqual(categories);
       expect(getState().referenceData.contractors).toStrictEqual(contractors);
       expect(getState().referenceData.rates).toStrictEqual(rates);
+      expect(getState().referenceData.recurrences).toStrictEqual(recurrences);
       expect(getState().chunks["2026-09"]).toStrictEqual(chunk);
       expect(getState().balances).toStrictEqual(balances);
       expect(getState().statistics).toStrictEqual(statistics);
@@ -392,6 +434,7 @@ describe("sync", () => {
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(2));
+      mockedDbGetRecurrences.mockResolvedValue(createRecurrences(2));
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(2),
       });
@@ -405,6 +448,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).not.toHaveBeenCalled();
       expect(mockedDbSaveContractors).not.toHaveBeenCalled();
       expect(mockedDbSaveRates).not.toHaveBeenCalled();
+      expect(mockedDbSaveRecurrences).not.toHaveBeenCalled();
       expect(mockedDbSaveChunk).not.toHaveBeenCalled();
       expect(mockedDbSaveStatistics).not.toHaveBeenCalled();
     });
@@ -415,6 +459,7 @@ describe("sync", () => {
       const categories = createCategories(2);
       const contractors = createContractors(2);
       const rates = createRates(2);
+      const recurrences = createRecurrences(2);
       const balances = createBalances(2);
       const chunk = createChunk(2);
       const statistics = createStatistics(2);
@@ -425,6 +470,7 @@ describe("sync", () => {
       mockedDbGetCategories.mockResolvedValue(null);
       mockedDbGetContractors.mockResolvedValue(null);
       mockedDbGetRates.mockResolvedValue(null);
+      mockedDbGetRecurrences.mockResolvedValue(null);
       mockedDbGetChunks.mockResolvedValue({});
       mockedDbGetStatistics.mockResolvedValue(null);
 
@@ -434,6 +480,7 @@ describe("sync", () => {
           "categories-key": encode(categories),
           "contractors-key": encode(contractors),
           "rates-key": encode(rates),
+          "recurrences-key": encode(recurrences),
           "balances-key": encode(balances),
           "chunk-2026-09": encode(chunk),
           "statistics-key": encode(statistics),
@@ -448,6 +495,7 @@ describe("sync", () => {
       expect(mockedDbSaveCategories).toHaveBeenCalledWith(categories);
       expect(mockedDbSaveContractors).toHaveBeenCalledWith(contractors);
       expect(mockedDbSaveRates).toHaveBeenCalledWith(rates);
+      expect(mockedDbSaveRecurrences).toHaveBeenCalledWith(recurrences);
       expect(mockedDbSaveBalances).toHaveBeenCalledWith(balances);
       expect(mockedDbSaveChunk).toHaveBeenCalledWith("2026-09", chunk);
       expect(mockedDbSaveStatistics).toHaveBeenCalledWith(statistics);
@@ -462,6 +510,7 @@ describe("sync", () => {
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(2));
+      mockedDbGetRecurrences.mockResolvedValue(createRecurrences(2));
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(2),
       });
@@ -482,6 +531,7 @@ describe("sync", () => {
       mockedDbGetCategories.mockResolvedValue(createCategories(2));
       mockedDbGetContractors.mockResolvedValue(createContractors(2));
       mockedDbGetRates.mockResolvedValue(createRates(1));
+      mockedDbGetRecurrences.mockResolvedValue(createRecurrences(2));
       mockedDbGetChunks.mockResolvedValue({
         "2026-09": createChunk(2),
       });

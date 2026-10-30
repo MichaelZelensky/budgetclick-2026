@@ -6,6 +6,7 @@ import { dbGetAccounts } from "@/repository/account";
 import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
+import { dbGetRecurrences } from "@/repository/recurrence";
 import { getManifest } from "@/manifest";
 import { loadAllChunks } from "@/sync";
 import { getFile } from "@/storage";
@@ -29,6 +30,10 @@ const contractorMocks = vi.hoisted(() => ({
 
 const ratesMocks = vi.hoisted(() => ({
   dbGetRates: vi.fn(),
+}));
+
+const recurrenceMocks = vi.hoisted(() => ({
+  dbGetRecurrences: vi.fn(),
 }));
 
 const manifestMocks = vi.hoisted(() => ({
@@ -63,6 +68,8 @@ vi.mock("@/repository/contractor", () => contractorMocks);
 
 vi.mock("@/repository/rates", () => ratesMocks);
 
+vi.mock("@/repository/recurrence", () => recurrenceMocks);
+
 vi.mock("@/manifest", () => manifestMocks);
 
 vi.mock("@/sync", () => syncMocks);
@@ -78,6 +85,7 @@ const mockedDbGetAccounts = vi.mocked(dbGetAccounts);
 const mockedDbGetCategories = vi.mocked(dbGetCategories);
 const mockedDbGetContractors = vi.mocked(dbGetContractors);
 const mockedDbGetRates = vi.mocked(dbGetRates);
+const mockedDbGetRecurrences = vi.mocked(dbGetRecurrences);
 const mockedGetManifest = vi.mocked(getManifest);
 const mockedLoadAllChunks = vi.mocked(loadAllChunks);
 const mockedGetFile = vi.mocked(getFile);
@@ -113,6 +121,7 @@ describe("exportData", () => {
     mockedDbGetCategories.mockReset();
     mockedDbGetContractors.mockReset();
     mockedDbGetRates.mockReset();
+    mockedDbGetRecurrences.mockReset();
     mockedGetManifest.mockReset();
     mockedLoadAllChunks.mockReset();
     mockedGetFile.mockReset();
@@ -139,6 +148,9 @@ describe("exportData", () => {
     mockedDbGetRates.mockResolvedValue({
       rates: [{ from: "USD", to: "EUR", rate: 0.9 }],
     });
+    mockedDbGetRecurrences.mockResolvedValue({
+      recurrences: [{ id: "recurrence-1" }],
+    });
 
     Object.defineProperty(URL, "createObjectURL", {
       value: vi.fn(() => "blob:test"),
@@ -158,16 +170,18 @@ describe("exportData", () => {
     expect(mockedGetFile).not.toHaveBeenCalled();
     expect(mockedGetManifest).toHaveBeenCalledOnce();
     expect(mockedLoadAllChunks).toHaveBeenCalledOnce();
+    expect(mockedDbGetRecurrences).toHaveBeenCalledOnce();
     expect(mockedZipSync).toHaveBeenCalledOnce();
 
     const files = mockedZipSync.mock.calls[0][0];
     const data = JSON.parse(new TextDecoder().decode(files["data.json"]));
 
-    expect(data.formatVersion).toBe(1);
+    expect(data.formatVersion).toBe(2);
     expect(data.accounts).toStrictEqual([{ id: "account-1" }]);
     expect(data.categories).toStrictEqual([{ id: "category-1" }]);
     expect(data.contractors).toStrictEqual([{ id: "contractor-1" }]);
     expect(data.rates).toStrictEqual([{ from: "USD", to: "EUR", rate: 0.9 }]);
+    expect(data.recurrences).toStrictEqual([{ id: "recurrence-1" }]);
     expect(data.transactions).toHaveLength(1);
     expect(data.transactions[0].id).toBe("t1");
     expect(data.attachments).toStrictEqual({});
