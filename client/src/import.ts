@@ -3,6 +3,7 @@ import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
+import { dbSaveRecurrences } from "@/repository/recurrence";
 import { dbSaveChunk } from "@/repository/transaction";
 import { dbSaveOfflineSync } from "@/repository/offline-sync";
 import { clearData } from "@/repository/data";
@@ -12,7 +13,6 @@ import { ReferenceDataKey } from "@/types/AppState";
 import type { Attachment } from "@/types/data/Attachment";
 import type { Transaction } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
-import type { StorageMetadata } from "@/types/storage/StorageMetadata";
 import type { ExportData } from "@/types/ExportData";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { rebuildBalances } from "@/balance";
@@ -23,17 +23,7 @@ import { encodeBlob, encodeData } from "@/utils/data";
 import { generateObjectKey } from "@/utils/key";
 import { getSettings, updateSettings } from "@/state/settings";
 import { saveSettings } from "@/settings";
-
-const createMetadata = (clientId: string): StorageMetadata => {
-  const now = new Date().toISOString();
-  return {
-    schemaVersion: 1,
-    version: 1,
-    createdAt: now,
-    updatedAt: now,
-    updatedBy: clientId,
-  };
-};
+import { createMetadata } from "@/utils/metadata";
 
 const toPlain = <T>(data: T): T => {
   return JSON.parse(JSON.stringify(data));
@@ -56,13 +46,24 @@ const parseData = (files: Record<string, Uint8Array>): ExportData => {
     throw new Error("Import file does not contain data.json");
   }
 
-  const data = JSON.parse(strFromU8(dataFile)) as ExportData;
+  const data = JSON.parse(strFromU8(dataFile)) as {
+    formatVersion: number;
+    accounts: ExportData["accounts"];
+    categories: ExportData["categories"];
+    contractors: ExportData["contractors"];
+    rates: ExportData["rates"];
+    recurrences?: ExportData["recurrences"];
+    transactions: ExportData["transactions"];
+    attachments: ExportData["attachments"];
+  };
+
   if (
-    data.formatVersion !== 1 ||
+    (data.formatVersion !== 1 && data.formatVersion !== 2) ||
     !Array.isArray(data.accounts) ||
     !Array.isArray(data.categories) ||
     !Array.isArray(data.contractors) ||
     !Array.isArray(data.rates) ||
+    (data.formatVersion === 2 && !Array.isArray(data.recurrences)) ||
     !Array.isArray(data.transactions) ||
     data.attachments === null ||
     typeof data.attachments !== "object"
@@ -70,7 +71,11 @@ const parseData = (files: Record<string, Uint8Array>): ExportData => {
     throw new Error("Invalid import data");
   }
 
-  return data;
+  return {
+    ...data,
+    formatVersion: 2,
+    recurrences: data.recurrences ?? [],
+  };
 };
 
 const getChunks = (transactions: Transaction[], clientId: string): Record<string, ChunkStorage> => {
@@ -89,7 +94,7 @@ const getChunks = (transactions: Transaction[], clientId: string): Record<string
     Object.entries(grouped).map(([month, monthTransactions]) => [
       month,
       {
-        metadata: createMetadata(clientId),
+        metadata: createMetadata(1, clientId),
         transactions: monthTransactions,
       },
     ]),
@@ -103,20 +108,24 @@ export const importData = async (file: File): Promise<Blob | null> => {
     const data = parseData(files);
     const clientId = getState().settings?.clientId ?? "-";
     const accounts = {
-      metadata: createMetadata(clientId),
+      metadata: createMetadata(1, clientId),
       accounts: data.accounts,
     };
     const categories = {
-      metadata: createMetadata(clientId),
+      metadata: createMetadata(1, clientId),
       categories: data.categories,
     };
     const contractors = {
-      metadata: createMetadata(clientId),
+      metadata: createMetadata(1, clientId),
       contractors: data.contractors,
     };
     const rates = {
-      metadata: createMetadata(clientId),
+      metadata: createMetadata(1, clientId),
       rates: data.rates,
+    };
+    const recurrences = {
+      metadata: createMetadata(1, clientId),
+      recurrences: data.recurrences,
     };
     const chunks = getChunks(data.transactions, clientId);
     const attachments = Object.fromEntries(
@@ -139,6 +148,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
       categories: generateObjectKey(),
       contractors: generateObjectKey(),
       rates: generateObjectKey(),
+      recurrences: generateObjectKey(),
       chunks: Object.fromEntries(
         Object.keys(chunks).map(month => [month, generateObjectKey()]),
       ),
@@ -165,6 +175,10 @@ export const importData = async (file: File): Promise<Blob | null> => {
         rates: {
           objectKey: objectKeys.rates,
           version: rates.metadata.version,
+        },
+        recurrences: {
+          objectKey: objectKeys.recurrences,
+          version: recurrences.metadata.version,
         },
       },
       chunks: Object.fromEntries(
@@ -203,6 +217,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
         categories: false,
         contractors: false,
         rates: false,
+        recurrences: false,
         balances: false,
         attachments: {},
       },
@@ -212,6 +227,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
       dbSaveCategories(categories),
       dbSaveContractors(contractors),
       dbSaveRates(rates),
+      dbSaveRecurrences(recurrences),
       ...Object.entries(chunks).map(([month, chunk]) => dbSaveChunk(month, chunk)),
     ]);
     const oversizedFiles: Record<string, Uint8Array> = {};
@@ -221,6 +237,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
         [objectKeys.categories, categories],
         [objectKeys.contractors, contractors],
         [objectKeys.rates, rates],
+        [objectKeys.recurrences, recurrences],
         ...Object.entries(chunks).map(([month, chunk]) => [objectKeys.chunks[month], chunk]),
         ...Object.entries(attachments).map(([id, attachment]) => [id, attachment]),
       ].map(([key, value]) => async () => {
@@ -244,6 +261,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
     updateReferenceDataState(ReferenceDataKey.Categories, categories);
     updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
     updateReferenceDataState(ReferenceDataKey.Rates, rates);
+    updateReferenceDataState(ReferenceDataKey.Recurrences, recurrences);
     Object.entries(chunks).forEach(([month, chunk]) => updateChunksState(month, chunk));
     await rebuildStatistics();
     await rebuildBalances();

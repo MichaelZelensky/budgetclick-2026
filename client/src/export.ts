@@ -4,6 +4,7 @@ import { dbGetAccounts } from "@/repository/account";
 import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
+import { dbGetRecurrences } from "@/repository/recurrence";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { getManifest } from "@/manifest";
 import { loadAllChunks } from "@/sync";
@@ -14,11 +15,12 @@ export const exportData = async (includeAttachments: boolean): Promise<void> => 
   const loadingId = setLoadingOn();
   try {
     const manifest = getManifest();
-    const [accounts, categories, contractors, rates, chunks] = await Promise.all([
+    const [accounts, categories, contractors, rates, recurrences, chunks] = await Promise.all([
       dbGetAccounts(),
       dbGetCategories(),
       dbGetContractors(),
       dbGetRates(),
+      dbGetRecurrences(),
       loadAllChunks(manifest),
     ]);
     const transactions = Object.values(chunks)
@@ -59,12 +61,13 @@ export const exportData = async (includeAttachments: boolean): Promise<void> => 
     }
 
     const data = {
-      formatVersion: 1,
+      formatVersion: 2,
       exportedAt: new Date().toISOString(),
       accounts: accounts?.accounts ?? [],
       categories: categories?.categories ?? [],
       contractors: contractors?.contractors ?? [],
       rates: rates?.rates ?? [],
+      recurrences: recurrences?.recurrences ?? [],
       transactions,
       attachments,
     };

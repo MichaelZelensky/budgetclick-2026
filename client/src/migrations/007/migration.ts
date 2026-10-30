@@ -10,8 +10,9 @@ import { manifestKey } from "@/manifest";
 import validateManifest from "@/validators/default/Manifest.js";
 
 const createEmptyRecurrencesStorage = (): RecurrencesStorage => {
+  const clientId = getState().settings?.clientId ?? "-";
   return {
-    metadata: createMetadata(1),
+    metadata: createMetadata(1, clientId),
     recurrences: [],
   };
 };
