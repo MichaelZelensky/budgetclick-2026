@@ -3,6 +3,7 @@ import { dbGetBalances, dbSaveBalances } from "@/repository/balance";
 import { dbGetCategories, dbSaveCategories } from "@/repository/category";
 import { dbGetContractors, dbSaveContractors } from "@/repository/contractor";
 import { dbGetRates, dbSaveRates } from "@/repository/rates";
+import { dbGetRecurrences, dbSaveRecurrences } from "@/repository/recurrence";
 import { dbGetChunks, dbSaveChunk } from "@/repository/transaction";
 import { getManifest } from "@/manifest";
 import { getFile } from "@/storage";
@@ -14,12 +15,14 @@ import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
+import type { RecurrencesStorage } from "@/types/storage/RecurrencesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { Manifest, ManifestEntry } from "@/types/storage/Manifest";
 import validateAccountsStorage from "@/validators/default/AccountsStorage.js";
 import validateCategoriesStorage from "@/validators/default/CategoriesStorage.js";
 import validateContractorsStorage from "@/validators/default/ContractorsStorage.js";
 import validateCurrencyRatesStorage from "@/validators/default/CurrencyRatesStorage.js";
+import validateRecurrencesStorage from "@/validators/default/RecurrencesStorage.js";
 import validateChunkStorage from "@/validators/default/ChunkStorage.js";
 import validateStatisticsStorage from "@/validators/default/StatisticsStorage.js";
 import validateBalanceStorage from "@/validators/default/BalanceStorage.js";
@@ -51,7 +54,7 @@ const loadRemoteObject = async <T>(
 };
 
 export const importRemoteData = async (manifest: Manifest): Promise<void> => {
-  const [accounts, categories, contractors, rates, chunks, balances, statistics] = await Promise.all([
+  const [accounts, categories, contractors, rates, recurrences, chunks, balances, statistics] = await Promise.all([
     loadRemoteObject<AccountsStorage>(
       manifest.references.accounts,
       validateAccountsStorage,
@@ -71,6 +74,11 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
       manifest.references.rates,
       validateCurrencyRatesStorage,
       "currency rates",
+    ),
+    loadRemoteObject<RecurrencesStorage>(
+      manifest.references.recurrences,
+      validateRecurrencesStorage,
+      "recurrences",
     ),
     loadInitialTransactionChunks(manifest),
     loadRemoteObject<BalanceStorage>(
@@ -96,6 +104,9 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   if (rates !== null) {
     await dbSaveRates(rates);
   }
+  if (recurrences !== null) {
+    await dbSaveRecurrences(recurrences);
+  }
   if (balances !== null) {
     await dbSaveBalances(balances);
   }
@@ -110,16 +121,18 @@ export const importRemoteData = async (manifest: Manifest): Promise<void> => {
   updateReferenceDataState(ReferenceDataKey.Categories, categories);
   updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
   updateReferenceDataState(ReferenceDataKey.Rates, rates);
+  updateReferenceDataState(ReferenceDataKey.Recurrences, recurrences);
   updateState("balances", balances);
   updateState("statistics", statistics);
 };
 
 const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
-  const [accounts, categories, contractors, rates] = await Promise.all([
+  const [accounts, categories, contractors, rates, recurrences] = await Promise.all([
     dbGetAccounts(),
     dbGetCategories(),
     dbGetContractors(),
     dbGetRates(),
+    dbGetRecurrences(),
   ]);
   if (manifest.references.accounts.version > (accounts?.metadata.version ?? 0)) {
     const remoteAccounts = await loadRemoteObject<AccountsStorage>(
@@ -163,6 +176,17 @@ const synchronizeReferenceData = async (manifest: Manifest): Promise<void> => {
     if (remoteRates !== null) {
       await dbSaveRates(remoteRates);
       updateReferenceDataState(ReferenceDataKey.Rates, remoteRates);
+    }
+  }
+  if (manifest.references.recurrences.version > (recurrences?.metadata.version ?? 0)) {
+    const remoteRecurrences = await loadRemoteObject<RecurrencesStorage>(
+      manifest.references.recurrences,
+      validateRecurrencesStorage,
+      "recurrences",
+    );
+    if (remoteRecurrences !== null) {
+      await dbSaveRecurrences(remoteRecurrences);
+      updateReferenceDataState(ReferenceDataKey.Recurrences, remoteRecurrences);
     }
   }
 };

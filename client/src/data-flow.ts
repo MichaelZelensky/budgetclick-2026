@@ -6,6 +6,7 @@ import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
+import { dbSaveRecurrences } from "@/repository/recurrence";
 import { dbSaveChunk } from "@/repository/transaction";
 import { dbGetAttachment, dbSaveAttachment } from "@/repository/attachment";
 import { dbSaveStatistics } from "@/repository/statistics";
@@ -14,6 +15,7 @@ import type { AccountsStorage } from "@/types/storage/AccountsStorage";
 import type { CategoriesStorage } from "@/types/storage/CategoriesStorage";
 import type { ContractorsStorage } from "@/types/storage/ContractorsStorage";
 import type { CurrencyRatesStorage } from "@/types/storage/CurrencyRatesStorage";
+import type { RecurrencesStorage } from "@/types/storage/RecurrencesStorage";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import type { Attachment } from "@/types/data/Attachment";
 import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
@@ -66,7 +68,7 @@ const bumpManifest = <T extends Record<string, unknown>>(
   };
 };
 
-const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage | CurrencyRatesStorage>(data: T): T => {
+const updateStorageMetadata = <T extends AccountsStorage | CategoriesStorage | ContractorsStorage | CurrencyRatesStorage | RecurrencesStorage>(data: T): T => {
   const now = new Date().toISOString();
   return {
     ...data,
@@ -88,6 +90,7 @@ const referenceDataSavers: { [K in ReferenceDataKey]: (data: ReferenceDataTypes[
   [ReferenceDataKey.Categories]: dbSaveCategories,
   [ReferenceDataKey.Contractors]: dbSaveContractors,
   [ReferenceDataKey.Rates]: dbSaveRates,
+  [ReferenceDataKey.Recurrences]: dbSaveRecurrences,
 };
 
 export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data }: SaveDataInput<K>): Promise<void> => {

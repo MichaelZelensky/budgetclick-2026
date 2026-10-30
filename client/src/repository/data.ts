@@ -6,6 +6,7 @@ import { dbGetContractors } from "@/repository/contractor";
 import { dbGetChunks } from "@/repository/transaction";
 import { dbGetStatistics } from "@/repository/statistics";
 import { dbGetRates } from "@/repository/rates";
+import { dbGetRecurrences } from "@/repository/recurrence";
 import { updateReferenceDataState, updateState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
 
@@ -19,10 +20,12 @@ export const initializeData = async (): Promise<void> => {
   const statistics = await dbGetStatistics();
   const balances = await dbGetBalances();
   const rates = await dbGetRates();
+  const recurrences = await dbGetRecurrences();
   updateReferenceDataState(ReferenceDataKey.Accounts, accounts);
   updateReferenceDataState(ReferenceDataKey.Categories, categories);
   updateReferenceDataState(ReferenceDataKey.Contractors, contractors);
   updateReferenceDataState(ReferenceDataKey.Rates, rates);
+  updateReferenceDataState(ReferenceDataKey.Recurrences, recurrences);
   updateState("chunks", chunks);
   updateState("statistics", statistics);
   updateState("balances", balances);

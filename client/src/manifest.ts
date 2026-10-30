@@ -41,7 +41,7 @@ export const createManifest = (clientId: string): Manifest => {
   const now = new Date().toISOString();
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     version: 1,
     createdAt: now,
     updatedAt: now,
@@ -62,6 +62,10 @@ export const createManifest = (clientId: string): Manifest => {
       rates: {
         objectKey: generateObjectKey(),
         version: 0,
+      },
+      recurrences: {
+        objectKey: generateObjectKey(),
+        version: 1,
       },
     },
     chunks: {},

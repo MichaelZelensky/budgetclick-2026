@@ -13,6 +13,7 @@ import { dbGetAccounts } from "@/repository/account";
 import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
+import { dbGetRecurrences } from "@/repository/recurrence";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 let synchronizing = false;
@@ -35,6 +36,7 @@ const hasPendingObject = (offlineSync: OfflineSync): boolean => {
     offlineSync.objects.categories ||
     offlineSync.objects.contractors ||
     offlineSync.objects.rates ||
+    offlineSync.objects.recurrences ||
     offlineSync.objects.statistics ||
     offlineSync.objects.balances
   );
@@ -155,6 +157,10 @@ const synchronizeReferenceData = async (): Promise<void> => {
     rates: {
       data: await dbGetRates(),
       entry: manifest.references.rates,
+    },
+    recurrences: {
+      data: await dbGetRecurrences(),
+      entry: manifest.references.recurrences,
     },
   };
 
