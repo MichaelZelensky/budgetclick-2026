@@ -12,6 +12,7 @@ const state = reactive<AppState>({
     categories: null,
     contractors: null,
     rates: null,
+    recurrences: null,
   },
   chunks: {},
   statistics: null,
@@ -31,6 +32,7 @@ export const resetStateData = (): void => {
   state.referenceData.categories = null;
   state.referenceData.contractors = null;
   state.referenceData.rates = null;
+  state.referenceData.recurrences = null;
   state.chunks = {};
   state.statistics = null;
   state.balances = null;

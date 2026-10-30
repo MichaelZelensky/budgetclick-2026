@@ -48,6 +48,7 @@ const parseData = (files: Record<string, Uint8Array>): ExportData => {
 
   const data = JSON.parse(strFromU8(dataFile)) as {
     formatVersion: number;
+    exportedAt?: string;
     accounts: ExportData["accounts"];
     categories: ExportData["categories"];
     contractors: ExportData["contractors"];
@@ -74,6 +75,7 @@ const parseData = (files: Record<string, Uint8Array>): ExportData => {
   return {
     ...data,
     formatVersion: 2,
+    exportedAt: data.exportedAt ?? new Date().toISOString(),
     recurrences: data.recurrences ?? [],
   };
 };
