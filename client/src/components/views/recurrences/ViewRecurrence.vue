@@ -12,6 +12,9 @@
       <LiteButton @click="edit">
         Edit
       </LiteButton>
+      <LiteButton @click="showSeriesModal = true">
+        Create series
+      </LiteButton>
       <LiteButton @click="showDeleteModal = true">
         Delete
       </LiteButton>
@@ -20,6 +23,17 @@
       </LiteButton>
     </ButtonGroup>
 
+    <Modal
+      v-if="showSeriesModal"
+      title="Create Series"
+      primary-button-label="Create"
+      secondary-button-label="Cancel"
+      @close="showSeriesModal = false"
+      @cancel="showSeriesModal = false"
+      @ok="confirmSeries"
+    >
+      All planned transactions of this recurrence will be removed and new ones will be created. Actual transactions are kept.
+    </Modal>
     <Modal
       v-if="showDeleteModal"
       title="Delete Recurrence"
@@ -40,12 +54,13 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import Modal from "@/components/ui/Modal.vue";
 import { getState } from "@/state/state";
-import { deleteRecurrence, describeRecurrence, getAccountName } from "@/recurrence";
+import { deleteRecurrence, describeRecurrence, getAccountName, replaceRecurrenceTransactions } from "@/recurrence";
 import { formatNumber } from "@/utils/number";
 
 const route = useRoute();
 const router = useRouter();
 const showDeleteModal = ref(false);
+const showSeriesModal = ref(false);
 
 const recurrence = computed(() =>
   getState().referenceData.recurrences?.recurrences.find(x => x.id === route.params.id && !x.isDeleted),
@@ -53,6 +68,13 @@ const recurrence = computed(() =>
 
 const edit = () => {
   router.push(`/recurrences/${route.params.id}/edit`);
+};
+
+const confirmSeries = async () => {
+  showSeriesModal.value = false;
+  if (recurrence.value !== undefined) {
+    await replaceRecurrenceTransactions(recurrence.value);
+  }
 };
 
 const confirmDelete = async () => {

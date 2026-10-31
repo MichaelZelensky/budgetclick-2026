@@ -34,7 +34,7 @@ import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import Modal from "@/components/ui/Modal.vue";
 import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
-import { createRecurrence, createRecurrenceForm, generateRecurrenceTransactions } from "@/recurrence";
+import { createRecurrence, createRecurrenceForm, replaceRecurrenceTransactions } from "@/recurrence";
 import type { Recurrence } from "@/types/data/Recurrence";
 
 const router = useRouter();
@@ -56,7 +56,7 @@ const finish = () => {
 const confirmGenerate = async () => {
   showGenerateModal.value = false;
   if (createdRecurrence.value !== undefined) {
-    await generateRecurrenceTransactions(createdRecurrence.value);
+    await replaceRecurrenceTransactions(createdRecurrence.value);
   }
   finish();
 };

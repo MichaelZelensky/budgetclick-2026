@@ -4,13 +4,11 @@ import { rebuildStatistics } from "@/stats";
 import { rebuildBalances } from "@/balance";
 import { ReferenceDataKey } from "@/types/AppState";
 import type { MonthlyRecurrencePattern, Recurrence, RecurrenceFrequency } from "@/types/data/Recurrence";
-import type { Transaction } from "@/types/data/Transaction";
+import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
 import type { ChunkStorage } from "@/types/storage/ChunkStorage";
-import type { RecurrenceFormData } from "@/types/RecurrenceFormData";
 import { generateEntityId } from "@/utils/entity";
 import { getLocalDatetime, getLocalMonth } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import type { TransactionDirection } from "@/types/data/Transaction";
 
 export type RecurrenceFormData = {
   direction: TransactionDirection;
@@ -273,10 +271,23 @@ export const createRecurrence = async (form: RecurrenceFormData) => {
   return recurrence;
 };
 
-export const generateRecurrenceTransactions = async (recurrence: Recurrence) => {
+export const replaceRecurrenceTransactions = async (recurrence: Recurrence) => {
   const now = new Date().toISOString();
+  const chunks = getState().chunks;
+  const isPlanned = (x: Transaction) => x.recurrenceId === recurrence.id && !x.isActual && !x.isDeleted;
+  const actualDates = new Set(
+    Object.values(chunks)
+      .flatMap(x => x.transactions)
+      .filter(x => x.recurrenceId === recurrence.id && x.isActual && !x.isDeleted)
+      .map(x => getLocalDate(new Date(x.datetime))),
+  );
   const transactionsByMonth = new Map<string, Transaction[]>();
-  getOccurrenceDates(recurrence).forEach(date => {
+  Object.entries(chunks).forEach(([month, chunk]) => {
+    if (chunk.transactions.some(isPlanned)) {
+      transactionsByMonth.set(month, []);
+    }
+  });
+  getOccurrenceDates(recurrence).filter(x => !actualDates.has(x)).forEach(date => {
     const datetime = new Date(`${date}T00:00:00`).toISOString();
     const month = getLocalMonth(datetime);
     const transaction: Transaction = {
@@ -301,7 +312,7 @@ export const generateRecurrenceTransactions = async (recurrence: Recurrence) => 
   const loadingId = setLoadingOn();
   try {
     for (const [month, transactions] of transactionsByMonth) {
-      const chunk: ChunkStorage = getState().chunks[month] ?? {
+      const chunk: ChunkStorage = chunks[month] ?? {
         metadata: {
           schemaVersion: 1,
           version: 0,
@@ -315,7 +326,10 @@ export const generateRecurrenceTransactions = async (recurrence: Recurrence) => 
         key: month,
         data: {
           ...chunk,
-          transactions: [...chunk.transactions, ...transactions],
+          transactions: [
+            ...chunk.transactions.map(x => isPlanned(x) ? { ...x, isDeleted: true, updatedAt: now } : x),
+            ...transactions,
+          ],
         },
       });
     }
