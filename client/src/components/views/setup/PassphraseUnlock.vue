@@ -75,7 +75,6 @@ const unlock = async () => {
     const manifest = getManifest();
     await initializeData();
     await importRemoteData(manifest);
-    getState().manifest = structuredClone(manifest);
     const accountsStorage = getState().referenceData.accounts;
     if (accountsStorage === null || accountsStorage.accounts.length === 0) {
       throw new Error("Accounts have not been initialized");
