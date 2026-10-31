@@ -1,4 +1,3 @@
-import { migrateManifest } from "@/migrations/004/rates";
 import { getState } from "@/state/state";
 
 export const migrate = (database: IDBDatabase): void => {
@@ -15,5 +14,4 @@ export const migrate = (database: IDBDatabase): void => {
     metadata,
     rates: [],
   }, "rates");
-  migrateManifest();
 };
