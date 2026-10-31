@@ -10,7 +10,11 @@ import Complete from "@/components/views/setup/Complete.vue";
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   initializeEncryptionKey: vi.fn(),
-  decryptRemoteManifest: vi.fn(),
+  initializeManifest: vi.fn(),
+  getManifest: vi.fn(),
+  getRawManifest: vi.fn(),
+  loadSalt: vi.fn(),
+  migrateStorage: vi.fn(),
   importRemoteData: vi.fn(),
   saveInitialStorageObjects: vi.fn(),
   updateSettings: vi.fn(),
@@ -62,7 +66,7 @@ vi.mock("@/encryption/salt", () => ({
   generateSalt: vi.fn(() => new Uint8Array([1, 2, 3])),
   encodeBytes: vi.fn(() => "AQID"),
   saveSalt: vi.fn(),
-  loadSalt: vi.fn(),
+  loadSalt: mocks.loadSalt,
 }));
 
 vi.mock("@/encryption/key", () => ({
@@ -71,8 +75,13 @@ vi.mock("@/encryption/key", () => ({
 
 vi.mock("@/manifest", () => ({
   initializeNewManifest: vi.fn(),
-  decryptRemoteManifest: mocks.decryptRemoteManifest,
-  getRawManifest: vi.fn(),
+  initializeManifest: mocks.initializeManifest,
+  getManifest: mocks.getManifest,
+  getRawManifest: mocks.getRawManifest,
+}));
+
+vi.mock("@/migrations/migrate", () => ({
+  migrateStorage: mocks.migrateStorage,
 }));
 
 vi.mock("@/repository/data", () => ({
@@ -121,7 +130,11 @@ describe("setup UI", () => {
   beforeEach(() => {
     mocks.push.mockReset();
     mocks.initializeEncryptionKey.mockReset();
-    mocks.decryptRemoteManifest.mockReset();
+    mocks.initializeManifest.mockReset();
+    mocks.getManifest.mockReset();
+    mocks.getRawManifest.mockReset();
+    mocks.loadSalt.mockReset();
+    mocks.migrateStorage.mockReset();
     mocks.importRemoteData.mockReset();
     mocks.saveInitialStorageObjects.mockReset();
     mocks.updateSettings.mockReset();
@@ -169,10 +182,17 @@ describe("setup UI", () => {
 
   describe("Storage", () => {
     it("continues to passphrase unlock", async () => {
+      mocks.loadSalt.mockResolvedValue(new Uint8Array([1, 2, 3]));
+      mocks.getRawManifest.mockResolvedValue(new ArrayBuffer(8));
+
       const wrapper = mount(Storage);
 
       await wrapper.find("button").trigger("click");
+      await flushPromises();
 
+      expect(mocks.loadSalt).toHaveBeenCalledOnce();
+      expect(mocks.getRawManifest).toHaveBeenCalledOnce();
+      expect(setupState.storageMode).toBe("existing");
       expect(mocks.push).toHaveBeenCalledWith("/setup/passphrase-unlock");
     });
   });
@@ -279,6 +299,8 @@ describe("setup UI", () => {
 
       expect(wrapper.text()).toContain("Storage has not been checked");
       expect(mocks.initializeEncryptionKey).not.toHaveBeenCalled();
+      expect(mocks.migrateStorage).not.toHaveBeenCalled();
+      expect(mocks.initializeManifest).not.toHaveBeenCalled();
       expect(mocks.importRemoteData).not.toHaveBeenCalled();
       expect(mocks.push).not.toHaveBeenCalled();
     });
@@ -318,8 +340,14 @@ describe("setup UI", () => {
 
       setupState.remoteSalt = remoteSalt;
       setupState.remoteManifest = remoteManifest;
+
       mocks.initializeEncryptionKey.mockResolvedValue(undefined);
-      mocks.decryptRemoteManifest.mockResolvedValue(manifest);
+      mocks.migrateStorage.mockResolvedValue(undefined);
+      mocks.initializeManifest.mockImplementation(async () => {
+        state.manifest = manifest;
+        return true;
+      });
+      mocks.getManifest.mockReturnValue(manifest);
       mocks.importRemoteData.mockResolvedValue(undefined);
 
       const wrapper = mount(PassphraseUnlock);
@@ -332,7 +360,9 @@ describe("setup UI", () => {
         "secret",
         remoteSalt,
       );
-      expect(mocks.decryptRemoteManifest).toHaveBeenCalledWith(remoteManifest);
+      expect(mocks.migrateStorage).toHaveBeenCalledOnce();
+      expect(mocks.initializeManifest).toHaveBeenCalledOnce();
+      expect(mocks.getManifest).toHaveBeenCalledOnce();
       expect(mocks.importRemoteData).toHaveBeenCalledWith(manifest);
       expect(state.manifest).toStrictEqual(manifest);
       expect(mocks.updateSettings).toHaveBeenCalledWith(
@@ -346,6 +376,12 @@ describe("setup UI", () => {
         }),
       );
       expect(mocks.push).toHaveBeenCalledWith("/setup/complete");
+
+      expect(mocks.initializeEncryptionKey.mock.invocationCallOrder[0])
+        .toBeLessThan(mocks.migrateStorage.mock.invocationCallOrder[0]);
+
+      expect(mocks.migrateStorage.mock.invocationCallOrder[0])
+        .toBeLessThan(mocks.initializeManifest.mock.invocationCallOrder[0]);
     });
   });
 

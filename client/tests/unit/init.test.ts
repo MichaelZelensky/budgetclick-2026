@@ -10,6 +10,7 @@ import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { synchronizeRemoteData } from "@/sync";
 import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
+import { migrateStorage } from "@/migrations/migrate";
 
 vi.mock("@/database", () => ({
   initializeDatabase: vi.fn(),
@@ -36,11 +37,16 @@ vi.mock("@/offline-sync", () => ({
   synchronizeOfflineData: vi.fn(),
 }));
 
+vi.mock("@/migrations/migrate", () => ({
+  migrateStorage: vi.fn(),
+}));
+
 const mockedInitializeDatabase = vi.mocked(initializeDatabase);
 const mockedInitializeStoredEncryptionKey = vi.mocked(initializeStoredEncryptionKey);
 const mockedInitializeManifest = vi.mocked(initializeManifest);
 const mockedInitializeData = vi.mocked(initializeData);
 const mockedSynchronizeRemoteData = vi.mocked(synchronizeRemoteData);
+const mockedMigrateStorage = vi.mocked(migrateStorage);
 
 describe("application initialization", () => {
   beforeEach(() => {
@@ -52,6 +58,7 @@ describe("application initialization", () => {
     mockedInitializeManifest.mockReset();
     mockedInitializeData.mockReset();
     mockedSynchronizeRemoteData.mockReset();
+    mockedMigrateStorage.mockReset();
 
     vi.mocked(initializeOfflineSync).mockReset();
     vi.mocked(synchronizeOfflineData).mockReset();
@@ -100,6 +107,7 @@ describe("application initialization", () => {
     await initializeApplication();
 
     expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
+    expect(mockedMigrateStorage).not.toHaveBeenCalled();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
     expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
@@ -119,6 +127,7 @@ describe("application initialization", () => {
     await initializeApplication();
 
     expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
+    expect(mockedMigrateStorage).not.toHaveBeenCalled();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
     expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
@@ -139,14 +148,13 @@ describe("application initialization", () => {
     await initializeApplication();
 
     expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
+    expect(mockedMigrateStorage).not.toHaveBeenCalled();
     expect(mockedInitializeManifest).not.toHaveBeenCalled();
     expect(mockedInitializeData).not.toHaveBeenCalled();
     expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
   });
 
-  it("initializes encryption before loading the manifest", async () => {
-    mockedInitializeManifest.mockResolvedValue(false);
-
+  it("initializes encryption and storage migration before loading the manifest", async () => {
     localStorage.setItem(
       "budgetclick.settings",
       JSON.stringify({
@@ -159,13 +167,14 @@ describe("application initialization", () => {
     await initializeApplication();
 
     expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
+    expect(mockedMigrateStorage).toHaveBeenCalledOnce();
     expect(mockedInitializeManifest).toHaveBeenCalledOnce();
 
-    expect(
-      mockedInitializeStoredEncryptionKey.mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      mockedInitializeManifest.mock.invocationCallOrder[0],
-    );
+    expect(mockedInitializeStoredEncryptionKey.mock.invocationCallOrder[0])
+      .toBeLessThan(mockedMigrateStorage.mock.invocationCallOrder[0]);
+
+    expect(mockedMigrateStorage.mock.invocationCallOrder[0])
+      .toBeLessThan(mockedInitializeManifest.mock.invocationCallOrder[0]);
   });
 
   it("initializes data and synchronizes remote data when manifest is initialized", async () => {
@@ -183,6 +192,7 @@ describe("application initialization", () => {
     await initializeApplication();
 
     expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
+    expect(mockedMigrateStorage).toHaveBeenCalledOnce();
     expect(mockedInitializeManifest).toHaveBeenCalledOnce();
     expect(mockedInitializeData).toHaveBeenCalledOnce();
     expect(mockedSynchronizeRemoteData).toHaveBeenCalledOnce();
@@ -202,11 +212,8 @@ describe("application initialization", () => {
 
     await initializeApplication();
 
-    expect(
-      mockedInitializeData.mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      mockedSynchronizeRemoteData.mock.invocationCallOrder[0],
-    );
+    expect(mockedInitializeData.mock.invocationCallOrder[0])
+      .toBeLessThan(mockedSynchronizeRemoteData.mock.invocationCallOrder[0]);
   });
 
   it("does not initialize data or synchronize when manifest is not initialized", async () => {

@@ -9,7 +9,7 @@ vi.mock("@/state/loading", () => ({
 }));
 
 vi.mock("@/migrations/migrate", () => ({
-  migrate: vi.fn(),
+  migrateDatabase: vi.fn(),
 }));
 
 describe("database", () => {
