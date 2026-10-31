@@ -4,6 +4,7 @@ import { getManifest } from "@/manifest";
 import { putFile } from "@/storage";
 import { ReferenceDataKey } from "@/types/AppState";
 import { encodeData } from "@/utils/data";
+import { logger } from "@/logger";
 
 export const saveInitialStorageObjects = async (): Promise<void> => {
   const state = getState();
@@ -17,15 +18,18 @@ export const saveInitialStorageObjects = async (): Promise<void> => {
     if (entry === undefined) {
       throw new Error("Manifest reference not found");
     }
+    logger.debug(`Saving initial ${key} storage object to ${entry.objectKey}`);
     await putFile(entry.objectKey, encodeData(data));
   }
   if (state.statistics === null) {
     throw new Error("Statistics have not been initialized");
   }
+  logger.debug(`Saving initial statistics storage object to ${manifest.statistics.objectKey}`);
   await putFile(manifest.statistics.objectKey, encodeData(state.statistics));
   if (state.balances === null) {
     throw new Error("Balances have not been initialized");
   }
+  logger.debug(`Saving initial balances storage object to ${manifest.balances.objectKey}`);
   await putFile(manifest.balances.objectKey, encodeData(state.balances));
 };
 
