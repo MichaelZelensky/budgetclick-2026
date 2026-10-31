@@ -1,4 +1,4 @@
-import { migrate } from "@/migrations/migrate";
+import { migrateDatabase } from "@/migrations/migrate";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 const databaseName = "budgetclick";
@@ -19,7 +19,7 @@ export const initializeDatabase = (): Promise<void> => {
       if (transaction === null) {
         throw new Error("Upgrade transaction not available");
       }
-      migrate(request.result, event.oldVersion, transaction);
+      migrateDatabase(request.result, event.oldVersion, transaction);
     };
     request.onsuccess = () => {
       databaseState.database = request.result;

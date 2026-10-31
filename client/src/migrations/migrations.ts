@@ -4,14 +4,19 @@ import { migrate as migrateV3 } from "@/migrations/003/migration";
 import { migrate as migrateV4 } from "@/migrations/004/migration";
 import { migrate as migrateV5 } from "@/migrations/005/migration";
 import { migrate as migrateV6 } from "@/migrations/006/migration";
-import { migrate as migrateV7 } from "@/migrations/007/migration";
+import { migrate as migrateV7Database } from "@/migrations/007/migrateDatabase";
+import { migrate as migrateV7Storage } from "@/migrations/007/migrateStorage";
 
-export const migrations = [
+export const databaseMigrations = [
   { version: 1, migrate: migrateV1 },
   { version: 2, migrate: migrateV2 },
   { version: 3, migrate: migrateV3 },
   { version: 4, migrate: migrateV4 },
   { version: 5, migrate: migrateV5 },
   { version: 6, migrate: migrateV6 },
-  { version: 7, migrate: migrateV7 },
+  { version: 7, migrate: migrateV7Database },
+];
+
+export const storageMigrations = [
+  { version: 7, migrate: migrateV7Storage },
 ];
