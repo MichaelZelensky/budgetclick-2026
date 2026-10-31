@@ -12,6 +12,18 @@
         Cancel
       </LiteButton>
     </ButtonGroup>
+
+    <Modal
+      v-if="showGenerateModal"
+      title="Generate Transactions"
+      primary-button-label="Yes"
+      secondary-button-label="No"
+      @close="finish"
+      @cancel="finish"
+      @ok="confirmGenerate"
+    >
+      Create all planned transactions of this recurrence and recalculate statistics?
+    </Modal>
   </main>
 </template>
 
@@ -20,16 +32,33 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
+import Modal from "@/components/ui/Modal.vue";
 import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
-import { createRecurrence, createRecurrenceForm } from "@/recurrence";
+import { createRecurrence, createRecurrenceForm, generateRecurrenceTransactions } from "@/recurrence";
+import type { Recurrence } from "@/types/data/Recurrence";
 
 const router = useRouter();
 const form = ref(createRecurrenceForm());
+const showGenerateModal = ref(false);
+const createdRecurrence = ref<Recurrence | undefined>();
 
 const save = async () => {
-  await createRecurrence(form.value);
+  createdRecurrence.value = await createRecurrence(form.value);
+  showGenerateModal.value = true;
+};
+
+const finish = () => {
+  showGenerateModal.value = false;
   form.value = createRecurrenceForm();
   router.push("/recurrences");
+};
+
+const confirmGenerate = async () => {
+  showGenerateModal.value = false;
+  if (createdRecurrence.value !== undefined) {
+    await generateRecurrenceTransactions(createdRecurrence.value);
+  }
+  finish();
 };
 
 const back = () => {

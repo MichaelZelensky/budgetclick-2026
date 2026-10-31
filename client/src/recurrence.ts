@@ -1,9 +1,15 @@
 import { getState } from "@/state/state";
-import { saveReferenceData } from "@/data-flow";
+import { saveChunkData, saveReferenceData } from "@/data-flow";
+import { rebuildStatistics } from "@/stats";
+import { rebuildBalances } from "@/balance";
 import { ReferenceDataKey } from "@/types/AppState";
 import type { MonthlyRecurrencePattern, Recurrence, RecurrenceFrequency } from "@/types/data/Recurrence";
+import type { Transaction } from "@/types/data/Transaction";
+import type { ChunkStorage } from "@/types/storage/ChunkStorage";
+import type { RecurrenceFormData } from "@/types/RecurrenceFormData";
 import { generateEntityId } from "@/utils/entity";
-import { getLocalDatetime } from "@/utils/date";
+import { getLocalDatetime, getLocalMonth } from "@/utils/date";
+import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import type { TransactionDirection } from "@/types/data/Transaction";
 
 export type RecurrenceFormData = {
@@ -31,6 +37,7 @@ export const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug
 const frequencies: RecurrenceFrequency[] = ["daily", "weekly", "monthly", "annually"];
 const ordinals = [1, 2, 3, 4, -1] as const;
 const ordinalNames = ["first", "second", "third", "fourth"];
+const dayMilliseconds = 86400000;
 
 const getLocalDate = (date: Date) => getLocalDatetime(date.toISOString()).slice(0, 10);
 
@@ -122,6 +129,52 @@ const buildRecurrenceFields = (form: RecurrenceFormData) => {
     monthlyPattern: frequency === "monthly" ? buildMonthlyPattern(form) : undefined,
     month: frequency === "annually" ? month : undefined,
   };
+};
+
+const isOccurrence = (recurrence: Recurrence, time: number) => {
+  const [startYear, startMonth, startDay] = recurrence.startDate.split("-").map(Number);
+  const startTime = Date.UTC(startYear, startMonth - 1, startDay);
+  const date = new Date(time);
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const weekday = date.getUTCDay();
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (recurrence.frequency === "daily") {
+    return Math.round((time - startTime) / dayMilliseconds) % recurrence.interval === 0;
+  }
+  if (recurrence.frequency === "weekly") {
+    const startWeekTime = startTime - ((new Date(startTime).getUTCDay() + 6) % 7) * dayMilliseconds;
+    const weekTime = time - ((weekday + 6) % 7) * dayMilliseconds;
+    const weekDifference = Math.round((weekTime - startWeekTime) / (7 * dayMilliseconds));
+    return (recurrence.weekdays ?? []).includes(weekday) && weekDifference % recurrence.interval === 0;
+  }
+  if (recurrence.frequency === "monthly") {
+    const pattern = recurrence.monthlyPattern;
+    const monthDifference = (year - startYear) * 12 + month - startMonth;
+    if (pattern === undefined || monthDifference % recurrence.interval !== 0) {
+      return false;
+    }
+    if (pattern.type === "date") {
+      return day === Math.min(pattern.day, daysInMonth);
+    }
+    const matchesOrdinal = pattern.ordinal === -1 ? day + 7 > daysInMonth : Math.ceil(day / 7) === pattern.ordinal;
+    return weekday === pattern.weekday && matchesOrdinal;
+  }
+  return (year - startYear) % recurrence.interval === 0 && month === recurrence.month && day === startDay;
+};
+
+const getOccurrenceDates = (recurrence: Recurrence) => {
+  const [startYear, startMonth, startDay] = recurrence.startDate.split("-").map(Number);
+  const [endYear, endMonth, endDay] = recurrence.endDate.split("-").map(Number);
+  const endTime = Date.UTC(endYear, endMonth - 1, endDay);
+  const dates: string[] = [];
+  for (let time = Date.UTC(startYear, startMonth - 1, startDay); time <= endTime; time += dayMilliseconds) {
+    if (isOccurrence(recurrence, time)) {
+      dates.push(new Date(time).toISOString().slice(0, 10));
+    }
+  }
+  return dates;
 };
 
 export const createRecurrenceForm = (): RecurrenceFormData => {
@@ -217,6 +270,60 @@ export const createRecurrence = async (form: RecurrenceFormData) => {
       recurrences: [...recurrencesStorage.recurrences, recurrence],
     },
   });
+  return recurrence;
+};
+
+export const generateRecurrenceTransactions = async (recurrence: Recurrence) => {
+  const now = new Date().toISOString();
+  const transactionsByMonth = new Map<string, Transaction[]>();
+  getOccurrenceDates(recurrence).forEach(date => {
+    const datetime = new Date(`${date}T00:00:00`).toISOString();
+    const month = getLocalMonth(datetime);
+    const transaction: Transaction = {
+      id: generateEntityId("t"),
+      createdAt: now,
+      updatedAt: now,
+      isDeleted: false,
+      direction: recurrence.direction,
+      amount: recurrence.amount,
+      accountId: recurrence.accountId,
+      description: recurrence.description,
+      datetime,
+      attachments: [],
+      categoryId: recurrence.categoryId ?? "",
+      contractorId: recurrence.contractorId ?? "",
+      isActual: false,
+      comment: recurrence.comment ?? "",
+      recurrenceId: recurrence.id,
+    };
+    transactionsByMonth.set(month, [...(transactionsByMonth.get(month) ?? []), transaction]);
+  });
+  const loadingId = setLoadingOn();
+  try {
+    for (const [month, transactions] of transactionsByMonth) {
+      const chunk: ChunkStorage = getState().chunks[month] ?? {
+        metadata: {
+          schemaVersion: 1,
+          version: 0,
+          createdAt: now,
+          updatedAt: now,
+          updatedBy: getState().settings?.clientId ?? "-",
+        },
+        transactions: [],
+      };
+      await saveChunkData({
+        key: month,
+        data: {
+          ...chunk,
+          transactions: [...chunk.transactions, ...transactions],
+        },
+      });
+    }
+    await rebuildStatistics();
+    await rebuildBalances();
+  } finally {
+    setLoadingOff(loadingId);
+  }
 };
 
 export const updateRecurrence = async (id: string, form: RecurrenceFormData) => {
