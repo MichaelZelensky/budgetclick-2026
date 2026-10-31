@@ -78,6 +78,22 @@ export const router = createRouter({
       component: () => import("@/components/views/rates/EditRate.vue"),
     },
     {
+      path: "/recurrences",
+      component: () => import("@/components/views/recurrences/ListRecurrences.vue"),
+    },
+    {
+      path: "/recurrences/create",
+      component: () => import("@/components/views/recurrences/CreateRecurrence.vue"),
+    },
+    {
+      path: "/recurrences/:id",
+      component: () => import("@/components/views/recurrences/ViewRecurrence.vue"),
+    },
+    {
+      path: "/recurrences/:id/edit",
+      component: () => import("@/components/views/recurrences/EditRecurrence.vue"),
+    },
+    {
       path: "/settings",
       component: () => import("@/components/views/Settings.vue"),
     },

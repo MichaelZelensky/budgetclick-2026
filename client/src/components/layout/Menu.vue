@@ -20,6 +20,10 @@
       Rates
     </RouterLink>
 
+    <RouterLink to="/recurrences" @click="close">
+      Recurrences
+    </RouterLink>
+
     <RouterLink to="/settings" @click="close">
       <GearIcon class="tw-h-4 tw-w-4" />
     </RouterLink>
