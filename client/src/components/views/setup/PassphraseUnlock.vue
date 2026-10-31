@@ -39,7 +39,7 @@ import LiteInputField from "@/components/ui/LiteInputField.vue";
 import SetupProgress from "@/components/SetupProgress.vue";
 import { initializeEncryptionKey } from "@/encryption/key";
 import { saveSalt } from "@/encryption/salt";
-import { decryptRemoteManifest } from "@/manifest";
+import { initializeManifest, getManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { getSettings, updateSettings } from "@/state/settings";
 import { getState } from "@/state/state";
@@ -47,6 +47,7 @@ import { getSetupState } from "@/state/setup";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { importRemoteData } from "@/sync";
 import { saveSettings } from "@/settings";
+import { migrateStorage } from "@/migrations/migrate";
 
 const router = useRouter();
 const passphrase = ref("");
@@ -66,7 +67,12 @@ const unlock = async () => {
   const loadingId = setLoadingOn();
   try {
     await initializeEncryptionKey(passphrase.value, setupState.remoteSalt);
-    const manifest = await decryptRemoteManifest(setupState.remoteManifest);
+    await migrateStorage();
+    const manifestInitialized = await initializeManifest();
+    if (!manifestInitialized) {
+      throw new Error("Storage manifest not found");
+    }
+    const manifest = getManifest();
     await initializeData();
     await importRemoteData(manifest);
     getState().manifest = structuredClone(manifest);

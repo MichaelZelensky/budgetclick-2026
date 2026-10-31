@@ -1,4 +1,4 @@
-import type { Manifest } from "@/types/storage/Manifest";
+import type { LegacyManifest, Manifest } from "@/types/storage/Manifest";
 import type { RecurrencesStorage } from "@/types/storage/RecurrencesStorage";
 import { getState } from "@/state/state";
 import { dbSaveRecurrences } from "@/repository/recurrence";
@@ -18,17 +18,18 @@ const createEmptyRecurrencesStorage = (): RecurrencesStorage => {
 };
 
 export const migrate = async (): Promise<void> => {
-  let manifest: Manifest;
-  try {
-    manifest = decodeData<Manifest>(await getFile(manifestKey));
-  } catch (error) {
-    if (isFileNotFoundError(error)) {
-      return;
+  const manifest = await (async (): Promise<LegacyManifest | null> => {
+    try {
+      return decodeData<LegacyManifest>(await getFile(manifestKey));
+    } catch (error) {
+      if (isFileNotFoundError(error)) {
+        return null;
+      }
+      throw error;
     }
-    throw error;
-  }
+  })();
 
-  if (manifest.migrationVersion !== undefined && manifest.migrationVersion >= 7) {
+  if (manifest === null) {
     return;
   }
 
@@ -36,7 +37,7 @@ export const migrate = async (): Promise<void> => {
     ? createEmptyRecurrencesStorage()
     : null;
 
-  const migratedManifest = {
+  const migratedManifest: Manifest = {
     ...manifest,
     migrationVersion: 7,
     schemaVersion: recurrences === null ? manifest.schemaVersion : 2,

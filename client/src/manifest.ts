@@ -6,6 +6,7 @@ import { decryptData } from "@/encryption/encryption";
 import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
 import { decodeData, encodeData } from "@/utils/data";
 import { generateObjectKey } from "@/utils/key";
+import { storageVersion } from "@/migrations/migrate";
 
 export const manifestKey = "manifest";
 
@@ -42,6 +43,7 @@ export const createManifest = (clientId: string): Manifest => {
 
   return {
     schemaVersion: 2,
+    migrationVersion: storageVersion,
     version: 1,
     createdAt: now,
     updatedAt: now,

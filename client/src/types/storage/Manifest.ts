@@ -2,6 +2,7 @@ export type Month = string;
 
 export type Manifest = {
   schemaVersion: number;
+  migrationVersion: number;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -17,6 +18,10 @@ export type Manifest = {
     startedAt?: string;
     startedBy?: string;
   };
+};
+
+export type LegacyManifest = Omit<Manifest, "migrationVersion"> & {
+  migrationVersion?: never;
 };
 
 export type ManifestEntry = {

@@ -18,18 +18,18 @@ export const saveInitialStorageObjects = async (): Promise<void> => {
     if (entry === undefined) {
       throw new Error("Manifest reference not found");
     }
-    logger.debug(`Saving initial ${key} storage object to ${entry.objectKey}`);
+    logger.debug(`Saving initial ${key} storage object to ${entry.objectKey}`, { data });
     await putFile(entry.objectKey, encodeData(data));
   }
   if (state.statistics === null) {
     throw new Error("Statistics have not been initialized");
   }
-  logger.debug(`Saving initial statistics storage object to ${manifest.statistics.objectKey}`);
+  logger.debug(`Saving initial statistics storage object to ${manifest.statistics.objectKey}`, { data: state.statistics });
   await putFile(manifest.statistics.objectKey, encodeData(state.statistics));
   if (state.balances === null) {
     throw new Error("Balances have not been initialized");
   }
-  logger.debug(`Saving initial balances storage object to ${manifest.balances.objectKey}`);
+  logger.debug(`Saving initial balances storage object to ${manifest.balances.objectKey}`, { data: state.balances });
   await putFile(manifest.balances.objectKey, encodeData(state.balances));
 };
 

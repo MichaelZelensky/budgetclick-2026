@@ -11,6 +11,7 @@ import { initializeManifest } from "@/manifest";
 import { initializeData } from "@/repository/data";
 import { synchronizeRemoteData } from "@/sync";
 import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
+import { migrateStorage } from "@/migrations/migrate";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -30,6 +31,7 @@ export const initializeApplication = async () => {
     return;
   }
   try {
+    await migrateStorage();
     const manifestInitialized = await initializeManifest();
     if (manifestInitialized) {
       await initializeData();
@@ -41,6 +43,7 @@ export const initializeApplication = async () => {
       throw error;
     }
     logger.warn("Initialize manifest failed; continuing with local data", error);
+    await initializeManifest();
     await initializeData();
   }
 };
