@@ -39,6 +39,16 @@
     <button
       v-if="mode === 'edit'"
       type="button"
+      class="tab tab-icon"
+      :class="{ active: modelValue === 'recurrence', hightlight: hasRecurrence }"
+      @click="modelValue = 'recurrence'"
+    >
+      <Repeat />
+    </button>
+
+    <button
+      v-if="mode === 'edit'"
+      type="button"
       class="tab new"
       @click="$emit('new')"
     >
@@ -50,8 +60,9 @@
 <script setup lang="ts">
 import Comment from "@/components/icons/ChatLeftText.vue";
 import Paperclip from "@/components/icons/Paperclip.vue";
+import Repeat from "@/components/icons/ArrowRepeat.vue";
 
-type Tab = "main" | "attachments" | "ext" | "comment";
+type Tab = "main" | "attachments" | "ext" | "comment" | "recurrence";
 
 const modelValue = defineModel<Tab>({ default: "main" });
 
@@ -60,10 +71,12 @@ withDefaults(
     mode: "create" | "edit";
     hasAttachments?: boolean;
     hasComment?: boolean;
+    hasRecurrence?: boolean;
   }>(),
   {
     hasAttachments: false,
     hasComment: false,
+    hasRecurrence: false,
   },
 );
 

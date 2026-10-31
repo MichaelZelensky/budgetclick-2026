@@ -28,19 +28,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import ButtonGroup from "@/components/ui/ButtonGroup.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import Modal from "@/components/ui/Modal.vue";
 import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
-import { createRecurrence, createRecurrenceForm, replaceRecurrenceTransactions } from "@/recurrence";
+import { createRecurrence, createRecurrenceForm, createRecurrenceFormFromTransaction, replaceRecurrenceTransactions } from "@/recurrence";
 import type { Recurrence } from "@/types/data/Recurrence";
 
+const route = useRoute();
 const router = useRouter();
 const form = ref(createRecurrenceForm());
 const showGenerateModal = ref(false);
 const createdRecurrence = ref<Recurrence | undefined>();
+
+watch(
+  () => route.query.transactionId,
+  transactionId => {
+    if (transactionId !== undefined) {
+      form.value = createRecurrenceFormFromTransaction(String(route.query.month), String(transactionId));
+    }
+  },
+  { immediate: true },
+);
 
 const save = async () => {
   createdRecurrence.value = await createRecurrence(form.value);

@@ -5,6 +5,7 @@
       mode="edit"
       :has-attachments="attachments.length > 0"
       :has-comment="!!comment"
+      :has-recurrence="!!originalTransaction.recurrenceId"
       class="tw--mx-4 tw--mt-4 tw-mb-4"
       @new="$emit('new')"
     />
@@ -55,7 +56,7 @@
             {{ attachment.name }}
           </a>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
-            ×
+            Ã—
           </button>
         </div>
       </div>
@@ -83,6 +84,19 @@
           Save
         </LiteButton>
       </div>
+    </div>
+
+    <div v-if="activeTab === 'recurrence'" class="tw-grid tw-gap-2 tw-pt-2">
+      <template v-if="originalTransaction.recurrenceId">
+        <p v-if="recurrence">{{ describeRecurrence(recurrence) }}</p>
+        <p v-else>Recurrence not found</p>
+        <LiteButton v-if="recurrence" @click="editRecurrence">
+          Edit recurrence
+        </LiteButton>
+      </template>
+      <LiteButton v-else @click="makeRecurrent">
+        Make recurrent
+      </LiteButton>
     </div>
 
     <Modal
@@ -131,6 +145,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import DashboardWidget from "@/components/views/dashboard/DashboardWidget.vue";
 import LiteButton from "@/components/ui/LiteButton.vue";
 import LiteInputField from "@/components/ui/LiteInputField.vue";
@@ -141,6 +156,7 @@ import { getAttachment, saveAttachment, saveChunkData } from "@/data-flow";
 import { dbGetAttachment } from "@/repository/attachment";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
+import { describeRecurrence } from "@/recurrence";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -160,8 +176,9 @@ type Attachment = {
   deleted: boolean;
   file?: File;
 };
-type Tab = "main" | "attachments" | "ext" | "comment";
+type Tab = "main" | "attachments" | "ext" | "comment" | "recurrence";
 
+const router = useRouter();
 const activeTab = ref<Tab>("main");
 const props = defineProps<{
   transaction: Transaction;
@@ -232,6 +249,12 @@ watch(isFutureDate, value => {
   }
 });
 
+const recurrence = computed(() =>
+  getState().referenceData.recurrences?.recurrences.find(
+    x => x.id === originalTransaction.value.recurrenceId && !x.isDeleted,
+  ),
+);
+
 const accountOptions = computed<Option[]>(() =>
   getState().referenceData.accounts?.accounts.map(account => ({
     value: account.id,
@@ -295,6 +318,20 @@ watch(
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";
+};
+
+const makeRecurrent = (): void => {
+  router.push({
+    path: "/recurrences/create",
+    query: {
+      transactionId: originalTransaction.value.id,
+      month: getLocalMonth(originalTransaction.value.datetime),
+    },
+  });
+};
+
+const editRecurrence = (): void => {
+  router.push(`/recurrences/${originalTransaction.value.recurrenceId}`);
 };
 
 const openAttachment = async (attachment: Attachment, event: MouseEvent): Promise<void> => {

@@ -199,6 +199,33 @@ export const createRecurrenceForm = (): RecurrenceFormData => {
   };
 };
 
+export const createRecurrenceFormFromTransaction = (month: string, transactionId: string) => {
+  const transaction = getState().chunks[month]?.transactions.find(x => x.id === transactionId);
+  if (!transaction) {
+    throw new Error("Transaction not found");
+  }
+  const startDate = getLocalDatetime(transaction.datetime).slice(0, 10);
+  const startDateTime = new Date(`${startDate}T00:00:00`);
+  const endDateTime = new Date(startDateTime);
+  endDateTime.setFullYear(endDateTime.getFullYear() + 1);
+  return {
+    ...createRecurrenceForm(),
+    direction: transaction.direction,
+    amount: String(transaction.amount),
+    accountId: transaction.accountId,
+    categoryId: transaction.categoryId ?? "",
+    contractorId: transaction.contractorId ?? "",
+    description: transaction.description,
+    comment: transaction.comment ?? "",
+    startDate,
+    endDate: getLocalDate(endDateTime),
+    weekdays: [startDateTime.getDay()],
+    monthlyDay: String(startDateTime.getDate()),
+    monthlyWeekday: String(startDateTime.getDay()),
+    month: String(startDateTime.getMonth() + 1),
+  };
+};
+
 export const toRecurrenceFormData = (recurrence: Recurrence): RecurrenceFormData => {
   const pattern = recurrence.monthlyPattern;
   return {
