@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { getState, initializeState } from "@/state/state";
 import { createRecurrenceForm } from "@/recurrence";
+import { getLocalMonth } from "@/utils/date";
 import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
 import ListRecurrences from "@/components/views/recurrences/ListRecurrences.vue";
 import CreateRecurrence from "@/components/views/recurrences/CreateRecurrence.vue";
@@ -12,6 +13,10 @@ import type { Recurrence } from "@/types/data/Recurrence";
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
+  route: {
+    params: { id: "r_1" },
+    query: {} as Record<string, string>,
+  },
   createRecurrence: vi.fn(),
   updateRecurrence: vi.fn(),
   deleteRecurrence: vi.fn(),
@@ -23,15 +28,20 @@ vi.mock("vue-router", () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
-  useRoute: () => ({
-    params: { id: "r_1" },
-    query: {},
-  }),
+  useRoute: () => mocks.route,
 }));
 
 vi.mock("@/data-flow", () => ({
   saveChunkData: vi.fn(),
   saveReferenceData: vi.fn(),
+}));
+
+vi.mock("@/sync", () => ({
+  loadAllChunks: vi.fn(),
+}));
+
+vi.mock("@/manifest", () => ({
+  getManifest: vi.fn(),
 }));
 
 vi.mock("@/stats", () => ({
@@ -84,6 +94,7 @@ describe("recurrences UI", () => {
     initializeState();
     mocks.push.mockReset();
     mocks.replace.mockReset();
+    mocks.route.query = {};
     mocks.createRecurrence.mockReset();
     mocks.updateRecurrence.mockReset();
     mocks.deleteRecurrence.mockReset();
@@ -168,8 +179,36 @@ describe("recurrences UI", () => {
       await findButton(wrapper, "Save")!.trigger("click");
       await flushPromises();
       expect(mocks.createRecurrence).toHaveBeenCalledOnce();
+      expect(mocks.createRecurrence).toHaveBeenCalledWith(expect.anything(), undefined);
       expect(wrapper.text()).toContain("Generate Transactions");
       expect(mocks.push).not.toHaveBeenCalled();
+    });
+
+    it("passes the source transaction when created from a transaction", async () => {
+      const transaction = {
+        id: "t_src",
+        createdAt: metadata.createdAt,
+        updatedAt: metadata.updatedAt,
+        isDeleted: false,
+        direction: "out" as const,
+        amount: 500,
+        accountId: "a_1",
+        description: "Rent",
+        datetime: new Date("2026-01-01T00:00:00").toISOString(),
+        attachments: [],
+        isActual: true,
+      };
+      const month = getLocalMonth(transaction.datetime);
+      getState().chunks = { [month]: { metadata, transactions: [transaction] } };
+      mocks.route.query = { transactionId: "t_src", month };
+      mocks.createRecurrence.mockResolvedValue(recurrence);
+      const wrapper = mount(CreateRecurrence);
+      await findButton(wrapper, "Save")!.trigger("click");
+      await flushPromises();
+      expect(mocks.createRecurrence).toHaveBeenCalledWith(
+        expect.objectContaining({ description: "Rent", amount: "500" }),
+        { month, transactionId: "t_src" },
+      );
     });
 
     it("generates transactions on Yes", async () => {

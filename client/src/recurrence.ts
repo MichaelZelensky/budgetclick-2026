@@ -1,5 +1,7 @@
 import { getState } from "@/state/state";
 import { saveChunkData, saveReferenceData } from "@/data-flow";
+import { getManifest } from "@/manifest";
+import { loadAllChunks } from "@/sync";
 import { rebuildStatistics } from "@/stats";
 import { rebuildBalances } from "@/balance";
 import { ReferenceDataKey } from "@/types/AppState";
@@ -45,6 +47,29 @@ const getRecurrencesStorage = () => {
     throw new Error("Recurrences have not been initialized");
   }
   return recurrencesStorage;
+};
+
+const getTransactionChunk = (month: string, transactionId: string) => {
+  const chunk = getState().chunks[month];
+  if (chunk === undefined || !chunk.transactions.some(x => x.id === transactionId)) {
+    throw new Error("Transaction not found");
+  }
+  return chunk;
+};
+
+const linkTransaction = async (month: string, transactionId: string, recurrenceId: string) => {
+  const chunk = getTransactionChunk(month, transactionId);
+  await saveChunkData({
+    key: month,
+    data: {
+      ...chunk,
+      transactions: chunk.transactions.map(x => x.id === transactionId ? {
+        ...x,
+        recurrenceId,
+        updatedAt: new Date().toISOString(),
+      } : x),
+    },
+  });
 };
 
 const joinNames = (names: string[]) => {
@@ -278,7 +303,7 @@ export const getAccountName = (accountId: string) => {
   return getState().referenceData.accounts?.accounts.find(x => x.id === accountId)?.name ?? accountId;
 };
 
-export const createRecurrence = async (form: RecurrenceFormData) => {
+export const createRecurrence = async (form: RecurrenceFormData, source?: { month: string; transactionId: string }) => {
   const now = new Date().toISOString();
   const recurrencesStorage = getRecurrencesStorage();
   const recurrence: Recurrence = {
@@ -288,6 +313,9 @@ export const createRecurrence = async (form: RecurrenceFormData) => {
     isDeleted: false,
     ...buildRecurrenceFields(form),
   };
+  if (source !== undefined) {
+    getTransactionChunk(source.month, source.transactionId);
+  }
   await saveReferenceData({
     key: ReferenceDataKey.Recurrences,
     data: {
@@ -295,12 +323,15 @@ export const createRecurrence = async (form: RecurrenceFormData) => {
       recurrences: [...recurrencesStorage.recurrences, recurrence],
     },
   });
+  if (source !== undefined) {
+    await linkTransaction(source.month, source.transactionId, recurrence.id);
+  }
   return recurrence;
 };
 
 export const replaceRecurrenceTransactions = async (recurrence: Recurrence) => {
   const now = new Date().toISOString();
-  const chunks = getState().chunks;
+  const chunks = { ...await loadAllChunks(getManifest()), ...getState().chunks };
   const isPlanned = (x: Transaction) => x.recurrenceId === recurrence.id && !x.isActual && !x.isDeleted;
   const actualDates = new Set(
     Object.values(chunks)
@@ -354,7 +385,7 @@ export const replaceRecurrenceTransactions = async (recurrence: Recurrence) => {
         data: {
           ...chunk,
           transactions: [
-            ...chunk.transactions.map(x => isPlanned(x) ? { ...x, isDeleted: true, updatedAt: now } : x),
+            ...chunk.transactions.filter(x => !isPlanned(x)),
             ...transactions,
           ],
         },

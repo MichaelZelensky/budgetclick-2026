@@ -29,6 +29,8 @@ Saving a recurrence generates planned transactions from the first matching occur
 
 When recurrence rules are edited, actual transactions remain unchanged; existing planned transactions linked to the recurrence are deleted and regenerated. When a recurrence is deleted, its planned transactions are deleted and actual transactions are preserved with their `recurrenceId` removed.
 
+Planned transactions of a recurrence are physically removed from their chunks, not marked with a deletion tombstone. This is an exception to soft deletion and avoids accumulating tombstones. Storage objects are versioned and a newer version replaces an older one, so the removal propagates to other clients and removed planned transactions are not restored. Regenerating a series skips dates that already have an actual transaction of the same recurrence.
+
 Schema validation checks field types and constraints. Custom validation checks business rules, including date ranges and consistency between frequency and frequency-specific fields.
 
 ## Date and Time

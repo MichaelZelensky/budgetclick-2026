@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getState, initializeState } from "@/state/state";
-import { createRecurrence, createRecurrenceForm, deleteRecurrence, describeRecurrence, replaceRecurrenceTransactions, toRecurrenceFormData, updateRecurrence } from "@/recurrence";
+import { createRecurrence, createRecurrenceForm, createRecurrenceFormFromTransaction, deleteRecurrence, describeRecurrence, replaceRecurrenceTransactions, toRecurrenceFormData, updateRecurrence } from "@/recurrence";
 import { getLocalDatetime, getLocalMonth } from "@/utils/date";
 import type { Recurrence } from "@/types/data/Recurrence";
 import type { Transaction } from "@/types/data/Transaction";
@@ -11,11 +11,21 @@ const mocks = vi.hoisted(() => ({
   saveReferenceData: vi.fn(),
   rebuildStatistics: vi.fn(),
   rebuildBalances: vi.fn(),
+  loadAllChunks: vi.fn(),
+  getManifest: vi.fn(),
 }));
 
 vi.mock("@/data-flow", () => ({
   saveChunkData: mocks.saveChunkData,
   saveReferenceData: mocks.saveReferenceData,
+}));
+
+vi.mock("@/sync", () => ({
+  loadAllChunks: mocks.loadAllChunks,
+}));
+
+vi.mock("@/manifest", () => ({
+  getManifest: mocks.getManifest,
 }));
 
 vi.mock("@/stats", () => ({
@@ -92,6 +102,9 @@ describe("recurrence", () => {
     mocks.saveReferenceData.mockReset();
     mocks.rebuildStatistics.mockReset();
     mocks.rebuildBalances.mockReset();
+    mocks.loadAllChunks.mockReset();
+    mocks.loadAllChunks.mockResolvedValue({});
+    mocks.getManifest.mockReset();
     getState().referenceData.recurrences = { metadata, recurrences: [] };
     getState().referenceData.accounts = {
       metadata,
@@ -156,6 +169,28 @@ describe("recurrence", () => {
         monthlyWeekday: "5",
       }));
     });
+
+    it("creates a form from a transaction", () => {
+      const transaction = makeTransaction({ id: "t_src", direction: "in", amount: 250, categoryId: "c_1", comment: "note" });
+      const month = getLocalMonth(transaction.datetime);
+      getState().chunks = { [month]: { metadata, transactions: [transaction] } };
+      expect(createRecurrenceFormFromTransaction(month, "t_src")).toEqual(expect.objectContaining({
+        direction: "in",
+        amount: "250",
+        accountId: "a_1",
+        categoryId: "c_1",
+        description: "Rent",
+        comment: "note",
+        startDate: "2026-01-01",
+        endDate: "2027-01-01",
+        monthlyDay: "1",
+        month: "1",
+      }));
+    });
+
+    it("throws when the source transaction is not found", () => {
+      expect(() => createRecurrenceFormFromTransaction("2026-01", "t_404")).toThrow("Transaction not found");
+    });
   });
 
   describe("createRecurrence", () => {
@@ -177,6 +212,23 @@ describe("recurrence", () => {
         key: "recurrences",
         data: expect.objectContaining({ recurrences: [recurrence] }),
       });
+      expect(mocks.saveChunkData).not.toHaveBeenCalled();
+    });
+
+    it("links the source transaction to the new recurrence", async () => {
+      const transaction = makeTransaction({ id: "t_src", recurrenceId: undefined });
+      const month = getLocalMonth(transaction.datetime);
+      getState().chunks = { [month]: { metadata, transactions: [transaction] } };
+      const recurrence = await createRecurrence(validForm(), { month, transactionId: "t_src" });
+      expect(mocks.saveChunkData).toHaveBeenCalledOnce();
+      expect(mocks.saveChunkData.mock.calls[0][0].key).toBe(month);
+      expect(mocks.saveChunkData.mock.calls[0][0].data.transactions[0].recurrenceId).toBe(recurrence.id);
+    });
+
+    it("rejects a missing source transaction before saving", async () => {
+      await expect(createRecurrence(validForm(), { month: "2026-01", transactionId: "t_404" })).rejects.toThrow("Transaction not found");
+      expect(mocks.saveReferenceData).not.toHaveBeenCalled();
+      expect(mocks.saveChunkData).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -292,19 +344,35 @@ describe("recurrence", () => {
       ]);
     });
 
-    it("tombstones planned transactions and keeps actual and unrelated ones", async () => {
+    it("removes planned transactions and keeps actual and unrelated ones", async () => {
       const planned = makeTransaction({ id: "t_planned" });
       const actual = makeTransaction({ id: "t_actual", isActual: true, datetime: new Date("2026-01-03T00:00:00").toISOString() });
       const unrelated = makeTransaction({ id: "t_other", recurrenceId: "r_2" });
       getState().chunks = { [month]: { metadata, transactions: [planned, actual, unrelated] } };
       await replaceRecurrenceTransactions(makeRecurrence({ interval: 2 }));
       const saved = getSavedTransactions();
-      expect(saved.find(x => x.id === "t_planned")?.isDeleted).toBe(true);
+      expect(saved.find(x => x.id === "t_planned")).toBeUndefined();
       expect(saved.find(x => x.id === "t_actual")).toEqual(actual);
       expect(saved.find(x => x.id === "t_other")).toEqual(unrelated);
       const created = saved.filter(x => x.id.startsWith("t_") && !["t_planned", "t_actual", "t_other"].includes(x.id));
       expect(created.map(x => toLocalDate(x.datetime))).toEqual(["2026-01-01", "2026-01-05", "2026-01-07"]);
       expect(created.every(x => !x.isActual && x.recurrenceId === "r_1")).toBe(true);
+    });
+
+    it("removes planned transactions from chunks that are not loaded in state", async () => {
+      mocks.loadAllChunks.mockResolvedValue({ [month]: { metadata, transactions: [makeTransaction({ id: "t_planned" })] } });
+      await replaceRecurrenceTransactions(makeRecurrence({ startDate: "2026-02-01", endDate: "2026-02-01" }));
+      expect(mocks.loadAllChunks).toHaveBeenCalledOnce();
+      const januaryCall = mocks.saveChunkData.mock.calls.find(x => x[0].key === month);
+      expect(januaryCall?.[0].data.transactions).toEqual([]);
+    });
+
+    it("skips dates that already have an actual transaction in an unloaded chunk", async () => {
+      const actual = makeTransaction({ id: "t_actual", isActual: true });
+      mocks.loadAllChunks.mockResolvedValue({ [month]: { metadata, transactions: [actual] } });
+      const dates = await generateDates(makeRecurrence({ startDate: "2026-01-01", endDate: "2026-01-02" }));
+      expect(dates).toEqual(["2026-01-01", "2026-01-02"]);
+      expect(getSavedTransactions().filter(x => !x.isActual).map(x => toLocalDate(x.datetime))).toEqual(["2026-01-02"]);
     });
 
     it("rebuilds statistics and balances once", async () => {
@@ -320,6 +388,8 @@ describe("recurrence", () => {
       const keys = mocks.saveChunkData.mock.calls.map(x => x[0].key);
       expect(keys).toContain(month);
       expect(keys).toHaveLength(2);
+      const januaryCall = mocks.saveChunkData.mock.calls.find(x => x[0].key === month);
+      expect(januaryCall?.[0].data.transactions).toEqual([]);
     });
   });
 });

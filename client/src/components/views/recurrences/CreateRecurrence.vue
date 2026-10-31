@@ -54,7 +54,8 @@ watch(
 );
 
 const save = async () => {
-  createdRecurrence.value = await createRecurrence(form.value);
+  const source = route.query.transactionId === undefined ? undefined : { month: String(route.query.month), transactionId: String(route.query.transactionId) };
+  createdRecurrence.value = await createRecurrence(form.value, source);
   showGenerateModal.value = true;
 };
 
