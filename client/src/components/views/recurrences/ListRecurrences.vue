@@ -48,10 +48,13 @@ const recurrences = computed(() =>
   (getState().referenceData.recurrences?.recurrences ?? [])
     .filter(x => !x.isDeleted)
     .map(recurrence => ({
-      ...recurrence,
+      id: recurrence.id,
+      description: recurrence.description,
       amount: `${recurrence.direction === "in" ? "+" : "-"}${formatNumber(recurrence.amount)}`,
       accountName: getAccountName(recurrence.accountId),
       schedule: describeRecurrence(recurrence),
+      startDate: recurrence.startDate,
+      endDate: recurrence.endDate,
     })),
 );
 
