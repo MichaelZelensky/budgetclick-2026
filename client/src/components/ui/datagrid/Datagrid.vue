@@ -676,9 +676,9 @@ table {
 
 th { padding: 0; position: relative; }
 
-td { @apply tw-px-4 tw-py-2 tw-align-top tw-text-zinc-400; }
+td { @apply tw-px-1 tw-py-1 tw-align-top tw-text-zinc-400; }
 
-.th-inner { @apply tw-px-4 tw-py-2 tw-relative; }
+.th-inner { @apply tw-px-1 tw-py-1 tw-relative; }
 
 th, td { @apply tw-overflow-hidden; }
 th:not(.boolean-column), td:not(.boolean-column) {
@@ -691,7 +691,7 @@ th:not(.boolean-column), td:not(.boolean-column) {
 
 thead tr { @apply tw-bg-zinc-700; }
 
-thead th { @apply tw-text-zinc-200 tw-font-normal; }
+thead th { @apply tw-text-zinc-200 tw-font-normal tw-text-xs; }
 
 .header-sort-btn {
   @apply tw-bg-transparent tw-border-0 tw-p-0 tw-m-0 tw-w-auto tw-font-medium;
@@ -748,6 +748,6 @@ tbody tr.selected td {
 }
 
 .filter-icon {
-  @apply tw-w-4 tw-h-4 tw-shrink-0 tw-opacity-60 hover:tw-opacity-100 tw-cursor-pointer;
+  @apply tw-w-3 tw-h-3 tw-shrink-0 tw-opacity-60 hover:tw-opacity-100 tw-cursor-pointer;
 }
 </style>

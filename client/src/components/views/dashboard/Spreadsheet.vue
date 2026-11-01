@@ -17,33 +17,81 @@
     class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
   >
     <template #actual="{ item }">
-      <span v-if="item.actual" class="tw-text-green-500">✓</span>
+      <div class="tw-flex tw-h-5 tw-items-center tw-leading-5">
+        <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
+          <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">✓</span>
+        </span>
+        <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
+          <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3"
+            :class="{
+              'tw-text-zinc-500': !item.actual,
+            }" />
+        </span>
+        <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
+          <Recurrence v-if="item.recurrenceId" class="tw-h-3 tw-w-3"
+            :class="{
+              'tw-text-zinc-500': !item.actual,
+            }" />
+        </span>
+      </div>
     </template>
 
     <template #date="{ item }">
-      <span :class="{ 'tw-text-red-600': !item.actual && !!item.date && item.date < currentDate }">
+      <span
+        class="tw-text-xs"
+        :class="{
+          'tw-italic tw-text-zinc-500': !item.actual && (!item.date || item.date >= currentDate),
+          'tw-text-red-800': !item.actual && !!item.date && item.date < currentDate,
+        }"
+      >
         {{ item.date }}
       </span>
     </template>
 
     <template #amount="{ item }">
       <span
-        class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-sm"
-        :class="item.direction === 'in' ? 'tw-text-green-700' : ''"
+        class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-xs"
+        :class="{ 
+          'tw-text-green-700': item.direction === 'in' && item.actual,
+          'tw-text-green-800': item.direction === 'in' && !item.actual,
+          'tw-italic tw-text-zinc-500': !item.actual,
+        }"
       >
         {{ item.amount }}
       </span>
     </template>
 
+    <template #description="{ item }">
+      <span
+        class="tw-block tw-w-full !tw-text-xs"
+        :class="{
+          'tw-italic tw-text-zinc-500': !item.actual,
+        }"
+      >
+        {{ item.description }}
+      </span>
+    </template>
+
+    <template #account="{ item }">
+      <span
+        class="tw-block tw-w-full !tw-text-xs"
+        :class="{
+          'tw-italic tw-text-zinc-500': !item.actual,
+        }"
+      >
+        {{ item.account }}
+      </span>
+    </template>
+
     <template #balance="{ item }">
       <div class="tw-flex tw-w-full tw-items-center">
-        <Paperclip
-          v-if="item.hasAttachments"
-          class="tw-shrink-0"
-        />
         <span
           class="tw-ml-auto tw-text-right tw-font-mono !tw-text-xs"
-          :class="{ 'tw-text-red-600': typeof item.balanceValue === 'number' && item.balanceValue < 0 }"
+          :class="{
+            'tw-text-red-600': typeof item.balanceValue === 'number' && item.balanceValue < 0,
+            'tw-text-red-800': !item.actual && typeof item.balanceValue === 'number' && item.balanceValue < 0,
+            'tw-italic tw-text-zinc-500': !item.actual,
+          }"
         >
           {{ item.balance }}
         </span>
@@ -80,6 +128,7 @@ import { computed, ref } from "vue";
 import Datagrid from "@/components/ui/datagrid/Datagrid.vue";
 import { DatagridColumnType } from "@/components/ui/datagrid/Datagrid.types";
 import Paperclip from "@/components/icons/Paperclip.vue";
+import Recurrence from "@/components/icons/ArrowRepeat.vue";
 import { getManifest } from "@/manifest";
 import { loadMoreTransactionChunks } from "@/load";
 import { getState } from "@/state/state";
@@ -105,6 +154,7 @@ type SpreadsheetRow = {
   balance: string;
   balanceValue?: number | null;
   hasAttachments: boolean;
+  recurrenceId?: string | null;
 };
 
 const getLocalDate = (datetime: string): string => {
@@ -220,6 +270,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         balance: typeof balance === "number" ? formatNumber(balance) : "",
         balanceValue: typeof balance === "number" ? balance : null,
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
+        recurrenceId: transaction.recurrenceId ?? null,
       };
     });
 });
