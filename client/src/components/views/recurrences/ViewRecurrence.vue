@@ -37,12 +37,13 @@
     <Modal
       v-if="showDeleteModal"
       title="Delete Recurrence"
-      secondary-button-label="Cancel"
+      primary-button-label="Delete planned"
+      secondary-button-label="Keep planned"
       @close="showDeleteModal = false"
-      @cancel="showDeleteModal = false"
-      @ok="confirmDelete"
+      @cancel="confirmDelete(false)"
+      @ok="confirmDelete(true)"
     >
-      Delete this recurrence?
+      This recurrence will be deleted. Choose what happens to its planned transactions: delete them, or keep them. Actual transactions are always kept. Kept transactions are detached from the recurrence and will no longer be linked to it. Closing this dialog cancels the deletion.
     </Modal>
   </main>
 </template>
@@ -77,9 +78,9 @@ const confirmSeries = async () => {
   }
 };
 
-const confirmDelete = async () => {
+const confirmDelete = async (deletePlanned: boolean) => {
   showDeleteModal.value = false;
-  await deleteRecurrence(String(route.params.id));
+  await deleteRecurrence(String(route.params.id), deletePlanned);
   router.push("/recurrences");
 };
 

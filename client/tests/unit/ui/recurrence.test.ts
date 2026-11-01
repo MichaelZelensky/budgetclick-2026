@@ -3,6 +3,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { getState, initializeState } from "@/state/state";
 import { createRecurrenceForm } from "@/recurrence";
 import { getLocalMonth } from "@/utils/date";
+import Modal from "@/components/ui/Modal.vue";
 import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
 import ListRecurrences from "@/components/views/recurrences/ListRecurrences.vue";
 import CreateRecurrence from "@/components/views/recurrences/CreateRecurrence.vue";
@@ -275,22 +276,40 @@ describe("recurrences UI", () => {
       expect(wrapper.text()).not.toContain("Create Series");
     });
 
-    it("deletes the recurrence after confirmation", async () => {
+    it("warns that kept transactions are detached from the recurrence", async () => {
       const wrapper = mount(ViewRecurrence);
       await findButton(wrapper, "Delete")!.trigger("click");
-      expect(wrapper.text()).toContain("Delete this recurrence?");
-      await findButton(wrapper, "Ok")!.trigger("click");
+      expect(wrapper.text()).toContain("Delete Recurrence");
+      expect(wrapper.text()).toContain("detached from the recurrence");
+      expect(mocks.deleteRecurrence).not.toHaveBeenCalled();
+    });
+
+    it("deletes the recurrence and its planned transactions", async () => {
+      const wrapper = mount(ViewRecurrence);
+      await findButton(wrapper, "Delete")!.trigger("click");
+      await findButton(wrapper, "Delete planned")!.trigger("click");
       await flushPromises();
-      expect(mocks.deleteRecurrence).toHaveBeenCalledWith("r_1");
+      expect(mocks.deleteRecurrence).toHaveBeenCalledWith("r_1", true);
       expect(mocks.push).toHaveBeenCalledWith("/recurrences");
     });
 
-    it("does not delete when the modal is cancelled", async () => {
+    it("deletes the recurrence and keeps its planned transactions", async () => {
       const wrapper = mount(ViewRecurrence);
       await findButton(wrapper, "Delete")!.trigger("click");
-      await findButton(wrapper, "Cancel")!.trigger("click");
+      await findButton(wrapper, "Keep planned")!.trigger("click");
+      await flushPromises();
+      expect(mocks.deleteRecurrence).toHaveBeenCalledWith("r_1", false);
+      expect(mocks.push).toHaveBeenCalledWith("/recurrences");
+    });
+
+    it("does not delete when the modal is closed", async () => {
+      const wrapper = mount(ViewRecurrence);
+      await findButton(wrapper, "Delete")!.trigger("click");
+      wrapper.findComponent(Modal).vm.$emit("close");
+      await flushPromises();
       expect(mocks.deleteRecurrence).not.toHaveBeenCalled();
       expect(mocks.push).not.toHaveBeenCalled();
+      expect(wrapper.text()).not.toContain("Delete Recurrence");
     });
 
     it("navigates to edit and back", async () => {

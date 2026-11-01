@@ -250,7 +250,7 @@ describe("recurrence", () => {
     });
   });
 
-  describe("updateRecurrence and deleteRecurrence", () => {
+  describe("updateRecurrence", () => {
     it("updates a recurrence", async () => {
       const recurrence = makeRecurrence({ frequency: "monthly", monthlyPattern: { type: "date", day: 1 } });
       getState().referenceData.recurrences = { metadata, recurrences: [recurrence] };
@@ -264,11 +264,64 @@ describe("recurrence", () => {
     it("throws when the recurrence is not found", async () => {
       await expect(updateRecurrence("r_404", createRecurrenceForm())).rejects.toThrow("Recurrence not found");
     });
+  });
 
-    it("marks a recurrence as deleted", async () => {
+  describe("deleteRecurrence", () => {
+    const month = getLocalMonth(new Date("2026-01-01T00:00:00").toISOString());
+    const planned = makeTransaction({ id: "t_planned" });
+    const actual = makeTransaction({ id: "t_actual", isActual: true, datetime: new Date("2026-01-03T00:00:00").toISOString() });
+    const unrelated = makeTransaction({ id: "t_other", recurrenceId: "r_2" });
+
+    beforeEach(() => {
       getState().referenceData.recurrences = { metadata, recurrences: [makeRecurrence()] };
-      await deleteRecurrence("r_1");
+      getState().chunks = { [month]: { metadata, transactions: [planned, actual, unrelated] } };
+    });
+
+    it("marks the recurrence as deleted", async () => {
+      await deleteRecurrence("r_1", false);
       expect(mocks.saveReferenceData.mock.calls[0][0].data.recurrences[0].isDeleted).toBe(true);
+    });
+
+    it("deletes planned transactions and detaches actual ones", async () => {
+      await deleteRecurrence("r_1", true);
+      const saved = getSavedTransactions();
+      expect(saved.find(x => x.id === "t_planned")).toBeUndefined();
+      expect(saved.find(x => x.id === "t_actual")?.recurrenceId).toBeUndefined();
+      expect(saved.find(x => x.id === "t_other")).toEqual(unrelated);
+      expect(mocks.rebuildStatistics).toHaveBeenCalledOnce();
+      expect(mocks.rebuildBalances).toHaveBeenCalledOnce();
+    });
+
+    it("keeps planned transactions and detaches them", async () => {
+      await deleteRecurrence("r_1", false);
+      const saved = getSavedTransactions();
+      expect(saved.find(x => x.id === "t_planned")).toEqual(expect.objectContaining({ id: "t_planned", isActual: false, recurrenceId: undefined }));
+      expect(saved.find(x => x.id === "t_actual")?.recurrenceId).toBeUndefined();
+      expect(saved.find(x => x.id === "t_other")).toEqual(unrelated);
+      expect(mocks.rebuildStatistics).not.toHaveBeenCalled();
+      expect(mocks.rebuildBalances).not.toHaveBeenCalled();
+    });
+
+    it("processes chunks that are not loaded in state", async () => {
+      getState().chunks = {};
+      mocks.loadAllChunks.mockResolvedValue({ [month]: { metadata, transactions: [planned, actual] } });
+      await deleteRecurrence("r_1", true);
+      expect(mocks.loadAllChunks).toHaveBeenCalledOnce();
+      expect(getSavedTransactions().map(x => x.id)).toEqual(["t_actual"]);
+    });
+
+    it("does not save chunks without linked transactions", async () => {
+      getState().chunks = {
+        [month]: { metadata, transactions: [planned] },
+        "2026-02": { metadata, transactions: [unrelated] },
+      };
+      await deleteRecurrence("r_1", true);
+      expect(mocks.saveChunkData.mock.calls.map(x => x[0].key)).toEqual([month]);
+    });
+
+    it("saves chunks before marking the recurrence as deleted", async () => {
+      await deleteRecurrence("r_1", true);
+      expect(mocks.saveChunkData.mock.invocationCallOrder[0]).toBeLessThan(mocks.saveReferenceData.mock.invocationCallOrder[0]);
     });
   });
 

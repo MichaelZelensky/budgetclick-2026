@@ -418,17 +418,44 @@ export const updateRecurrence = async (id: string, form: RecurrenceFormData) => 
   });
 };
 
-export const deleteRecurrence = async (id: string) => {
+export const deleteRecurrence = async (id: string, deletePlanned: boolean) => {
   const recurrencesStorage = getRecurrencesStorage();
-  await saveReferenceData({
-    key: ReferenceDataKey.Recurrences,
-    data: {
-      ...recurrencesStorage,
-      recurrences: recurrencesStorage.recurrences.map(x => x.id === id ? {
-        ...x,
-        isDeleted: true,
-        updatedAt: new Date().toISOString(),
-      } : x),
-    },
-  });
+  const now = new Date().toISOString();
+  const chunks = { ...await loadAllChunks(getManifest()), ...getState().chunks };
+  const isLinked = (x: Transaction) => x.recurrenceId === id;
+  const isRemoved = (x: Transaction) => deletePlanned && isLinked(x) && !x.isActual;
+  const loadingId = setLoadingOn();
+  try {
+    for (const [month, chunk] of Object.entries(chunks)) {
+      if (!chunk.transactions.some(isLinked)) {
+        continue;
+      }
+      await saveChunkData({
+        key: month,
+        data: {
+          ...chunk,
+          transactions: chunk.transactions
+            .filter(x => !isRemoved(x))
+            .map(x => isLinked(x) ? { ...x, recurrenceId: undefined, updatedAt: now } : x),
+        },
+      });
+    }
+    if (deletePlanned) {
+      await rebuildStatistics();
+      await rebuildBalances();
+    }
+    await saveReferenceData({
+      key: ReferenceDataKey.Recurrences,
+      data: {
+        ...recurrencesStorage,
+        recurrences: recurrencesStorage.recurrences.map(x => x.id === id ? {
+          ...x,
+          isDeleted: true,
+          updatedAt: now,
+        } : x),
+      },
+    });
+  } finally {
+    setLoadingOff(loadingId);
+  }
 };
