@@ -22,3 +22,13 @@ export const dbSaveAttachment = async (id: string, data: Attachment): Promise<vo
     transaction.onerror = () => reject(transaction.error ?? new Error("Failed to save attachment"));
   });
 };
+
+export const dbDeleteAttachment = async (id: string): Promise<void> => {
+  const database = getDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(objectStoreName, "readwrite");
+    transaction.objectStore(objectStoreName).delete(id);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("Failed to delete attachment"));
+  });
+};

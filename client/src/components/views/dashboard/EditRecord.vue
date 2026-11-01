@@ -32,9 +32,15 @@
           Income
         </LiteToggle>
 
-        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
-          Save
-        </LiteButton>
+        <div class="tw-ml-auto tw-flex tw-items-center tw-gap-2">
+          <LiteButton @click="showDeleteModal = true">
+            Delete
+          </LiteButton>
+
+          <LiteButton @click="saveRecord" variant="primary">
+            Save
+          </LiteButton>
+        </div>
       </div>
     </div>
 
@@ -56,7 +62,7 @@
             {{ attachment.name }}
           </a>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
-            ×
+            Ã—
           </button>
         </div>
       </div>
@@ -140,6 +146,22 @@
     >
       Remove this attachment?
     </Modal>
+    <Modal
+      v-if="showDeleteModal"
+      title="Delete Transaction"
+      secondary-button-label="Cancel"
+      @close="showDeleteModal = false"
+      @cancel="showDeleteModal = false"
+      @ok="confirmDeleteTransaction"
+    >
+      <div class="tw-grid tw-gap-1">
+        <div>Date: {{ getLocalDatetime(originalTransaction.datetime) }}</div>
+        <div>Amount: {{ originalTransaction.amount }}</div>
+        <div>Account: {{ accountOptions.find(x => x.value === originalTransaction.accountId)?.text }}</div>
+        <div class="tw-max-h-24 tw-overflow-y-auto tw-break-words">Description: {{ originalTransaction.description }}</div>
+        <div class="tw-pt-2">Delete this transaction?</div>
+      </div>
+    </Modal>
   </DashboardWidget>
 </template>
 
@@ -157,6 +179,7 @@ import { dbGetAttachment } from "@/repository/attachment";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import { describeRecurrence } from "@/recurrence";
+import { deleteTransaction } from "@/transaction";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -198,6 +221,7 @@ const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showMonthChangeModal = ref(false);
 const showRemoveAttachmentModal = ref(false);
+const showDeleteModal = ref(false);
 const attachmentToRemove = ref<string | undefined>();
 const originalTransaction = ref(props.transaction);
 const attachments = ref<Attachment[]>([]);
@@ -395,6 +419,12 @@ const confirmRemoveAttachment = (): void => {
 
   attachmentToRemove.value = undefined;
   showRemoveAttachmentModal.value = false;
+};
+
+const confirmDeleteTransaction = async (): Promise<void> => {
+  showDeleteModal.value = false;
+  await deleteTransaction(originalTransaction.value);
+  emit("new");
 };
 
 const saveRecord = async (): Promise<void> => {

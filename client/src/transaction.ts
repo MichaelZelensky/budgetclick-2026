@@ -1,6 +1,6 @@
 
 import { getState } from "@/state/state";
-import { saveChunkData } from "@/data-flow";
+import { deleteAttachment, saveChunkData } from "@/data-flow";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -85,5 +85,47 @@ export const createTransaction = async (
     month,
     transaction.accountId,
     transaction.direction === "in" ? transaction.amount : -transaction.amount,
+  );
+};
+
+export const deleteTransaction = async (transaction: Transaction) => {
+  const month = getLocalMonth(transaction.datetime);
+  const chunk = getState().chunks[month];
+
+  if (!chunk) {
+    throw new Error(`Chunk not found: ${month}`);
+  }
+
+  await saveChunkData({
+    key: month,
+    data: {
+      ...chunk,
+      transactions: transaction.isActual
+        ? chunk.transactions.map(x =>
+          x.id === transaction.id
+            ? { ...x, isDeleted: true, updatedAt: new Date().toISOString() }
+            : x
+        )
+        : chunk.transactions.filter(x => x.id !== transaction.id),
+    },
+  });
+
+  if (!transaction.isActual) {
+    for (const attachment of transaction.attachments) {
+      await deleteAttachment(attachment.id);
+    }
+  }
+
+  await updateStatistics(
+    month,
+    transaction.accountId,
+    transaction.direction === "in" ? -transaction.amount : 0,
+    transaction.direction === "out" ? -transaction.amount : 0,
+  );
+
+  await updateBalance(
+    month,
+    transaction.accountId,
+    transaction.direction === "in" ? -transaction.amount : transaction.amount,
   );
 };

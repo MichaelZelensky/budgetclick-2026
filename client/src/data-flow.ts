@@ -1,14 +1,14 @@
 import { toRaw } from "vue";
 import { getState, updateReferenceDataState, updateChunksState, updateState } from "@/state/state";
 import { getManifest, saveManifest, clearManifestPending, manifestKey } from "@/manifest";
-import { getFile, putFile } from "@/storage";
+import { deleteFile, getFile, putFile } from "@/storage";
 import { dbSaveAccounts } from "@/repository/account";
 import { dbSaveCategories } from "@/repository/category";
 import { dbSaveContractors } from "@/repository/contractor";
 import { dbSaveRates } from "@/repository/rates";
 import { dbSaveRecurrences } from "@/repository/recurrence";
 import { dbSaveChunk } from "@/repository/transaction";
-import { dbGetAttachment, dbSaveAttachment } from "@/repository/attachment";
+import { dbDeleteAttachment, dbGetAttachment, dbSaveAttachment } from "@/repository/attachment";
 import { dbSaveStatistics } from "@/repository/statistics";
 import { dbSaveBalances } from "@/repository/balance";
 import type { AccountsStorage } from "@/types/storage/AccountsStorage";
@@ -138,6 +138,26 @@ export const saveAttachment = async (id: string, data: Attachment): Promise<void
       try {
         await putFile(id, encodeData(data));
         await clearAttachmentPending(id);
+      } catch {
+        getState().isOnline = false;
+      }
+    }
+  } catch (error) {
+    showError(getErrorMessage(error));
+    throw error;
+  } finally {
+    setLoadingOff(loadingId);
+  }
+};
+
+export const deleteAttachment = async (id: string): Promise<void> => {
+  const loadingId = setLoadingOn();
+  try {
+    await dbDeleteAttachment(id);
+    await clearAttachmentPending(id);
+    if (getState().isOnline) {
+      try {
+        await deleteFile(id);
       } catch {
         getState().isOnline = false;
       }

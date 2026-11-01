@@ -129,3 +129,8 @@ export const putFile = async (key: string, body: Uint8Array): Promise<void> => {
   logger.debug(`Putting file: ${key}`);
   await putRawFile(key, await encryptData(body));
 };
+
+export const deleteFile = async (key: string): Promise<void> => {
+  logger.debug(`Deleting file: ${key}`);
+  await removeRawFile(key);
+};
