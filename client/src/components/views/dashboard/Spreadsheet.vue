@@ -43,7 +43,7 @@
         />
         <span
           class="tw-ml-auto tw-text-right tw-font-mono !tw-text-xs"
-          :class="{ 'tw-text-red-600': Number(item.balance) < 0 }"
+          :class="{ 'tw-text-red-600': typeof item.balanceValue === 'number' && item.balanceValue < 0 }"
         >
           {{ item.balance }}
         </span>
@@ -103,6 +103,7 @@ type SpreadsheetRow = {
   account: string;
   description: string;
   balance: string;
+  balanceValue?: number | null;
   hasAttachments: boolean;
 };
 
@@ -217,6 +218,7 @@ const transactions = computed<SpreadsheetRow[]>(() => {
         account: `${account?.currency ?? ""} (${account?.name ?? ""})`,
         description: transaction.description,
         balance: typeof balance === "number" ? formatNumber(balance) : "",
+        balanceValue: typeof balance === "number" ? balance : null,
         hasAttachments: transaction.attachments.some(attachment => !attachment.isDeleted),
       };
     });
