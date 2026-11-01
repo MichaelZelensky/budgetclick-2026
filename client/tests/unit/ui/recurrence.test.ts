@@ -322,8 +322,9 @@ describe("recurrences UI", () => {
   });
 
   describe("EditRecurrence", () => {
-    it("saves changes and returns to the view", async () => {
+    it("saves changes and asks to rebuild the series", async () => {
       const wrapper = mount(EditRecurrence);
+      expect(wrapper.text()).not.toContain("Rebuild Series");
       await findButton(wrapper, "Save")!.trigger("click");
       await flushPromises();
       expect(mocks.updateRecurrence).toHaveBeenCalledWith("r_1", expect.objectContaining({
@@ -331,6 +332,28 @@ describe("recurrences UI", () => {
         amount: "500",
         frequency: "monthly",
       }));
+      expect(wrapper.text()).toContain("Rebuild Series");
+      expect(mocks.replaceRecurrenceTransactions).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
+    });
+
+    it("rebuilds the series on Yes", async () => {
+      const wrapper = mount(EditRecurrence);
+      await findButton(wrapper, "Save")!.trigger("click");
+      await flushPromises();
+      await findButton(wrapper, "Yes")!.trigger("click");
+      await flushPromises();
+      expect(mocks.replaceRecurrenceTransactions).toHaveBeenCalledWith(recurrence);
+      expect(mocks.push).toHaveBeenCalledWith("/recurrences/r_1");
+    });
+
+    it("only saves on No", async () => {
+      const wrapper = mount(EditRecurrence);
+      await findButton(wrapper, "Save")!.trigger("click");
+      await flushPromises();
+      await findButton(wrapper, "No")!.trigger("click");
+      await flushPromises();
+      expect(mocks.replaceRecurrenceTransactions).not.toHaveBeenCalled();
       expect(mocks.push).toHaveBeenCalledWith("/recurrences/r_1");
     });
 
