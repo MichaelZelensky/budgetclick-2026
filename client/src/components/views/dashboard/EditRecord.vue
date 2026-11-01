@@ -423,8 +423,13 @@ const confirmRemoveAttachment = (): void => {
 
 const confirmDeleteTransaction = async (): Promise<void> => {
   showDeleteModal.value = false;
-  await deleteTransaction(originalTransaction.value);
-  emit("new");
+  const loadingId = setLoadingOn();
+  try {
+    await deleteTransaction(originalTransaction.value);
+    emit("new");
+  } finally {
+    setLoadingOff(loadingId);
+  }
 };
 
 const saveRecord = async (): Promise<void> => {
