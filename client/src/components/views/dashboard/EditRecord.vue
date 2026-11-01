@@ -16,7 +16,7 @@
         <LiteSelect v-model="accountId" :options="accountOptions" title="Account" disabled />
       </div>
 
-      <LiteInputField v-model="description" placeholder="Description" required />
+      <LiteInputField v-model="description" placeholder="Description" :maxlength="200" required />
 
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
@@ -84,7 +84,7 @@
     </div>
 
     <div v-if="activeTab === 'comment'" class="tw-grid tw-gap-2 tw-pt-2">
-      <LiteTextarea v-model="comment" placeholder="Comment" :rows="4" />
+      <LiteTextarea v-model="comment" placeholder="Comment" :rows="4" :maxlength="2000" />
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
@@ -179,7 +179,7 @@ import { dbGetAttachment } from "@/repository/attachment";
 import { updateStatistics } from "@/stats";
 import { updateBalance } from "@/balance";
 import { describeRecurrence } from "@/recurrence";
-import { deleteTransaction } from "@/transaction";
+import { commentMaxLength, deleteTransaction, descriptionMaxLength } from "@/transaction";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { Transaction, TransactionDirection } from "@/types/data/Transaction";
@@ -490,13 +490,13 @@ const saveRecord = async (): Promise<void> => {
       direction: direction.value,
       amount: Number(amount.value),
       accountId: originalTransaction.value.accountId,
-      description: description.value.trim(),
+      description: description.value.trim().slice(0, descriptionMaxLength),
       datetime: transactionDatetime.toISOString(),
       attachments: updatedAttachments,
       categoryId: categoryId.value,
       contractorId: contractorId.value,
       isActual: isFutureDate.value ? false : isActual.value,
-      comment: comment.value,
+      comment: comment.value.slice(0, commentMaxLength),
     };
     await saveChunkData({
       key: month,

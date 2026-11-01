@@ -13,7 +13,7 @@
         <LiteSelect v-model="accountId" :options="accountOptions" title="Account" />
       </div>
 
-      <LiteInputField v-model="description" placeholder="Description" required />
+      <LiteInputField v-model="description" placeholder="Description" :maxlength="descriptionMaxLength" required />
       <LiteInputField v-model="datetime" type="datetime-local" required />
 
       <div class="tw-flex tw-items-center tw-gap-6">
@@ -67,7 +67,7 @@
     </div>
 
     <div v-if="activeTab === 'comment'" class="tw-grid tw-gap-2 tw-pt-2">
-      <LiteTextarea v-model="comment" placeholder="Comment" :rows="4" />
+      <LiteTextarea v-model="comment" placeholder="Comment" :rows="4" :maxlength="commentMaxLength" />
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
           Save
@@ -139,7 +139,7 @@ import LiteToggle from "@/components/ui/LiteToggle.vue";
 import Modal from "@/components/ui/Modal.vue";
 import RecordTabs from "@/components/views/dashboard/RecordTabs.vue";
 import { saveAttachment } from "@/data-flow";
-import { createTransaction } from "@/transaction";
+import { commentMaxLength, createTransaction, descriptionMaxLength } from "@/transaction";
 import { getState } from "@/state/state";
 import type { Option } from "@/components/ui/lite-select/LiteSelect.types";
 import type { TransactionDirection } from "@/types/data/Transaction";

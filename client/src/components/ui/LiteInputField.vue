@@ -9,6 +9,7 @@
       :placeholder="placeholder ?? (type === 'number' ? '0.00' : undefined)"
       :disabled="disabled"
       :step="step"
+      :maxlength="maxlength"
       @input="validateInput"
     >
   </div>
@@ -61,6 +62,10 @@ const props = defineProps({
   },
   step: {
     type: [Number, String],
+    default: undefined,
+  },
+  maxlength: {
+    type: Number,
     default: undefined,
   },
   allowEmpty: {

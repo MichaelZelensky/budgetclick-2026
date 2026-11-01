@@ -8,6 +8,9 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 import { generateEntityId } from "@/utils/entity";
 import { getLocalMonth } from "@/utils/date";
 
+export const descriptionMaxLength = 200;
+export const commentMaxLength = 2000;
+
 type CreateTransactionInput = {
   direction: TransactionDirection;
   amount: number;
@@ -46,13 +49,13 @@ export const createTransaction = async (
     direction: input.direction,
     amount: input.amount,
     accountId: input.accountId,
-    description: input.description.trim(),
+    description: input.description.trim().slice(0, descriptionMaxLength),
     datetime: now,
     attachments: input.attachments ?? [],
     categoryId: input.categoryId ?? "",
     contractorId: input.contractorId ?? "",
     isActual: input.isActual ?? true,
-    comment: input.comment ?? "",
+    comment: (input.comment ?? "").slice(0, commentMaxLength),
   };
 
   const chunk: ChunkStorage = existingChunk ?? {

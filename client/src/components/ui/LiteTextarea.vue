@@ -1,6 +1,6 @@
 <template>
   <div class="tw-mb-2">
-    <textarea v-model="internalValue" :placeholder="placeholder" :rows="rows" :disabled="disabled"></textarea>
+    <textarea v-model="internalValue" :placeholder="placeholder" :rows="rows" :disabled="disabled" :maxlength="maxlength"></textarea>
   </div>
 </template>
 
@@ -27,6 +27,10 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  maxlength: {
+    type: Number,
+    default: undefined
   }
 });
 
