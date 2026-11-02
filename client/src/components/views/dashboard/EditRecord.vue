@@ -62,7 +62,7 @@
             {{ attachment.name }}
           </a>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
-            Ã—
+            ×
           </button>
         </div>
       </div>
