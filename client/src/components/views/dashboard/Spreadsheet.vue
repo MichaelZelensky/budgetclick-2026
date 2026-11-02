@@ -47,6 +47,7 @@
         class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-xs"
         :class="{
           'tw-text-green-700': item.direction === 'in' && item.actual,
+          'tw-text-green-700 tw-italic': item.direction === 'in' && !item.actual,
           'tw-italic': !item.actual,
         }"
       >
