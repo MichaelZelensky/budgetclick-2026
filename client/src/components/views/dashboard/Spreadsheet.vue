@@ -22,16 +22,10 @@
           <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">✓</span>
         </span>
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
-          <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3"
-            :class="{
-              'tw-text-zinc-500': !item.actual,
-            }" />
+          <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3" />
         </span>
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
-          <Recurrence v-if="item.recurrenceId" class="tw-h-3 tw-w-3"
-            :class="{
-              'tw-text-zinc-500': !item.actual,
-            }" />
+          <Recurrence v-if="item.recurrenceId" class="tw-h-3 tw-w-3" />
         </span>
       </div>
     </template>
@@ -40,8 +34,8 @@
       <span
         class="tw-text-xs"
         :class="{
-          'tw-italic tw-text-zinc-500': !item.actual && (!item.date || item.date >= currentDate),
-          'tw-text-red-800': !item.actual && !!item.date && item.date < currentDate,
+          'tw-italic': !item.actual && (!item.date || item.date >= currentDate),
+          'tw-italic tw-text-red-600': !item.actual && !!item.date && item.date < currentDate,
         }"
       >
         {{ item.date }}
@@ -51,10 +45,9 @@
     <template #amount="{ item }">
       <span
         class="tw-block tw-w-full tw-text-right tw-font-mono !tw-text-xs"
-        :class="{ 
+        :class="{
           'tw-text-green-700': item.direction === 'in' && item.actual,
-          'tw-text-green-800': item.direction === 'in' && !item.actual,
-          'tw-italic tw-text-zinc-500': !item.actual,
+          'tw-italic': !item.actual,
         }"
       >
         {{ item.amount }}
@@ -64,9 +57,7 @@
     <template #description="{ item }">
       <span
         class="tw-block tw-w-full !tw-text-xs"
-        :class="{
-          'tw-italic tw-text-zinc-500': !item.actual,
-        }"
+        :class="{ 'tw-italic': !item.actual }"
       >
         {{ item.description }}
       </span>
@@ -75,9 +66,7 @@
     <template #account="{ item }">
       <span
         class="tw-block tw-w-full !tw-text-xs"
-        :class="{
-          'tw-italic tw-text-zinc-500': !item.actual,
-        }"
+        :class="{ 'tw-italic': !item.actual }"
       >
         {{ item.account }}
       </span>
@@ -88,12 +77,13 @@
         <span
           class="tw-ml-auto tw-text-right tw-font-mono !tw-text-xs"
           :class="{
-            'tw-text-red-600': typeof item.balanceValue === 'number' && item.balanceValue < 0,
-            'tw-text-red-800': !item.actual && typeof item.balanceValue === 'number' && item.balanceValue < 0,
-            'tw-italic tw-text-zinc-500': !item.actual,
+            'tw-text-zinc-400': item.actual && typeof item.balanceValue === 'number' && item.balanceValue >= 0,
+            'tw-text-red-600': item.actual && typeof item.balanceValue === 'number' && item.balanceValue < 0,
+            'tw-text-red-600 tw-italic': !item.actual && typeof item.balanceValue === 'number' && item.balanceValue < 0,
+            'tw-italic': !item.actual,
           }"
         >
-          {{ item.balance }}
+          {{ !item.actual && !!item.date && item.date < currentDate ? '' : item.balance }}
         </span>
       </div>
     </template>
