@@ -87,15 +87,20 @@
             <LiteInputField v-model="form.monthlyDay" type="number" :allow-negative="false" />
           </label>
         </div>
-
-<div v-if="form.monthlyType !== 'date'" class="tw-grid tw-grid-cols-2 tw-gap-x-4">
-  <LiteSelect v-model="form.monthlyOrdinal" :options="ordinalOptions" title="Occurrence" />
-  <LiteSelect v-model="form.monthlyWeekday" :options="weekdayOptions" title="Weekday" />
-</div>
+        <div v-if="form.monthlyType !== 'date'" class="tw-grid tw-grid-cols-2 tw-gap-x-4">
+          <LiteSelect v-model="form.monthlyOrdinal" :options="ordinalOptions" title="Occurrence" />
+          <LiteSelect v-model="form.monthlyWeekday" :options="weekdayOptions" title="Weekday" />
+        </div>
       </div>
 
       <div v-if="form.frequency === 'annually'" class="tw-grid tw-grid-cols-1 tw-gap-x-4 sm:tw-grid-cols-2">
-        <LiteSelect v-model="form.month" :options="monthOptions" title="Month" />
+        <label class="tw-grid tw-gap-1">
+          <span class="tw-text-sm">Month</span>
+          <LiteSelect v-model="form.month" :options="monthOptions" title="Month" />
+          <span class="tw-text-xs tw-text-zinc-500">
+            Month in which the transaction repeats each year. The day is taken from the start date.
+          </span>
+        </label>
       </div>
     </section>
   </div>
