@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import CreateAccount from "@/components/views/accounts/CreateAccount.vue";
-import EditAccount from "@/components/views/accounts/EditAccount.vue";
+import CreateAccount from "@/gui/views/accounts/CreateAccount.vue";
+import EditAccount from "@/gui/views/accounts/EditAccount.vue";
 import { saveReferenceData } from "@/data-flow";
 import { initializeState, getState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";

@@ -1,0 +1,58 @@
+<template>
+  <main>
+    <h1>{{ account.name }}</h1>
+
+    <p>{{ account.description }}</p>
+    <p>{{ account.currency }}</p>
+    <p>Starting balance: {{ formatNumber(account.currentBalance) }}</p>
+    <p>Current balance: {{ formatNumber(currentBalance) }}</p>
+
+    <ButtonGroup>
+      <LiteButton @click="edit">
+        Edit
+      </LiteButton>
+      <LiteButton @click="back">
+        Back
+      </LiteButton>
+    </ButtonGroup>
+  </main>
+</template>
+
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import ButtonGroup from "@/gui/ui/ButtonGroup.vue";
+import LiteButton from "@/gui/ui/LiteButton.vue";
+import { getState } from "@/state/state";
+import { ensureBalanceData, getCurrentBalance } from "@/balance";
+import { formatNumber } from "@/utils/number";
+
+const route = useRoute();
+const router = useRouter();
+const accountsStorage = getState().referenceData.accounts;
+
+if (accountsStorage === null) {
+  throw new Error("Accounts have not been initialized");
+}
+
+const account = accountsStorage.accounts.find(x => x.id === route.params.id);
+
+if (!account) {
+  throw new Error("Account not found");
+}
+
+const currentBalance = ref(account.currentBalance);
+
+onMounted(async () => {
+  await ensureBalanceData();
+  currentBalance.value = getCurrentBalance(account.id);
+});
+
+const edit = () => {
+  router.push(`/accounts/${account.id}/edit`);
+};
+
+const back = () => {
+  router.push("/accounts");
+};
+</script>

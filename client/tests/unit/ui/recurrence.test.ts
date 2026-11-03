@@ -3,12 +3,12 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { getState, initializeState } from "@/state/state";
 import { createRecurrenceForm } from "@/recurrence";
 import { getLocalMonth } from "@/utils/date";
-import Modal from "@/components/ui/Modal.vue";
-import RecurrenceForm from "@/components/views/recurrences/RecurrenceForm.vue";
-import ListRecurrences from "@/components/views/recurrences/ListRecurrences.vue";
-import CreateRecurrence from "@/components/views/recurrences/CreateRecurrence.vue";
-import ViewRecurrence from "@/components/views/recurrences/ViewRecurrence.vue";
-import EditRecurrence from "@/components/views/recurrences/EditRecurrence.vue";
+import Modal from "@/gui/ui/Modal.vue";
+import RecurrenceForm from "@/gui/views/recurrences/RecurrenceForm.vue";
+import ListRecurrences from "@/gui/views/recurrences/ListRecurrences.vue";
+import CreateRecurrence from "@/gui/views/recurrences/CreateRecurrence.vue";
+import ViewRecurrence from "@/gui/views/recurrences/ViewRecurrence.vue";
+import EditRecurrence from "@/gui/views/recurrences/EditRecurrence.vue";
 import type { Recurrence } from "@/types/data/Recurrence";
 
 const mocks = vi.hoisted(() => ({

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import ClientId from "@/components/views/setup/ClientId.vue";
-import Storage from "@/components/views/setup/Storage.vue";
-import PassphraseCreate from "@/components/views/setup/PassphraseCreate.vue";
-import PassphraseUnlock from "@/components/views/setup/PassphraseUnlock.vue";
-import CreateAccount from "@/components/views/setup/CreateAccount.vue";
-import Complete from "@/components/views/setup/Complete.vue";
+import ClientId from "@/gui/views/setup/ClientId.vue";
+import Storage from "@/gui/views/setup/Storage.vue";
+import PassphraseCreate from "@/gui/views/setup/PassphraseCreate.vue";
+import PassphraseUnlock from "@/gui/views/setup/PassphraseUnlock.vue";
+import CreateAccount from "@/gui/views/setup/CreateAccount.vue";
+import Complete from "@/gui/views/setup/Complete.vue";
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),

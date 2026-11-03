@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { getRequiredSetupRoute } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 import { resetSetupState, getSetupState } from "@/state/setup";
-import CreateAccount from "@/components/views/setup/CreateAccount.vue";
+import CreateAccount from "@/gui/views/setup/CreateAccount.vue";
 
 const { push, saveReferenceData, saveSettings } = vi.hoisted(() => ({
   push: vi.fn(),

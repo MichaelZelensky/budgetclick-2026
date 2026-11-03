@@ -7,127 +7,127 @@ export const router = createRouter({
   routes: [
     {
       path: "/",
-      component: () => import("@/components/views/Dashboard.vue"),
+      component: () => import("@/gui/views/Dashboard.vue"),
     },
     {
       path: "/editor",
-      component: () => import("@/components/views/ImageEditor.vue"),
+      component: () => import("@/gui/views/ImageEditor.vue"),
     },
     {
       path: "/accounts",
-      component: () => import("@/components/views/accounts/ListAccounts.vue"),
+      component: () => import("@/gui/views/accounts/ListAccounts.vue"),
     },
     {
       path: "/accounts/create",
-      component: () => import("@/components/views/accounts/CreateAccount.vue"),
+      component: () => import("@/gui/views/accounts/CreateAccount.vue"),
     },
     {
       path: "/accounts/:id",
-      component: () => import("@/components/views/accounts/ViewAccount.vue"),
+      component: () => import("@/gui/views/accounts/ViewAccount.vue"),
     },
     {
       path: "/accounts/:id/edit",
-      component: () => import("@/components/views/accounts/EditAccount.vue"),
+      component: () => import("@/gui/views/accounts/EditAccount.vue"),
     },
     {
       path: "/categories",
-      component: () => import("@/components/views/categories/ListCategories.vue"),
+      component: () => import("@/gui/views/categories/ListCategories.vue"),
     },
     {
       path: "/categories/create",
-      component: () => import("@/components/views/categories/CreateCategory.vue"),
+      component: () => import("@/gui/views/categories/CreateCategory.vue"),
     },
     {
       path: "/categories/:id",
-      component: () => import("@/components/views/categories/ViewCategory.vue"),
+      component: () => import("@/gui/views/categories/ViewCategory.vue"),
     },
     {
       path: "/categories/:id/edit",
-      component: () => import("@/components/views/categories/EditCategory.vue"),
+      component: () => import("@/gui/views/categories/EditCategory.vue"),
     },
     {
       path: "/contractors",
-      component: () => import("@/components/views/contractors/ListContractors.vue"),
+      component: () => import("@/gui/views/contractors/ListContractors.vue"),
     },
     {
       path: "/contractors/create",
-      component: () => import("@/components/views/contractors/CreateContractor.vue"),
+      component: () => import("@/gui/views/contractors/CreateContractor.vue"),
     },
     {
       path: "/contractors/:id",
-      component: () => import("@/components/views/contractors/ViewContractor.vue"),
+      component: () => import("@/gui/views/contractors/ViewContractor.vue"),
     },
     {
       path: "/contractors/:id/edit",
-      component: () => import("@/components/views/contractors/EditContractor.vue"),
+      component: () => import("@/gui/views/contractors/EditContractor.vue"),
     },
     {
       path: "/rates",
-      component: () => import("@/components/views/rates/ListRates.vue"),
+      component: () => import("@/gui/views/rates/ListRates.vue"),
     },
     {
       path: "/rates/create",
-      component: () => import("@/components/views/rates/CreateRate.vue"),
+      component: () => import("@/gui/views/rates/CreateRate.vue"),
     },
     {
       path: "/rates/:id",
-      component: () => import("@/components/views/rates/ViewRate.vue"),
+      component: () => import("@/gui/views/rates/ViewRate.vue"),
     },
     {
       path: "/rates/:id/edit",
-      component: () => import("@/components/views/rates/EditRate.vue"),
+      component: () => import("@/gui/views/rates/EditRate.vue"),
     },
     {
       path: "/recurrences",
-      component: () => import("@/components/views/recurrences/ListRecurrences.vue"),
+      component: () => import("@/gui/views/recurrences/ListRecurrences.vue"),
     },
     {
       path: "/recurrences/create",
-      component: () => import("@/components/views/recurrences/CreateRecurrence.vue"),
+      component: () => import("@/gui/views/recurrences/CreateRecurrence.vue"),
     },
     {
       path: "/recurrences/:id",
-      component: () => import("@/components/views/recurrences/ViewRecurrence.vue"),
+      component: () => import("@/gui/views/recurrences/ViewRecurrence.vue"),
     },
     {
       path: "/recurrences/:id/edit",
-      component: () => import("@/components/views/recurrences/EditRecurrence.vue"),
+      component: () => import("@/gui/views/recurrences/EditRecurrence.vue"),
     },
     {
       path: "/settings",
-      component: () => import("@/components/views/Settings.vue"),
+      component: () => import("@/gui/views/Settings.vue"),
     },
     {
       path: "/help",
-      component: () => import("@/components/views/Help.vue"),
+      component: () => import("@/gui/views/Help.vue"),
     },
     {
       path: "/setup/client-id",
-      component: () => import("@/components/views/setup/ClientId.vue"),
+      component: () => import("@/gui/views/setup/ClientId.vue"),
     },
     {
       path: "/setup/storage",
-      component: () => import("@/components/views/setup/Storage.vue"),
+      component: () => import("@/gui/views/setup/Storage.vue"),
     },
     {
       path: "/setup/passphrase-create",
-      component: () => import("@/components/views/setup/PassphraseCreate.vue"),
+      component: () => import("@/gui/views/setup/PassphraseCreate.vue"),
     },
     {
       path: "/setup/passphrase-unlock",
-      component: () => import("@/components/views/setup/PassphraseUnlock.vue"),
+      component: () => import("@/gui/views/setup/PassphraseUnlock.vue"),
     },
     {
       path: "/setup/account",
-      component: () => import("@/components/views/setup/CreateAccount.vue"),
+      component: () => import("@/gui/views/setup/CreateAccount.vue"),
     },
     {
       path: "/setup/complete",
-      component: () => import("@/components/views/setup/Complete.vue"),
+      component: () => import("@/gui/views/setup/Complete.vue"),
     },
     {
       path: "/:pathMatch(.*)*",
-      component: () => import("@/components/views/NotFound.vue"),
+      component: () => import("@/gui/views/NotFound.vue"),
     },
   ],
 });

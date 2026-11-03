@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import Settings from "@/components/views/Settings.vue";
+import Settings from "@/gui/views/Settings.vue";
 import { saveSettings } from "@/settings";
 import { initializeState, getState } from "@/state/state";
 import { initializeSettings } from "@/state/settings";

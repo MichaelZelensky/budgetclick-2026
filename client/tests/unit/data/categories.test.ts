@@ -2,8 +2,8 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 
-import CreateCategory from "@/components/views/categories/CreateCategory.vue";
-import EditCategory from "@/components/views/categories/EditCategory.vue";
+import CreateCategory from "@/gui/views/categories/CreateCategory.vue";
+import EditCategory from "@/gui/views/categories/EditCategory.vue";
 import { saveReferenceData } from "@/data-flow";
 import { getState } from "@/state/state";
 import validateCategory from "@/validators/default/Category";

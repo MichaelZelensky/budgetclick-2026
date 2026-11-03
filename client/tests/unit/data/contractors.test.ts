@@ -2,8 +2,8 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 
-import CreateContractor from "@/components/views/contractors/CreateContractor.vue";
-import EditContractor from "@/components/views/contractors/EditContractor.vue";
+import CreateContractor from "@/gui/views/contractors/CreateContractor.vue";
+import EditContractor from "@/gui/views/contractors/EditContractor.vue";
 import { saveReferenceData } from "@/data-flow";
 import validateContractor from "@/validators/default/Contractor";
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import ErrorOverlay from "@/components/ui/overlays/ErrorOverlay.vue";
+import ErrorOverlay from "@/gui/ui/overlays/ErrorOverlay.vue";
 import { clearError, showError } from "@/state/error";
 
 const mountOverlay = () => mount(ErrorOverlay, {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import SpinnerOverlay from "@/components/ui/overlays/SpinnerOverlay.vue";
+import SpinnerOverlay from "@/gui/ui/overlays/SpinnerOverlay.vue";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
 
 describe("SpinnerOverlay", () => {

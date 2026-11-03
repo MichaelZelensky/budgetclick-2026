@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import CreateRate from "@/components/views/rates/CreateRate.vue";
-import EditRate from "@/components/views/rates/EditRate.vue";
+import CreateRate from "@/gui/views/rates/CreateRate.vue";
+import EditRate from "@/gui/views/rates/EditRate.vue";
 import { saveReferenceData } from "@/data-flow";
 import { getState, initializeState } from "@/state/state";
 import { ReferenceDataKey } from "@/types/AppState";
