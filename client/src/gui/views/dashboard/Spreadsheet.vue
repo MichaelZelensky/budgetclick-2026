@@ -12,14 +12,14 @@
       }
     }"
     :single-row-selection="true"
-    :clear-selection="props.clearSelection"
+    :clear-selection="(props.clearSelection ?? 0) + clearSelectionVersion"
     @selection-change="onSelectionChange"
     class="md:tw-pt-2 md:tw-px-2 sm:tw-px-0 sm:tw-pt-0"
   >
     <template #actual="{ item }">
       <div class="tw-flex tw-h-5 tw-items-center tw-leading-5">
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
-          <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">✓</span>
+          <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">âœ“</span>
         </span>
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
           <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3" />
@@ -171,6 +171,7 @@ const earlierTransactions = ref<Transaction[]>([]);
 const laterTransactions = ref<Transaction[]>([]);
 const loadingEarlier = ref(false);
 const loadingLater = ref(false);
+const clearSelectionVersion = ref(0);
 
 const selectedTransactions = computed<Transaction[]>(() => {
   const currentDate = new Date();
@@ -326,6 +327,9 @@ const loadEarlier = async (): Promise<void> => {
     return;
   }
 
+  clearSelectionVersion.value++;
+  emit("selectionChange", null);
+
   const manifest = getManifest();
   const earliestTransaction = earliestDisplayedTransaction.value;
 
@@ -374,6 +378,9 @@ const loadLater = async (): Promise<void> => {
   if (loadingLater.value || !canLoadLater.value) {
     return;
   }
+
+  clearSelectionVersion.value++;
+  emit("selectionChange", null);
 
   const manifest = getManifest();
   const latestTransaction = latestDisplayedTransaction.value;
