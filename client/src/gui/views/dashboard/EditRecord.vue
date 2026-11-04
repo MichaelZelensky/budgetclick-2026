@@ -61,6 +61,16 @@
           >
             {{ attachment.name }}
           </a>
+          <span class="tw-text-sm tw-text-gray-500">
+            {{ formatFileSize(attachment.size) }}
+          </span>
+          <button
+            v-if="isSupportedImage(attachment.type)"
+            type="button"
+            @click="editAttachment(attachment)"
+          >
+            Edit
+          </button>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
             ×
           </button>
@@ -189,7 +199,7 @@ import { generateEntityId } from "@/utils/entity";
 import { decodeBlob, encodeBlob } from "@/utils/data";
 import { getLocalDatetime, getLocalMonth, isFutureDate as checkFutureDate } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import { useRecordAttachments } from "@/gui/composables/useRecordAttachments";
+import { useRecordAttachments, isSupportedImage } from "@/gui/composables/useRecordAttachments";
 
 type Attachment = {
   id: string;
@@ -197,6 +207,7 @@ type Attachment = {
   type: string;
   url: string;
   deleted: boolean;
+  size: number;
   file?: File;
 };
 type Tab = "main" | "attachments" | "ext" | "comment" | "recurrence";
@@ -232,6 +243,7 @@ const {
   pendingOversizedImage,
   closeAttachmentSizeModal,
   editOversizedImage,
+  editImage,
   selectAttachments,
 } = useRecordAttachments<Attachment>({
   attachments,
@@ -242,6 +254,7 @@ const {
     file,
     url: URL.createObjectURL(file),
     deleted: false,
+    size: file.size,
   }),
   isDuplicate: (attachment, file) =>
     !attachment.deleted
@@ -260,6 +273,7 @@ const {
         const data = await getAttachment(attachment.id);
         attachment.name = data.name;
         attachment.type = data.type;
+        attachment.size = decodeBlob(data.data).byteLength;
       }),
     );
   },
@@ -302,6 +316,11 @@ const contractorOptions = computed<Option[]>(() => [
   })) ?? []),
 ]);
 
+const formatFileSize = (size: number): string =>
+  size < 1024 * 1024
+    ? `${(size / 1024).toFixed(1)} KB`
+    : `${(size / (1024 * 1024)).toFixed(2)} MB`;
+
 const populateEditor = async (transaction: Transaction): Promise<void> => {
   originalTransaction.value = transaction;
   description.value = transaction.description;
@@ -326,6 +345,7 @@ const populateEditor = async (transaction: Transaction): Promise<void> => {
           type: cached?.type ?? "",
           url: "",
           deleted: false,
+          size: cached?.data === undefined ? 0 : decodeBlob(cached.data).byteLength,
         };
       }),
   );
@@ -358,6 +378,34 @@ const editRecurrence = (): void => {
   router.push(`/recurrences/${originalTransaction.value.recurrenceId}`);
 };
 
+const editAttachment = async (attachment: Attachment): Promise<void> => {
+  const data = attachment.file === undefined
+    ? await getAttachment(attachment.id)
+    : undefined;
+  const file = attachment.file ?? new File(
+    [decodeBlob(data!.data)],
+    data!.name,
+    { type: data!.type },
+  );
+
+  editImage(file, editedFile => {
+    const currentAttachment = attachments.value.find(
+      item => item.id === attachment.id,
+    );
+
+    if (currentAttachment === undefined) {
+      return;
+    }
+
+    URL.revokeObjectURL(currentAttachment.url);
+    currentAttachment.name = editedFile.name;
+    currentAttachment.type = editedFile.type;
+    currentAttachment.file = editedFile;
+    currentAttachment.size = editedFile.size;
+    currentAttachment.url = URL.createObjectURL(editedFile);
+  });
+};
+
 const openAttachment = async (attachment: Attachment, event: MouseEvent): Promise<void> => {
   event.preventDefault();
 
@@ -376,6 +424,7 @@ const openAttachment = async (attachment: Attachment, event: MouseEvent): Promis
     const url = URL.createObjectURL(file);
     attachment.name = data.name;
     attachment.type = data.type;
+    attachment.size = file.size;
     attachment.url = url;
     attachment.file = file;
 

@@ -44,6 +44,16 @@
           <a :href="attachment.url" target="_blank" rel="noopener">
             {{ attachment.name }}
           </a>
+          <span class="tw-text-sm tw-text-gray-500">
+            {{ formatFileSize(attachment.size) }}
+          </span>
+          <button
+            v-if="isSupportedImage(attachment.type)"
+            type="button"
+            @click="editAttachment(attachment)"
+          >
+            Edit
+          </button>
           <button type="button" @click="requestRemoveAttachment(attachment.id)">
             ×
           </button>
@@ -147,7 +157,7 @@ import { generateEntityId } from "@/utils/entity";
 import { encodeBlob } from "@/utils/data";
 import { getLocalDatetime, isFutureDate as checkFutureDate } from "@/utils/date";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
-import { useRecordAttachments } from "@/gui/composables/useRecordAttachments";
+import { useRecordAttachments, isSupportedImage } from "@/gui/composables/useRecordAttachments";
 
 type Attachment = {
   id: string;
@@ -155,6 +165,7 @@ type Attachment = {
   type: string;
   file: File;
   url: string;
+  size: number;
 };
 type Tab = "main" | "attachments" | "ext" | "comment";
 
@@ -182,6 +193,7 @@ const {
   pendingOversizedImage,
   closeAttachmentSizeModal,
   editOversizedImage,
+  editImage,
   selectAttachments,
 } = useRecordAttachments<Attachment>({
   attachments,
@@ -191,6 +203,7 @@ const {
     type: file.type,
     file,
     url: URL.createObjectURL(file),
+    size: file.size,
   }),
   isDuplicate: (attachment, file) =>
     attachment.name === file.name && attachment.type === file.type,
@@ -229,6 +242,30 @@ const contractorOptions = computed<Option[]>(() => [
     text: contractor.name,
   })) ?? []),
 ]);
+
+const formatFileSize = (size: number): string =>
+  size < 1024 * 1024
+    ? `${(size / 1024).toFixed(1)} KB`
+    : `${(size / (1024 * 1024)).toFixed(2)} MB`;
+
+const editAttachment = (attachment: Attachment): void => {
+  editImage(attachment.file, editedFile => {
+    const currentAttachment = attachments.value.find(
+      item => item.id === attachment.id,
+    );
+
+    if (currentAttachment === undefined) {
+      return;
+    }
+
+    URL.revokeObjectURL(currentAttachment.url);
+    currentAttachment.file = editedFile;
+    currentAttachment.name = editedFile.name;
+    currentAttachment.type = editedFile.type;
+    currentAttachment.size = editedFile.size;
+    currentAttachment.url = URL.createObjectURL(editedFile);
+  });
+};
 
 const setIncome = (value: boolean): void => {
   direction.value = value ? "in" : "out";

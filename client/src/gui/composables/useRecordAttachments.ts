@@ -26,6 +26,9 @@ const supportedImageTypes = [
   "image/bmp",
 ];
 
+export const isSupportedImage = (type: string): boolean =>
+  supportedImageTypes.includes(type);
+
 export const useRecordAttachments = <T extends AttachmentBase>(
   options: Options<T>,
 ) => {
@@ -52,6 +55,16 @@ export const useRecordAttachments = <T extends AttachmentBase>(
     options.onAttachmentAdded();
   };
 
+  const editImage = (file: File, onEdited: (file: File) => void = addAttachment): void => {
+    startImageEditor(
+      file,
+      router.currentRoute.value.fullPath,
+      onEdited,
+    );
+
+    void router.push("/editor");
+  };
+
   const closeAttachmentSizeModal = (): void => {
     showAttachmentSizeModal.value = false;
     pendingOversizedImage.value = undefined;
@@ -65,14 +78,7 @@ export const useRecordAttachments = <T extends AttachmentBase>(
     const file = pendingOversizedImage.value;
     showAttachmentSizeModal.value = false;
     pendingOversizedImage.value = undefined;
-
-    startImageEditor(
-      file,
-      router.currentRoute.value.fullPath,
-      addAttachment,
-    );
-
-    void router.push("/editor");
+    editImage(file);
   };
 
   const selectAttachments = async (event: Event): Promise<void> => {
@@ -132,6 +138,7 @@ export const useRecordAttachments = <T extends AttachmentBase>(
     pendingOversizedImage,
     closeAttachmentSizeModal,
     editOversizedImage,
+    editImage,
     selectAttachments,
   };
 };
