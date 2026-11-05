@@ -13,6 +13,10 @@
       <LiteInputField v-model="storage" />
     </label>
 
+    <p class="tw-mt-2 tw-text-sm">
+      <a href="https://budgetclick.com/docs#storage" target="_blank" rel="noopener noreferrer">Storage setup help</a>
+    </p>
+
     <ButtonGroup class="tw-mt-4">
       <LiteButton @click="checkStorage">
         Continue
