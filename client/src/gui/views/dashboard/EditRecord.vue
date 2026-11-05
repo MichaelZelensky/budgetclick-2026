@@ -6,6 +6,7 @@
       :has-attachments="attachments.length > 0"
       :has-comment="!!comment"
       :has-recurrence="!!originalTransaction.recurrenceId"
+      :has-ext="!!originalTransaction.categoryId || !!originalTransaction.contractorId"
       class="tw--mx-4 tw--mt-4 tw-mb-4"
       @new="$emit('new')"
     />

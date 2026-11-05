@@ -4,6 +4,8 @@
       v-model="activeTab"
       mode="create"
       :has-attachments="attachments.length > 0"
+      :has-comment="!!comment"
+      :has-ext="!!categoryId || !!contractorId"
       class="tw--mx-4 tw--mt-4 tw-mb-4"
     />
 

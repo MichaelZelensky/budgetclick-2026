@@ -12,7 +12,7 @@
     <button
       type="button"
       class="tab tab-icon"
-      :class="{ active: modelValue === 'attachments', hightlight: hasAttachments }"
+      :class="{ active: modelValue === 'attachments', highlight: hasAttachments }"
       @click="modelValue = 'attachments'"
     >
       <Paperclip />
@@ -21,7 +21,7 @@
     <button
       type="button"
       class="tab"
-      :class="{ active: modelValue === 'ext' }"
+      :class="{ active: modelValue === 'ext', highlight: hasExt }"
       @click="modelValue = 'ext'"
     >
       Ext
@@ -30,7 +30,7 @@
     <button
       type="button"
       class="tab tab-icon"
-      :class="{ active: modelValue === 'comment', hightlight: hasComment }"
+      :class="{ active: modelValue === 'comment', highlight: hasComment }"
       @click="modelValue = 'comment'"
     >
       <Comment />
@@ -40,7 +40,7 @@
       v-if="mode === 'edit'"
       type="button"
       class="tab tab-icon"
-      :class="{ active: modelValue === 'recurrence', hightlight: hasRecurrence }"
+      :class="{ active: modelValue === 'recurrence', highlight: hasRecurrence }"
       @click="modelValue = 'recurrence'"
     >
       <Repeat />
@@ -72,11 +72,13 @@ withDefaults(
     hasAttachments?: boolean;
     hasComment?: boolean;
     hasRecurrence?: boolean;
+    hasExt?: boolean;
   }>(),
   {
     hasAttachments: false,
     hasComment: false,
     hasRecurrence: false,
+    hasExt: false,
   },
 );
 
@@ -104,11 +106,11 @@ defineEmits<{
   @apply tw-flex tw-items-center tw-justify-center tw-px-2;
 }
 
-.tab-icon.hightlight {
+.tab.highlight {
   @apply tw-text-sky-600;
 }
 
-.tab-icon.hightlight:hover {
+.tab.highlight:hover {
   @apply tw-text-sky-400;
 }
 
