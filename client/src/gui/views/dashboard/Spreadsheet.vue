@@ -19,7 +19,7 @@
     <template #actual="{ item }">
       <div class="tw-flex tw-h-5 tw-items-center tw-leading-5">
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
-          <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">âœ“</span>
+          <span v-if="item.actual" class="tw-text-green-500 tw-text-[10px]">✓</span>
         </span>
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
           <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3" />
