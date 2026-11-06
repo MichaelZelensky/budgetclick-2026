@@ -7,7 +7,7 @@
     <Transition>
       <div v-if="showSpinner">
         <SpinnerIcon />
-        <span v-if="!noText">Loading</span>
+        <span v-if="!noText">Loading. Do not close the browser.</span>
       </div>
     </Transition>
   </Overlay>
