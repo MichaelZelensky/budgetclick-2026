@@ -14,7 +14,10 @@
     </label>
 
     <p class="tw-mt-2 tw-text-sm">
-      <a href="https://budgetclick.com/docs#storage" target="_blank" rel="noopener noreferrer">Storage setup help</a>
+      <a href="https://budgetclick.com/docs#storage" target="_blank" rel="noopener noreferrer" class="tw-whitespace-nowrap">
+        <QuestionCircleFill class="tw-inline tw-mr-1" />
+        Storage setup help
+      </a>
     </p>
 
     <ButtonGroup class="tw-mt-4">
@@ -39,6 +42,7 @@ import { loadSalt } from "@/encryption/salt";
 import { getRawManifest } from "@/manifest";
 import { getSetupState } from "@/state/setup";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import QuestionCircleFill from "@/gui/icons/QuestionCircleFill.vue";
 
 const router = useRouter();
 const storage = ref(getSettings().storage === "-" ? "" : getSettings().storage);
