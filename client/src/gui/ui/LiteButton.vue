@@ -5,6 +5,7 @@
     >
     <button
       v-if="type !== 'link'"
+      v-bind="$attrs"
       :type="type"
       :disabled="disabled"
       @click="onClick"
@@ -31,6 +32,8 @@ import type { PropType } from "vue";
 const emit = defineEmits<{
   click: [event: MouseEvent];
 }>();
+
+defineOptions({ inheritAttrs: false });
 
 const props = defineProps({
   disabled: {

@@ -169,7 +169,8 @@
       <div class="tw-flex tw-items-center tw-space-x-2" v-if="options.paginate && filteredData.length > itemsPerPage">
         <LiteButton size="sm" :disabled="currentPage === 1" @click="firstPage" title="First"> ⇤ </LiteButton>
         <LiteButton size="sm" :disabled="currentPage === 1" @click="prevPage" title="Previous"> ← </LiteButton>
-        <LiteButton size="sm" v-for="page in pageNumbers" :key="page" @click="goToPage(page)" :disabled="+currentPage === +page">{{ page }}</LiteButton>
+        <LiteButton size="sm" v-for="page in pageNumbers" :key="page" @click="goToPage(page)" :disabled="+currentPage === +page" 
+          :class="{ 'tw-bg-zinc-700 tw-text-zinc-100': +currentPage === +page }">{{ page }}</LiteButton>
         <LiteButton size="sm" :disabled="currentPage === totalPages" @click="nextPage" title="Next"> → </LiteButton>
         <LiteButton size="sm" :disabled="currentPage === totalPages" @click="lastPage" title="Last"> ⇥ </LiteButton>
       </div>
