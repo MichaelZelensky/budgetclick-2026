@@ -27,89 +27,78 @@ Expected outcome:
 - Stable encryption model
 - Ready for implementation
 
-### Client module setup priority:
+### Client module setup priority
 
-```
 Build from the bottom up. The higher-level modules depend on the lower ones, and this minimizes rework.
 
 Suggested order:
 
 0. **Base**
-- ✅schema generation
-- ✅build process
-- ✅validators generation
-- ✅implement tests
-- ✅build the production desktop running environment (docker container)
-- ✅logger with log levels
+   - ✅Schema generation
+   - ✅Build process
+   - ✅Validators generation
+   - ✅Implement tests
+   - ✅Build the production desktop running environment (Docker container)
+   - ✅Logger with log levels
 
 1. **Settings**
-
-   * ✅Load `config.json` and `settings.json`
-   * ✅Load the user settings, add the view, persist the user settings in the browser memory
-   * ✅Local user settings (passphrase and storage path)
-   * ✅Validate config and settings
-   * ✅Global constants (app state with immutable objects)
+   - ✅Load `config.json` and `settings.json`
+   - ✅Load user settings, add the view, persist user settings in browser memory
+   - ✅Local user settings (passphrase and storage path)
+   - ✅Validate config and settings
+   - ✅Global constants (app state with immutable objects)
 
 2. **Encryption**
-
-   * ✅Key derivation
-   * ✅AES-GCM encrypt/decrypt
-   * ✅Serialization helpers
-   * ✅Tests
+   - ✅Key derivation
+   - ✅AES-GCM encrypt/decrypt
+   - ✅Serialization helpers
+   - ✅Tests
 
 3. **Storage**
-
-   * ✅Storage interfaces
-   * ✅IndexedDB adapter
-   * ✅S3 adapter
-   * ✅Binary read/write
+   - ✅Storage interfaces
+   - ✅IndexedDB adapter
+   - ✅S3 adapter
+   - ✅Binary read/write
 
 4. **Local Database (IndexedDB)**
-
-   * ✅Database initialization
-   * ✅Object stores
-   * ✅Transactions
-   * ✅Version management
+   - ✅Database initialization
+   - ✅Object stores
+   - ✅Transactions
+   - ✅Version management
 
 5. **Migrations**
-
-   * ✅Local migration framework
-   * ✅Storage migration framework
-   * ✅Runner
-   * ✅Version checks
+   - ✅Local migration framework
+   - ✅Storage migration framework
+   - ✅Runner
+   - ✅Version checks
 
 6. **Repositories (`data/`)**
-
-   * ✅AccountRepository
-   * ✅CategoryRepository
-   * ✅TransactionRepository
-   * ✅ContractorRepository
+   - ✅AccountRepository
+   - ✅CategoryRepository
+   - ✅TransactionRepository
+   - ✅ContractorRepository
 
 7. **State**
-
-   * ✅Reactive application state
-   * ✅Current settings
-   * ✅Current database
-   * Sync status
+   - ✅Reactive application state
+   - ✅Current settings
+   - ✅Current database
+   - Sync status
 
 8. **Cache**
-
-   * Derived balances
-   * Statistics
-   * Query caching
+   - Derived balances
+   - Statistics
+   - Query caching
 
 9. **Sync**
-
-   * Manifest
-   * Dirty tracking
-   * Merge
-   * Upload/download
+   - Manifest
+   - Dirty tracking
+   - Merge
+   - Upload/download
 
 10. **Views**
+    - ✅Setup wizard
+    - ✅Main application
 
-    * ✅Setup wizard
-    * ✅Main application
-```
 ## Phase 1 - Development Environment
 
 Goal:
@@ -118,7 +107,7 @@ Create the development and deployment foundation.
 
 Activities:
 
-- ✅Setup repository (done)
+- ✅Setup repository
 - ✅Setup AI-assisted tooling
 - ✅Setup Vue + TypeScript project
 - ✅Setup PWA configuration
@@ -143,71 +132,53 @@ Scope:
 
 - ✅S3 connection
 - ✅Application shell
-   1. ✅Tailwind + base styles + variables
-   2. ✅Responsive breakpoints
-   3. ✅Application shell — header, menu, footer
-   4. ✅Router
-   5. ✅Dashboard + Settings views
-   6. ✅Reusable UI components
-   7. ✅Responsive testing + polish
-   8. ✅Tests where applicable
+  1. ✅Tailwind + base styles + variables
+  2. ✅Responsive breakpoints
+  3. ✅Application shell — header, menu, footer
+  4. ✅Router
+  5. ✅Dashboard + Settings views
+  6. ✅Reusable UI components
+  7. ✅Responsive testing + polish
+  8. ✅Tests where applicable
 - ✅Initial setup flow
-   1. ✅Provide user guidance
-   2. ✅Initialize manifest if the storage is new
+  1. ✅Provide user guidance
+  2. ✅Initialize manifest if the storage is new
 - ✅Local IndexedDB storage
-   1. ✅Set up IndexedDb
-   2. ✅Implement Migration (migration scripts + migration engine)
-   3. ✅Implement initial data flow and CRUD for all entities
+  1. ✅Set up IndexedDB
+  2. ✅Implement migrations (scripts + migration engine)
+  3. ✅Implement initial data flow and CRUD for all entities
 - ✅Encryption layer
-   - ✅Define encryption contract
-   - ✅Update setup flow:
-       passphrase → encryption key → encrypted manifest
-   - ✅Implement PBKDF2 key derivation
-   - ✅Generate and persist storage salt
-   - ✅Persist derived encryption key locally
-   - ✅Implement `client/src/encryption/`
-   - ✅Integrate encryption into storage transport:
-       encrypt before PUT
-       decrypt after GET
-   - ✅Remove `EncryptedObject` type
-   - ✅Encrypt manifest and all storage objects
-   - ✅Add encryption tests
+  - ✅Define encryption contract
+  - ✅Update setup flow: passphrase → encryption key → encrypted manifest
+  - ✅Implement PBKDF2 key derivation
+  - ✅Generate and persist storage salt
+  - ✅Persist derived encryption key locally
+  - ✅Implement `client/src/encryption/`
+  - ✅Integrate encryption into storage transport
+  - ✅Remove `EncryptedObject` type
+  - ✅Encrypt manifest and all storage objects
+  - ✅Add encryption tests
 - ✅Synchronization engine
-   - ✅Update contract / docs/sync.md
-   - ✅Import existing remote data during setup
-   - ✅Define initial transaction loading strategy
-   - ✅Synchronize remote changes to local data
-   - ✅Accept newer remote objects
-   - ✅Synchronization tests
+  - ✅Update contract / `docs/sync.md`
+  - ✅Import existing remote data during setup
+  - ✅Define initial transaction loading strategy
+  - ✅Synchronize remote changes to local data
+  - ✅Accept newer remote objects
+  - ✅Synchronization tests
 - ✅Bank account management
 - ✅Categories
 - ✅Contractors
-- Refine the transaction explorer views
-  - transaction widget:
-   - ✅income / expense
-   - ✅planned / actual
-   - ✅edit a record
-  - list of transactions
-   - infinite scrolling ("load more" button)
-   - date selection
-   - balance after transaction
-- ✅ Monthly statistics
-   - ✅ rates
-
+- ✅Transaction explorer
+  - ✅Income / expense
+  - ✅Planned / actual
+  - ✅Edit a record
+  - ✅Transaction list
+  - ✅Infinite scrolling (load more button)
+  - ✅Date selection
+  - ✅Balance after transaction
+- ✅Monthly statistics
+  - ✅Rates
 - ✅Basic offline workflow
-
-Included:
-
-- Automatic synchronization
-
-Excluded:
-
-- Manual conflict resolution
-- Compression
-- Recurrence engine
-- Attachments
-- Banking integrations
-- Multi-user features
 
 Expected outcome:
 
@@ -217,93 +188,41 @@ Expected outcome:
 
 Goal:
 
-Improve productivity features.
+Expand personal finance management capabilities.
 
 Activities:
 
-- Recurrence engine
-- Planned transaction improvements
-- Search
-- Filtering (widget)
-- Reporting improvements
-- ✅attachments
-- import / export
+- ✅Recurrence engine
+- ✅Search
+- ✅Filtering
+- ✅Reporting improvements
+- ✅Attachments
+- ✅Import / export
 
 Expected outcome:
 
 - More automated personal finance management.
 
-## Phase 4 - Iteration 2
+## Phase 4 - Finalization
 
 Goal:
 
-Improve usability and reliability.
+Stabilize the free version and prepare it for release.
 
 Activities:
 
-- Manual conflict resolution
-- Compression
-- Improve synchronization reliability
-- Improve UI / UX
-- Improve data entry flow
-- Add validation
-- Expand automated tests
-- Run user scenario tests
-- Argon2id key derivation
+- Debugging and bug fixing
+- UX improvements
+- Reliability improvements
+- Automated and user scenario tests
+- Final validation across supported devices and browsers
 
 Expected outcome:
 
-- Stable daily-use version.
+- Stable, reliable free version.
+- All implemented functionality fixed and maintained.
+- Roadmap for the free version completed.
 
-## Phase 5 - Iteration 3
+## Beyond the Free Version
 
-Goal:
-
-Advanced functionality.
-
-Activities:
-
-- Attachment support
-- Reports
-- Data visualization
-- Export / Import
-- Backup tools
-- Key rotation
-
-Expected outcome:
-
-- Mature personal finance platform.
-
-## Every Iteration Includes
-
-### Development
-
-- Feature implementation
-- Refactoring
-- Documentation updates
-
-### Quality
-
-- Automated tests
-- User scenario tests
-- Manual validation
-
-### Documentation
-
-Update:
-
-- design.md
-- storage-contract.md
-- data-schema.md
-- sync.md
-- encryption.md
-- migrations.md
-
-### Architecture
-
-Review:
-
-- Design decisions
-- Storage format
-- Synchronization strategy
-- Migration strategy
+Further development will be outside the scope of the free version and considered for BudgetClick Premium.
