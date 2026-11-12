@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h } from "vue";
+import { defineComponent, h, nextTick, type PropType } from "vue";
 import { getState, initializeState } from "@/state/state";
 import Spreadsheet from "@/gui/views/dashboard/Spreadsheet.vue";
 import type { Transaction } from "@/types/data/Transaction";
@@ -45,17 +45,38 @@ const DatagridStub = defineComponent({
   name: "Datagrid",
   props: {
     clearSelection: { type: Number, default: 0 },
+    data: {
+      type: Array as PropType<{
+        id: string;
+        actual: boolean;
+        hasAttachments: boolean;
+        recurrenceId?: string | null;
+      }[]>,
+      default: () => [],
+    },
   },
   emits: ["selection-change"],
-  setup: (_, { slots }) => () => h("div", slots.customBottomControls?.()),
+  setup: (props, { slots }) => () => h("div", [
+    ...props.data.map(item =>
+      h("div", { key: item.id }, slots.actual?.({ item })),
+    ),
+    slots.customBottomControls?.(),
+  ]),
 });
 
 const findButton = (wrapper: ReturnType<typeof mount>, text: string) =>
   wrapper.findAll("button").find(button => button.text() === text);
 
-const mountSpreadsheet = (direction: "earlier" | "later") => {
+const mountSpreadsheet = (
+  direction: "earlier" | "later",
+  recurrenceIds: Record<number, string> = {},
+) => {
   const transactions = createTransactions(direction);
   const month = transactions[0].datetime.slice(0, 7);
+
+  for (const [index, recurrenceId] of Object.entries(recurrenceIds)) {
+    transactions[Number(index)].recurrenceId = recurrenceId;
+  }
 
   getState().chunks = {
     [month]: { metadata, transactions },
@@ -117,4 +138,38 @@ describe("Spreadsheet UI", () => {
       expect(datagrid.props("clearSelection")).toBe(1);
     },
   );
+
+  it("highlights recurrence icons for transactions in the selected recurrence family", async () => {
+    const { wrapper, transactions } = mountSpreadsheet("later", {
+      0: "r_1",
+      1: "r_1",
+      2: "r_2",
+    });
+    const datagrid = wrapper.findComponent(DatagridStub);
+
+    expect(wrapper.findAll(".tw-text-sky-600")).toHaveLength(0);
+
+    datagrid.vm.$emit("selection-change", [transactions[0].id]);
+    await nextTick();
+
+    expect(wrapper.findAll(".tw-text-sky-600")).toHaveLength(2);
+  });
+
+  it("removes recurrence family highlighting when selection is cleared", async () => {
+    const { wrapper, transactions } = mountSpreadsheet("later", {
+      0: "r_1",
+      1: "r_1",
+    });
+    const datagrid = wrapper.findComponent(DatagridStub);
+
+    datagrid.vm.$emit("selection-change", [transactions[0].id]);
+    await nextTick();
+
+    expect(wrapper.findAll(".tw-text-sky-600")).toHaveLength(2);
+
+    datagrid.vm.$emit("selection-change", []);
+    await nextTick();
+
+    expect(wrapper.findAll(".tw-text-sky-600")).toHaveLength(0);
+  });
 });

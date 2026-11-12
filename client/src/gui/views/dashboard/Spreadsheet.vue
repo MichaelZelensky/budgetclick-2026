@@ -24,7 +24,10 @@
         <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
           <Paperclip v-if="item.hasAttachments" class="tw-h-3 tw-w-3" />
         </span>
-        <span class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center">
+        <span
+          class="tw-flex tw-w-3 tw-shrink-0 tw-items-center tw-justify-center"
+          :class="{ 'tw-text-sky-600': selectedRecurrenceId && item.recurrenceId === selectedRecurrenceId }"
+        >
           <Recurrence v-if="item.recurrenceId" class="tw-h-3 tw-w-3" />
         </span>
       </div>
@@ -172,6 +175,7 @@ const laterTransactions = ref<Transaction[]>([]);
 const loadingEarlier = ref(false);
 const loadingLater = ref(false);
 const clearSelectionVersion = ref(0);
+const selectedRecurrenceId = ref<string | null>(null);
 
 const selectedTransactions = computed<Transaction[]>(() => {
   const currentDate = new Date();
@@ -328,6 +332,7 @@ const loadEarlier = async (): Promise<void> => {
   }
 
   clearSelectionVersion.value++;
+  selectedRecurrenceId.value = null;
   emit("selectionChange", null);
 
   const manifest = getManifest();
@@ -380,6 +385,7 @@ const loadLater = async (): Promise<void> => {
   }
 
   clearSelectionVersion.value++;
+  selectedRecurrenceId.value = null;
   emit("selectionChange", null);
 
   const manifest = getManifest();
@@ -434,6 +440,7 @@ const onSelectionChange = (ids: string[]): void => {
         .find(item => item.id === selectedId) ?? null
     : null;
 
+  selectedRecurrenceId.value = transaction?.recurrenceId ?? null;
   emit("selectionChange", transaction);
 };
 </script>
