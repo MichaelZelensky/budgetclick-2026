@@ -538,6 +538,7 @@ const headerCheckboxIsIndeterminate = computed(() =>
 
 const clearSelection = () => {
   selectedRowIdSet.value = new Set<RowId>();
+  emit("selectionChange", []);
 };
 
 watch(() => props.clearSelection, () => clearSelection());
