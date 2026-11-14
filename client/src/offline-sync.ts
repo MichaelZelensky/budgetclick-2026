@@ -15,6 +15,7 @@ import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
 import { dbGetRecurrences } from "@/repository/recurrence";
 import { setLoadingOff, setLoadingOn } from "@/state/loading";
+import { logger } from "@/logger";
 
 let synchronizing = false;
 
@@ -132,7 +133,7 @@ export const setObjectPending = (key: "statistics" | "balances", pending: boolea
 
 const saveObject = async (objectKey: string, data: unknown): Promise<void> => {
   const manifest = await getPendingManifest();
-  console.debug(`Saving object: ${objectKey}`, data);
+  logger.debug(`Saving object: ${objectKey}`, data);
   await putFile(objectKey, encodeData(data));
   await putFile(manifestKey, encodeData(manifest));
 };
@@ -166,10 +167,10 @@ const synchronizeReferenceData = async (): Promise<void> => {
 
   for (const key of Object.values(ReferenceDataKey)) {
     if (!offlineSync.objects[key]) {
-      console.debug(`Skip: ${key}`);
+      logger.debug(`Skip: ${key}`);
       continue;
     }
-    console.debug(`Synchronizing reference data: ${key}`);
+    logger.debug(`Synchronizing reference data: ${key}`);
     const value = referenceData[key];
     if (value.data === null) {
       throw new Error(`Reference data not found: ${key}`);
@@ -178,7 +179,7 @@ const synchronizeReferenceData = async (): Promise<void> => {
       await saveObject(value.entry.objectKey, value.data);
       await clearReferenceDataPending(key);
     } catch (error) {
-      console.error(`Failed to synchronize reference data: ${key}`, error);
+      logger.error(`Failed to synchronize reference data: ${key}`, error);
     }
   }
 };
@@ -189,7 +190,7 @@ const synchronizeAttachments = async (): Promise<void> => {
     if (!pending) {
       continue;
     }
-    console.debug(`Synchronizing attachment: ${id}`);
+    logger.debug(`Synchronizing attachment: ${id}`);
     try {
       const attachment = await dbGetAttachment(id);
       if (attachment === null) {
@@ -198,7 +199,7 @@ const synchronizeAttachments = async (): Promise<void> => {
       await putFile(id, encodeData(attachment));
       await clearAttachmentPending(id);
     } catch (error) {
-      console.error(`Failed to synchronize attachment: ${id}`, error);
+      logger.error(`Failed to synchronize attachment: ${id}`, error);
     }
   }
 };
@@ -221,7 +222,7 @@ const synchronizeChunks = async (): Promise<void> => {
       await saveObject(entry.objectKey, chunk);
       await clearChunkPending(month);
     } catch (error) {
-      console.error(`Failed to synchronize chunk: ${month}`, error);
+      logger.error(`Failed to synchronize chunk: ${month}`, error);
     }
   }
 };
@@ -240,7 +241,7 @@ const synchronizeStatistics = async (): Promise<void> => {
     await saveObject(manifest.statistics.objectKey, statistics);
     await setObjectPending("statistics", false);
   } catch (error) {
-    console.error("Failed to synchronize statistics", error);
+    logger.error("Failed to synchronize statistics", error);
   }
 };
 
@@ -258,7 +259,7 @@ const synchronizeBalances = async (): Promise<void> => {
     await saveObject(manifest.balances.objectKey, balances);
     await setObjectPending("balances", false);
   } catch (error) {
-    console.error("Failed to synchronize balances", error);
+    logger.error("Failed to synchronize balances", error);
   }
 };
 
@@ -267,13 +268,13 @@ export const synchronizeOfflineData = async (): Promise<void> => {
     return;
   }
   const offlineSync = await dbGetOfflineSync();
-  console.log("Offline sync state:", offlineSync);
+  logger.info("Offline sync state:", offlineSync);
   if (!hasPendingData(offlineSync)) {
     return;
   }
   synchronizing = true;
   const loadingId = setLoadingOn();
-  console.log("Synchronizing offline data... +");
+  logger.info("Synchronizing offline data... +");
   try {
     await synchronizeReferenceData();
     await synchronizeAttachments();
@@ -288,10 +289,10 @@ export const synchronizeOfflineData = async (): Promise<void> => {
       });
     }
   } catch {
-    console.error("Error occurred during offline data synchronization. Please check your internet connection and try again.");
+    logger.error("Error occurred during offline data synchronization. Please check your internet connection and try again.");
   } finally {
     setLoadingOff(loadingId);
-    console.log("Offline data synchronization completed.");
+    logger.info("Offline data synchronization completed.");
     synchronizing = false;
   }
 };

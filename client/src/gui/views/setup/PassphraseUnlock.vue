@@ -48,6 +48,7 @@ import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { importRemoteData } from "@/sync";
 import { saveSettings } from "@/settings";
 import { migrateStorage } from "@/migrations/migrate";
+import { logger } from "@/logger";
 
 const router = useRouter();
 const passphrase = ref("");
@@ -89,7 +90,7 @@ const unlock = async () => {
     await saveSalt(setupState.remoteSalt);
     router.push("/setup/complete");
   } catch (exception) {
-    console.error(exception);
+    logger.error(exception);
     error.value = exception instanceof Error ? exception.message : "Incorrect passphrase";
   } finally {
     setLoadingOff(loadingId);

@@ -24,6 +24,7 @@ import { generateObjectKey } from "@/utils/key";
 import { getSettings, updateSettings } from "@/state/settings";
 import { saveSettings } from "@/settings";
 import { createMetadata } from "@/utils/metadata";
+import { logger } from "@/logger";
 
 const toPlain = <T>(data: T): T => {
   return JSON.parse(JSON.stringify(data));
@@ -253,7 +254,7 @@ export const importData = async (file: File): Promise<Blob | null> => {
           }
           const encrypted = await encryptData(body);
           oversizedFiles[`${(key as string)[0]}/${key}`] = encrypted;
-          console.debug(`Import oversized: ${key}, name=${attachment.name}, file=${files[`attachments/${key}-${attachment.name}`]?.byteLength} bytes, envelope=${body.byteLength} bytes, encrypted=${encrypted.byteLength} bytes (${(encrypted.byteLength / 1024 / 1024).toFixed(2)} MB)`);
+          logger.debug(`Import oversized: ${key}, name=${attachment.name}, file=${files[`attachments/${key}-${attachment.name}`]?.byteLength} bytes, envelope=${body.byteLength} bytes, encrypted=${encrypted.byteLength} bytes (${(encrypted.byteLength / 1024 / 1024).toFixed(2)} MB)`);
           await putFile(key as string, encodeData({ ...attachment, data: encodeBlob(new ArrayBuffer(0)) }));
         }
       }),
