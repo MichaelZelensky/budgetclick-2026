@@ -69,73 +69,55 @@
     <h3>1. Create a bucket</h3>
 
     <p>
-      Create a dedicated bucket for BudgetClick using an S3-compatible provider
-      such as AWS S3.
+      Create a dedicated bucket for BudgetClick. Do not use a bucket containing
+      other personal or important data. BudgetClick's storage path acts as an
+      access capability.
     </p>
 
     <p>
-      Do not use a bucket containing other personal or important data.
-      BudgetClick's storage path acts as an access capability.
+      On AWS, use the CloudFormation template
+      <a
+        href="https://github.com/MichaelZelensky/budgetclick-2026/blob/main/server/s3/cloudformation.yml"
+        target="_blank"
+        rel="noopener noreferrer"
+        ><code>cloudformation.yml</code></a
+      >. Download it, open <strong>CloudFormation</strong> in the AWS console,
+      choose
+      <strong>Create stack → With new resources → Upload a template file</strong>,
+      enter a unique bucket name, and submit. When the stack is created, copy
+      <code>StoragePath</code> from its <strong>Outputs</strong> tab.
     </p>
-
-    <h3>2. Allow public access</h3>
 
     <p>
-      BudgetClick does not use AWS credentials. The bucket therefore needs to
-      allow anonymous read and write access to objects.
+      The template creates a public bucket with the required policy and CORS
+      configuration. The bucket is public by design. Everything in it is
+      encrypted, so the worst an outsider can do is delete or overwrite
+      objects, not read them.
     </p>
-
-    <p>
-      If your provider has a public-access blocking feature, configure it so
-      that the bucket policy can grant public access.
-    </p>
-
-    <h3>3. Configure the bucket policy</h3>
-
-    <p>The bucket policy should allow anonymous:</p>
 
     <ul class="tw-list-disc tw-pl-5">
-      <li>GetObject</li>
-      <li>PutObject</li>
-      <li>ListBucket</li>
+      <li>
+        <strong>Public access:</strong> if the stack fails or the bucket stays
+        private, open <strong>S3 → Block Public Access settings for this
+        account</strong> and turn off <strong>Block public policy</strong>. The
+        account-level setting overrides the bucket settings.
+      </li>
+      <li>
+        <strong>Bucket name:</strong> it must be globally unique across all AWS
+        accounts. If the name is taken, the stack is rolled back; create it
+        again with a different name.
+      </li>
     </ul>
 
     <p>
-      It should not allow bucket deletion, bucket configuration changes, IAM
-      access, or object deletion.
+      For other S3-compatible providers, create an equivalent bucket using the
+      template as a reference for the required policy and CORS settings.
     </p>
 
-    <p>For AWS S3, the policy is:</p>
-
-    <pre><code>{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "BudgetClickPublicReadWrite",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject"
-      ],
-      "Resource": "arn:aws:s3:::BUCKET_NAME/*"
-    },
-    {
-      "Sid": "BudgetClickPublicList",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:ListBucket",
-      "Resource": "arn:aws:s3:::BUCKET_NAME"
-    }
-  ]
-}</code></pre>
-
-    <p>Replace <code>BUCKET_NAME</code> with the name of your bucket.</p>
-
-    <h3>4. Enter the storage path</h3>
+    <h3>2. Enter the storage path</h3>
 
     <p>
-      Copy the HTTPS URL of your bucket and enter it in <router-link to="/settings">Settings</router-link>. For example:
+      Enter the HTTPS URL of your bucket in <router-link to="/settings">Settings</router-link>. For example:
     </p>
 
     <pre><code>https://your-bucket.s3.us-east-1.amazonaws.com/</code></pre>
@@ -148,7 +130,7 @@
     <InlineAlert variant="warning">
       <p>
         Each storage object, including monthly transaction chunks and
-        attachments, must not exceed 3 MB. Large attachments or months with many
+        attachments, must not exceed 5 MB. Large attachments or months with many
         transactions may need to be reduced or split.
       </p>
     </InlineAlert>

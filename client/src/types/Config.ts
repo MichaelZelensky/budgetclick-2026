@@ -14,6 +14,7 @@ type StorageConfig = {
   getUrl: string;
   listUrl: string;
   deleteUrl: string;
+  mode: "proxy" | "direct";
 };
 
 type KdfConfig = {
