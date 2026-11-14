@@ -4,7 +4,7 @@ import type { Attachment } from "@/types/data/Attachment";
 const objectStoreName = "attachments";
 
 export const dbGetAttachment = async (id: string): Promise<Attachment | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get(id);
@@ -14,7 +14,7 @@ export const dbGetAttachment = async (id: string): Promise<Attachment | null> =>
 };
 
 export const dbSaveAttachment = async (id: string, data: Attachment): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(data, id);
@@ -24,7 +24,7 @@ export const dbSaveAttachment = async (id: string, data: Attachment): Promise<vo
 };
 
 export const dbDeleteAttachment = async (id: string): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).delete(id);

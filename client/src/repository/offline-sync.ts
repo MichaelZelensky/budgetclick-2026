@@ -5,7 +5,7 @@ const objectStoreName = "offlineSync";
 const recordKey = "offlineSync";
 
 export const dbGetOfflineSync = async (): Promise<OfflineSync> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get(recordKey);
@@ -21,7 +21,7 @@ export const dbGetOfflineSync = async (): Promise<OfflineSync> => {
 };
 
 export const dbSaveOfflineSync = async (offlineSync: OfflineSync): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(offlineSync, recordKey);

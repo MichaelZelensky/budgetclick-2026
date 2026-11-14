@@ -4,7 +4,7 @@ import type { StatisticsStorage } from "@/types/storage/StatisticsStorage";
 const objectStoreName = "statistics";
 
 export const dbGetStatistics = async (): Promise<StatisticsStorage | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get("statistics");
@@ -14,7 +14,7 @@ export const dbGetStatistics = async (): Promise<StatisticsStorage | null> => {
 };
 
 export const dbSaveStatistics = async (statistics: StatisticsStorage): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(statistics, "statistics");

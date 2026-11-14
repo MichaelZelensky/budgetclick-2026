@@ -4,7 +4,7 @@ import type { BalanceStorage } from "@/types/storage/BalanceStorage";
 const objectStoreName = "balances";
 
 export const dbGetBalances = async (): Promise<BalanceStorage | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get("balances");
@@ -14,7 +14,7 @@ export const dbGetBalances = async (): Promise<BalanceStorage | null> => {
 };
 
 export const dbSaveBalances = async (balances: BalanceStorage): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(balances, "balances");

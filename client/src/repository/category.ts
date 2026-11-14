@@ -5,7 +5,7 @@ const objectStoreName = "categories";
 const recordKey = "current";
 
 export const dbGetCategories = async (): Promise<CategoriesStorage | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get(recordKey);
@@ -15,7 +15,7 @@ export const dbGetCategories = async (): Promise<CategoriesStorage | null> => {
 };
 
 export const dbSaveCategories = async (categoriesStorage: CategoriesStorage): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(categoriesStorage, recordKey);

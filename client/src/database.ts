@@ -7,14 +7,6 @@ const databaseState = {
   database: null as IDBDatabase | null,
 };
 
-const reopenDatabase = () => {
-  if (document.visibilityState === "visible" && databaseState.database !== null) {
-    databaseState.database.close();
-    databaseState.database = null;
-    void initializeDatabase();
-  }
-};
-
 export const initializeDatabase = (): Promise<void> => {
   if (databaseState.database !== null) {
     return Promise.resolve();
@@ -31,11 +23,6 @@ export const initializeDatabase = (): Promise<void> => {
     };
     request.onsuccess = () => {
       databaseState.database = request.result;
-      request.result.onclose = () => {
-        databaseState.database = null;
-        void initializeDatabase();
-      };
-      document.addEventListener("visibilitychange", reopenDatabase);
       setLoadingOff(loadingId);
       resolve();
     };
@@ -46,7 +33,17 @@ export const initializeDatabase = (): Promise<void> => {
   });
 };
 
-export const getDatabase = (): IDBDatabase => {
+export const getDatabase = async (): Promise<IDBDatabase> => {
+  if (databaseState.database !== null) {
+    try {
+      databaseState.database.transaction(Array.from(databaseState.database.objectStoreNames)).abort();
+      return databaseState.database;
+    } catch {
+      databaseState.database.close();
+      databaseState.database = null;
+    }
+  }
+  await initializeDatabase();
   if (databaseState.database === null) {
     throw new Error("Database has not been initialized");
   }

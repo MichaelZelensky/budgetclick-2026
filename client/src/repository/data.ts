@@ -32,7 +32,7 @@ export const initializeData = async (): Promise<void> => {
 };
 
 export const clearData = async (): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   const objectStoreNames = Array.from(database.objectStoreNames).filter(x => x !== encryptionKeyStore);
   await new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(objectStoreNames, "readwrite");

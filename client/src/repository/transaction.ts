@@ -4,7 +4,7 @@ import type { ChunkStorage } from "@/types/storage/ChunkStorage";
 const objectStoreName = "chunks";
 
 export const dbGetChunks = async (): Promise<Record<string, ChunkStorage>> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const store = transaction.objectStore(objectStoreName);
@@ -20,7 +20,7 @@ export const dbGetChunks = async (): Promise<Record<string, ChunkStorage>> => {
 };
 
 export const dbGetChunk = async (month: string): Promise<ChunkStorage | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get(month);
@@ -30,7 +30,7 @@ export const dbGetChunk = async (month: string): Promise<ChunkStorage | null> =>
 };
 
 export const dbSaveChunk = async (month: string, chunk: ChunkStorage): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(chunk, month);
@@ -40,7 +40,7 @@ export const dbSaveChunk = async (month: string, chunk: ChunkStorage): Promise<v
 };
 
 export const dbDeleteChunk = async (month: string): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).delete(month);

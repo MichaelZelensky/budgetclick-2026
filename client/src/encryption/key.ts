@@ -41,8 +41,8 @@ const deriveEncryptionKey = async (
 };
 
 const getStoredEncryptionKey = (): Promise<EncryptionKeyRecord | undefined> => {
-  return new Promise((resolve, reject) => {
-    const transaction = getDatabase().transaction(encryptionKeyStore, "readonly");
+  return new Promise(async (resolve, reject) => {
+    const transaction = (await getDatabase()).transaction(encryptionKeyStore, "readonly");
     const request = transaction.objectStore(encryptionKeyStore).get(encryptionKeyId);
     request.onsuccess = () => {
       resolve(request.result as EncryptionKeyRecord | undefined);
@@ -56,8 +56,8 @@ const getStoredEncryptionKey = (): Promise<EncryptionKeyRecord | undefined> => {
 const saveStoredEncryptionKey = (
   record: EncryptionKeyRecord,
 ): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const transaction = getDatabase().transaction(encryptionKeyStore, "readwrite");
+  return new Promise(async (resolve, reject) => {
+    const transaction = (await getDatabase()).transaction(encryptionKeyStore, "readwrite");
     const request = transaction.objectStore(encryptionKeyStore).put(record, encryptionKeyId);
     request.onsuccess = () => resolve();
     request.onerror = () => {

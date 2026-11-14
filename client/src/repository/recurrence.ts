@@ -6,7 +6,7 @@ const objectStoreName = "recurrences";
 const recordKey = "current";
 
 export const dbGetRecurrences = async (): Promise<RecurrencesStorage | null> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readonly");
     const request = transaction.objectStore(objectStoreName).get(recordKey);
@@ -16,7 +16,7 @@ export const dbGetRecurrences = async (): Promise<RecurrencesStorage | null> => 
 };
 
 export const dbSaveRecurrences = async (recurrencesStorage: RecurrencesStorage): Promise<void> => {
-  const database = getDatabase();
+  const database = await getDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(objectStoreName, "readwrite");
     transaction.objectStore(objectStoreName).put(recurrencesStorage, recordKey);
