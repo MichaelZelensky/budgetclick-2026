@@ -14,9 +14,20 @@ vi.mock("@/migrations/migrate", () => ({
   }),
 }));
 
+const setVisibilityState = (value: DocumentVisibilityState) => {
+  Object.defineProperty(document, "visibilityState", { value, configurable: true });
+};
+
+const breakConnection = (database: IDBDatabase) => {
+  vi.spyOn(database, "transaction").mockImplementation(() => {
+    throw new Error("The database connection is closing");
+  });
+};
+
 describe("database", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setVisibilityState("visible");
   });
 
   it("initializes database", async () => {
@@ -38,20 +49,78 @@ describe("database", () => {
     expect(setLoadingOff).not.toHaveBeenCalled();
   });
 
-  it("returns the same database when connection is healthy", async () => {
+  it("returns the same database on repeated calls", async () => {
     const database = await getDatabase();
 
     expect(await getDatabase()).toBe(database);
   });
 
-  it("reopens database when connection is closing", async () => {
+  it("opens only one connection for concurrent calls", async () => {
     const database = await getDatabase();
-    vi.spyOn(database, "transaction").mockImplementation(() => {
-      throw new Error("The database connection is closing");
+    database.onclose?.(new Event("close"));
+    vi.clearAllMocks();
+
+    const [first, second] = await Promise.all([getDatabase(), getDatabase()]);
+
+    expect(first).toBe(second);
+    expect(setLoadingOn).toHaveBeenCalledTimes(1);
+  });
+
+  it("reopens database on close event", async () => {
+    const database = await getDatabase();
+
+    database.onclose?.(new Event("close"));
+
+    expect(await getDatabase()).not.toBe(database);
+  });
+
+  it("reopens database on versionchange event", async () => {
+    const database = await getDatabase();
+
+    database.onversionchange?.(new Event("versionchange") as IDBVersionChangeEvent);
+
+    expect(await getDatabase()).not.toBe(database);
+  });
+
+  it("reopens database when page becomes visible and connection is broken", async () => {
+    const database = await getDatabase();
+    breakConnection(database);
+
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    await vi.waitFor(async () => {
+      expect(await getDatabase()).not.toBe(database);
     });
+  });
 
-    const reopened = await getDatabase();
+  it("reopens database on pageshow when connection is broken", async () => {
+    const database = await getDatabase();
+    breakConnection(database);
 
-    expect(reopened).not.toBe(database);
+    window.dispatchEvent(new Event("pageshow"));
+
+    await vi.waitFor(async () => {
+      expect(await getDatabase()).not.toBe(database);
+    });
+  });
+
+  it("keeps database when page becomes visible and connection is healthy", async () => {
+    const database = await getDatabase();
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(await getDatabase()).toBe(database);
+  });
+
+  it("keeps database when page becomes hidden", async () => {
+    const database = await getDatabase();
+    breakConnection(database);
+    setVisibilityState("hidden");
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(await getDatabase()).toBe(database);
   });
 });
