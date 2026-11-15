@@ -191,11 +191,11 @@ const selectedTransactions = computed<Transaction[]>(() => {
     .sort((a, b) => a.datetime.localeCompare(b.datetime));
 
   const initialTransactions = currentAndFutureTransactions.length > 0
-    ? currentAndFutureTransactions.slice(0, 100)
+    ? currentAndFutureTransactions.slice(0, 20)
     : cachedTransactions
         .filter(transaction => getLocalDate(transaction.datetime) < currentDateString)
         .sort((a, b) => b.datetime.localeCompare(a.datetime))
-        .slice(0, 100);
+        .slice(0, 20);
 
   const initialTransactionIds = new Set(initialTransactions.map(transaction => transaction.id));
 

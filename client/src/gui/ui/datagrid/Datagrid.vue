@@ -325,8 +325,8 @@ for (const column of props.columns) {
 const itemsPerPage = ref<number>(
   route.query.pageSize
     ? Number(route.query.pageSize)
-    : rowsPerPageNumbers.value.includes(100)
-      ? 100
+    : rowsPerPageNumbers.value.includes(20)
+      ? 20
       : rowsPerPageNumbers.value[0]
 );
 watch(rowsPerPageNumbers, (newList) => {
