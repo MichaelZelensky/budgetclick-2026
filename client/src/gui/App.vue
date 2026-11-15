@@ -1,6 +1,6 @@
 
 <template>
-  <div class="tw-flex tw-h-[100dvh] tw-flex-col">
+  <div class="tw-flex tw-h-[100dvh] tw-flex-col tw-w-full tw-max-w-full tw-overflow-hidden">
     <Header />
     <main
       class="tw-min-h-0 tw-flex-1"

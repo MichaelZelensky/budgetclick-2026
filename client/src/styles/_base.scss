@@ -1,5 +1,13 @@
 @tailwind base;
 
+html,
+body {
+  touch-action: pan-x pan-y; // allows scrolling, blocks pinch and double-tap zoom
+  overscroll-behavior: none; // no rubber-banding of the page
+  height: 100%;
+  overflow: hidden;
+}
+
 html {
   @apply tw-bg-zinc-900 tw-text-zinc-200;
 }
@@ -28,6 +36,7 @@ button {
 input,
 select,
 textarea {
+  // font-size: 16px; // iOS zooms the page on focus if < 16px
   @apply tw-border tw-border-zinc-600 tw-rounded-sm tw-bg-zinc-800 tw-text-zinc-200;
 }
 
