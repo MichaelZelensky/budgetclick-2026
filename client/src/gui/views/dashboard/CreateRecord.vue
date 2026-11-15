@@ -16,7 +16,20 @@
       </div>
 
       <LiteInputField v-model="description" placeholder="Description" :maxlength="descriptionMaxLength" required />
-      <LiteInputField v-model="datetime" type="datetime-local" required />
+
+      <div class="tw-grid tw-grid-cols-[1fr_auto] tw-items-end tw-gap-2">
+        <LiteInputField
+          :model-value="datetime"
+          type="datetime-local"
+          required
+          @update:model-value="setDatetime"
+        />
+        <div v-if="isDatetimeEdited" class="tw-mb-2 tw-flex">
+          <LiteButton @click="setCurrentDatetime">
+            Now
+          </LiteButton>
+        </div>
+      </div>
 
       <div class="tw-flex tw-items-center tw-gap-6">
         <LiteToggle v-model="isActual" :disabled="isFutureDate">
@@ -28,9 +41,11 @@
         >
           Income
         </LiteToggle>
-        <LiteButton @click="saveRecord" variant="primary" class="tw-ml-auto">
-          Save
-        </LiteButton>
+        <div class="tw-ml-auto">
+          <LiteButton @click="saveRecord" variant="primary">
+            Save
+          </LiteButton>
+        </div>
       </div>
     </div>
 
@@ -141,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import DashboardWidget from "@/gui/views/dashboard/DashboardWidget.vue";
 import LiteButton from "@/gui/ui/LiteButton.vue";
 import LiteInputField from "@/gui/ui/LiteInputField.vue";
@@ -171,6 +186,10 @@ type Attachment = {
 };
 type Tab = "main" | "attachments" | "ext" | "comment";
 
+const datetimeRefreshIntervalMs = 30_000;
+
+const getNow = (): string => getLocalDatetime(new Date().toISOString());
+
 const activeTab = ref<Tab>("main");
 const description = ref("");
 const amount = ref("");
@@ -180,7 +199,8 @@ const accountId = ref<string | undefined>(
 const categoryId = ref("");
 const contractorId = ref("");
 const comment = ref("");
-const datetime = ref(getLocalDatetime(new Date().toISOString()));
+const datetime = ref(getNow());
+const isDatetimeEdited = ref(false);
 const direction = ref<TransactionDirection>("out");
 const isActual = ref(true);
 const showRemoveAttachmentModal = ref(false);
@@ -244,6 +264,42 @@ const contractorOptions = computed<Option[]>(() => [
     text: contractor.name,
   })) ?? []),
 ]);
+
+const setDatetime = (value: unknown): void => {
+  datetime.value = typeof value === "string" ? value : "";
+  isDatetimeEdited.value = true;
+};
+
+const setCurrentDatetime = (): void => {
+  datetime.value = getNow();
+  isDatetimeEdited.value = false;
+};
+
+const refreshDatetime = (): void => {
+  if (!isDatetimeEdited.value) {
+    datetime.value = getNow();
+  }
+};
+
+const onVisibilityChange = (): void => {
+  if (document.visibilityState === "visible") {
+    refreshDatetime();
+  }
+};
+
+let refreshTimerId: number | undefined;
+
+onMounted(() => {
+  refreshTimerId = window.setInterval(refreshDatetime, datetimeRefreshIntervalMs);
+  window.addEventListener("focus", refreshDatetime);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+});
+
+onBeforeUnmount(() => {
+  window.clearInterval(refreshTimerId);
+  window.removeEventListener("focus", refreshDatetime);
+  document.removeEventListener("visibilitychange", onVisibilityChange);
+});
 
 const formatFileSize = (size: number): string =>
   size < 1024 * 1024
@@ -327,7 +383,7 @@ const confirmSaveDocumentOnly = async (): Promise<void> => {
   showDocumentOnlyModal.value = false;
   amount.value = "0";
   description.value = `File: ${attachments.value[0].name}`;
-  datetime.value = getLocalDatetime(new Date().toISOString());
+  setCurrentDatetime();
   await persistRecord();
 };
 
@@ -371,7 +427,7 @@ const resetForm = () => {
   attachments.value.forEach(attachment => URL.revokeObjectURL(attachment.url));
   description.value = "";
   amount.value = "";
-  datetime.value = getLocalDatetime(new Date().toISOString());
+  setCurrentDatetime();
   direction.value = "out";
   isActual.value = true;
   categoryId.value = "";
