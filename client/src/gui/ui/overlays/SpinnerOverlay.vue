@@ -2,12 +2,15 @@
   <Overlay
     v-if="showOverlay"
     :force-height="forceHeight"
+    class="spinner-overlay"
     :class="{ 'no-text': noText, 'no-background': noBackground }"
   >
     <Transition>
-      <div v-if="showSpinner">
-        <SpinnerIcon />
-        <span v-if="!noText">Loading. Do not close the browser.</span>
+      <div v-if="showSpinner" class="modal-card spinner-card">
+        <SpinnerAnimation />
+        <span v-if="!noText" class="loading-text">
+          Loading. Do not close the browser.
+        </span>
       </div>
     </Transition>
   </Overlay>
@@ -17,7 +20,7 @@
 import { computed, ref, watch } from "vue";
 import { isLoading } from "@/state/loading";
 import Overlay from "@/gui/ui/overlays/Overlay.vue";
-import SpinnerIcon from "@/gui/icons/Spinner.vue";
+import SpinnerAnimation from "@/gui/ui/overlays/SpinnerAnimation.vue";
 
 defineProps({
   forceHeight: {
@@ -68,13 +71,19 @@ watch(
   &.no-background {
     @apply tw-bg-transparent;
   }
+}
+.spinner-card {
+  @apply tw-items-center tw-justify-center;
+  @apply tw-text-center;
+  min-width: 18rem;
+  max-width: 90vw;
+  min-height: 6rem;
+
   .spinner-icon {
     @apply tw-text-xl;
   }
-  .text {
+  .loading-text {
     @apply tw-select-none;
-    @apply tw-ml-2;
-    @apply tw-inline-block;
   }
 }
 .v-leave-active {
