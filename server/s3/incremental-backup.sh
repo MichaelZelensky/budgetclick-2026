@@ -20,13 +20,13 @@
 #   - Uses a FIXED destination prefix (no date), so each run only copies changes.
 #
 # DESTINATION:
-#   s3://budgetclick-storage-backup/incremental/
+#   s3://your-destination-bucket-name/incremental/
 #
 # IMPORTANT:
 #   This script does not touch bucket versioning. If versioning is already
 #   enabled on the backup bucket, old versions will still accumulate. To stop
 #   that, run once:
-#     aws s3api put-bucket-versioning --bucket budgetclick-storage-backup \
+#     aws s3api put-bucket-versioning --bucket your-destination-bucket-name \
 #       --versioning-configuration Status=Suspended
 #   (Existing versions stay until you delete them; versioning can be suspended
 #   but never fully disabled once enabled.)
