@@ -10,7 +10,7 @@
 
     <label class="tw-mt-4 tw-block">
       Storage
-      <LiteInputField v-model="storage" />
+      <LiteInputField v-model="storage" placeholder="https://BUCKET_NAME.s3.REGION.amazonaws.com/" />
     </label>
 
     <p class="tw-mt-2 tw-text-sm">
