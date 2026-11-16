@@ -10,20 +10,29 @@ Name: `budgetclick`, initial version `1`. Version is controlled solely by schema
 
 ## Object Stores
 
-| Store | Key | Purpose |
-| ------------- | ------- | -------------------------------------------- |
-| `manifest` | `key` | Locally cached manifest |
-| `accounts` | `key` | Local copy of accounts storage object |
-| `categories` | `key` | Local copy of categories storage object |
-| `contractors` | `key` | Local copy of contractors storage object |
-| `chunks` | `month` | Local monthly transaction chunks |
-| `attachments` | `id` | Locally cached attachment objects |
+| Store | Key | Purpose | Migration |
+| ------------- | ------- | -------------------------------------------- | --- |
+| `accounts` | `key` | Local copy of accounts storage object | 001 |
+| `categories` | `key` | Local copy of categories storage object | 001 |
+| `contractors` | `key` | Local copy of contractors storage object | 001 |
+| `chunks` | `month` | Local monthly transaction chunks | 001 |
+| `encryptionKeys` | — | Derived encryption key and salt | 002 |
+| `statistics` | `key` | Local copy of statistics storage object | 003 |
+| `balances` | `key` | Local copy of balances storage object | 003 |
+| `rates` | `key` | Local copy of rates storage object | 004 |
+| `offlineSync` | `key` | Pending-sync state (`docs/offline-mode.md`) | 005 |
+| `attachments` | `id` | Locally cached attachment objects | 006 |
+| `recurrences` | `key` | Local copy of recurrences storage object | 007 |
 
-Each store maps to one logical remote storage object or group.
+Data stores each map to one logical remote storage object or group; `encryptionKeys` and `offlineSync` are local-only. The manifest is not stored in IndexedDB.
 
-## Manifest & Reference Objects
+## Manifest
 
-`manifest` holds the latest locally available `Manifest` (key `"manifest"`) — cached so the app works offline; the remote manifest remains authoritative when online. `accounts`, `categories`, and `contractors` each hold one record (key `"current"`) containing that object's metadata + entity array.
+The latest manifest is cached in `localStorage` so the app works offline; the remote manifest remains authoritative when online. A manifest pending upload is kept in `offlineSync.manifest`.
+
+## Reference and Derived Objects
+
+`accounts`, `categories`, `contractors` and `recurrences` each hold one record (key `"current"`) containing that object's metadata + entity array. `statistics`, `balances`, `rates` and `offlineSync` each hold one record keyed by the store name.
 
 ## Monthly Chunks
 
@@ -43,7 +52,7 @@ Each attachment contains:
 }
 ```
 
-`name` is the original filename, `type` is the MIME type, and `blob` is the attachment bytes encoded as base64 for JSON serialization.
+`name` is the original filename, `type` is the MIME type, and `data` is the attachment bytes encoded as base64 for JSON serialization.
 
 Attachments are cached on demand and are not required to be loaded during initial synchronization. The cache is not the source of truth; a missing attachment is retrieved from remote storage when needed.
 
@@ -57,7 +66,7 @@ The app must run fully from cached manifest, reference objects, chunks, and loca
 
 ## Synchronization State
 
-IndexedDB must retain enough state to resume sync after a restart or network/storage failure. Dirty/sync metadata is local-only and shouldn't leak into remote storage objects. No dedicated metadata store yet — add one only when a concrete need arises.
+The `offlineSync` store retains enough state to resume sync after a restart or network/storage failure. This sync metadata is local-only and shouldn't leak into remote storage objects.
 
 ## Transactions & Versioning
 
@@ -72,12 +81,7 @@ Startup must: open `budgetclick` → apply pending upgrades → expose the DB to
 ```
 Remote encrypted object → Download → Decrypt → IndexedDB object
        ↑                                              │
-     Upload ← Encrypt ← Local changes ←────────────────┘
+     Upload ← Encrypt ← Local changes ←───────────────┘
 ```
 
 Attachments follow the same encryption flow but are not represented in the manifest.
-
-## MVP Scope
-
-Included: manifest, accounts, categories, contractors, monthly chunks, attachment cache.
-Not yet included: a separate transaction store, a generic metadata store, sync engine, migration engine.

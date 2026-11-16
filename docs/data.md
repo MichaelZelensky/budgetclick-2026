@@ -10,7 +10,7 @@ Every persisted object carries a schema version, used by local and remote migrat
 
 # Relationships
 
-- **Transaction:** belongs to one Account and one Category, optionally one Contractor, may reference multiple Attachments, and may reference a Recurrence.
+- **Transaction:** belongs to one Account, optionally one Category and one Contractor, has a list of Attachment references (empty if none), and may reference a Recurrence.
 - **Account:** owns many Transactions.
 - **Category / Contractor:** referenced by many Transactions.
 - **Recurrence:** defines a recurring transaction plan and owns generated planned transactions.
@@ -29,7 +29,7 @@ Saving a recurrence generates planned transactions from the first matching occur
 
 When recurrence rules are edited, actual transactions remain unchanged; existing planned transactions linked to the recurrence are deleted and regenerated. When a recurrence is deleted, the user chooses whether its planned transactions are deleted or kept. Actual transactions are always preserved. All preserved transactions are detached from the recurrence: their `recurrenceId` is removed, and the user is warned about this before the deletion.
 
-Planned transactions of a recurrence are physically removed from their chunks, not marked with a deletion tombstone. This is an exception to soft deletion and avoids accumulating tombstones. Storage objects are versioned and a newer version replaces an older one, so the removal propagates to other clients and removed planned transactions are not restored. Regenerating a series skips dates that already have an actual transaction of the same recurrence.
+Planned transactions of a recurrence are physically removed from their chunks, not marked with a deletion tombstone. This is an exception to soft deletion and avoids recurrence regeneration spam. Storage objects are versioned and a newer version replaces an older one, so the removal propagates to other clients and removed planned transactions are not restored. Regenerating a series skips dates that already have an actual transaction of the same recurrence.
 
 Schema validation checks field types and constraints. Custom validation checks business rules, including date ranges and consistency between frequency and frequency-specific fields.
 
@@ -82,9 +82,9 @@ When a transaction is opened, its attachment IDs are displayed immediately. Open
 
 A missing attachment cache entry is therefore normal and must not prevent a transaction or its attachment IDs from being displayed.
 
-Attachments are not represented in the manifest and do not participate in startup synchronization.
+Attachments are not represented in the manifest, have no version, and do not participate in startup synchronization.
 
-When an attachment is removed from a saved transaction, its reference is retained with `isDeleted: true`. New attachments removed before the transaction is saved are removed from the transaction entirely. Physical attachment data is not removed in the MVP.
+When an attachment is removed from a saved transaction, its reference is retained with `isDeleted: true`. New attachments removed before the transaction is saved are removed from the transaction entirely. Orphaned attachments are physically removed from storage.
 
 ## Derived Data
 
@@ -135,18 +135,18 @@ Format: `<type>_<8-character id>`, e.g. `t_Ak39LmP2`. Random generation, local c
 | Contractor            | `o_`   | `o_Xy82LmQa` |
 | Recurrence            | `r_`   | `r_Cv62NdQa` |
 
-Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key.
+Attachment IDs are an exception: they are random 8-character identifiers without a type prefix because each attachment ID is also its storage object key, so it must be unique across all storage objects.
 
 Prefixes are globally unique, permanent, and every future entity type gets its own.
 
 # Lifecycle
 
-`Create â†’ Update â†’ Delete (Tombstone) â†’ Physical removal (future)`. MVP uses soft deletion; tombstones remain until all clients have processed the deletion.
+`Create → Update → Delete`. How an object is deleted depends on its type:
+
+- **Actual transactions** are soft deleted (tombstone).
+- **Planned transactions** are physically removed from their chunks, with no tombstone, to avoid recurrence regeneration spam and accumulation of unnecessary tombstones.
+- **Orphaned attachments** are physically removed from storage.
 
 # Future Compatibility
 
-Schema must support new entities without redesigning existing ones: assets, liabilities, investments, exchange rates, bank connections, secrets, and other future entities â€” introduced as new entities whenever possible.
-
-# Open Decisions
-
-Asset model, investment model, bank integration model.
+Schema must support new entities without redesigning existing ones: assets, liabilities, investments, exchange rates, bank connections, secrets, and other future entities — introduced as new entities whenever possible.

@@ -1,4 +1,4 @@
-# BudgetClick 2026 â€” Synchronization Specification (Condensed)
+# BudgetClick 2026 — Synchronization Specification (Condensed)
 
 ## Principles
 
@@ -14,7 +14,7 @@ Every synchronized object has:
 - **Object key** — stable, randomly generated at creation, never changes, stored in the manifest, obfuscates storage names. Objects are overwritten in place by key.
 - **Version** — an integer incremented (`version += 1`) on every change. A missing local object is treated as version `0`.
 
-**Remote manifest**: downloaded and decrypted at startup, kept in application state for the session (not persisted as its own IndexedDB record). It is the authoritative index of object keys + latest remote versions, and is compared directly against each local object's stored version.
+**Remote manifest**: downloaded and decrypted at startup, kept in application state for the session and cached in `localStorage` for offline use (not stored in IndexedDB). It is the authoritative index of object keys + latest remote versions, and is compared directly against each local object's stored version.
 
 ```
 Local version 3, Remote version 3 → no download needed
@@ -39,7 +39,7 @@ Download → decrypt → validate → verify version matches manifest
 Save to IndexedDB → update application state
 ```
 
-**Local → remote** is handled entirely by normal app writes (save to IndexedDB → update state → encrypt → upload → update manifest). The sync engine only pulls remote changes; it has no separate push path.
+**Local → remote** is handled by normal app writes (save to IndexedDB → update state → encrypt → upload → update manifest). The sync engine only pulls remote changes; pending uploads are tracked by `OfflineSync` and retried on reconnect (`docs/offline-mode.md`).
 
 ## Initial Setup / Import
 
@@ -48,7 +48,7 @@ Configure existing storage → load salt → derive encryption key
       ↓
 Download + decrypt + validate manifest
       ↓
-Download reference data (accounts, categories, contractors)
+Download reference data (accounts, categories, contractors, rates, recurrences)
       ↓
 Download transaction chunks needed for the initial view (see selection rules)
       ↓
@@ -63,7 +63,7 @@ Transactions are stored in full monthly chunks (never trimmed individually):
 
 1. Load current and future months, chronologically, until up to **100 transactions** are loaded.
 2. If current and future months contain **at least one transaction**, display only those chunks; do not load past months.
-3. If current and future months contain **no transactions**, load past months newestâ†’oldest until up to **100 transactions** are loaded.
+3. If current and future months contain **no transactions**, load past months newest→oldest until up to **100 transactions** are loaded.
 4. If fewer than 100 applicable transactions exist, load all available applicable chunks.
 
 The same selection rule is used during existing-storage setup/import and app startup. Missing or outdated chunks needed by the rule are downloaded from remote storage and saved to IndexedDB.
@@ -85,13 +85,3 @@ Sync failures must never corrupt local data:
 ## Client Identifier
 
 Each install has a persistent `clientId`, used for attributing the latest change, diagnostics, and future conflict resolution. It is not synced as user identity.
-
-## Future Work
-
-- Manual conflict resolution
-- true optimistic concurrency
-- background/reconnect/scheduled sync
-- sync queues & retries
-- incremental sync
-- sync diagnostics
-- advanced merge strategies.

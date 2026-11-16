@@ -19,13 +19,13 @@ Migration state lives in the manifest (`{ "migration": { "version": 5, "state": 
 
 # Migration Programs
 
-Each version is an independent program under `client/migrations/<version>/index.ts`, responsible for its own transformations, layout updates, manifest updates, validation, and cleanup. Migrations run sequentially until the manifest version matches the client version.
+Each version is an independent program under `client/src/migrations/<version>/`, responsible for its own transformations, layout updates, manifest updates, validation, and cleanup. Migrations run sequentially until the manifest version matches the client version.
 
 # Migration Rules
 
 Each migration: unique version, migrates from exactly one prior version, deterministic, idempotent, repeatable, safely recoverable, never modifies past migrations. Chains only (`1→2→3→4`); direct jumps (`1→4`) are not allowed.
 
-When a migration introduces a new local storage object, it creates the object store and seeds an empty version-0 storage object. This ensures the local storage object exists for both new and existing installations.
+When a migration introduces a new local storage object, it creates the object store and seeds an empty storage object. This ensures the local storage object exists for both new and existing installations.
 
 For an existing installation, when a migration introduces a new remote storage object, the migration creates the remote object from the seeded local object and adds its manifest entry if the entry does not already exist.
 

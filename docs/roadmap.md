@@ -8,9 +8,9 @@ Complete the technical specification before implementation.
 
 Activities:
 
-- ✅Finalize `design.md`
-- ✅Finalize `storage-contract.md`
-- ✅Finalize `data-schema.md`
+- ✅Finalize `architecture.md`
+- ✅Finalize `storage.md`
+- ✅Finalize `data.md`
 - ✅Finalize `sync.md`
 - ✅Finalize `encryption.md`
 - ✅Finalize `migrations.md`
@@ -44,7 +44,7 @@ Suggested order:
 1. **Settings**
    - ✅Load `config.json` and `settings.json`
    - ✅Load user settings, add the view, persist user settings in browser memory
-   - ✅Local user settings (passphrase and storage path)
+   - ✅Local user settings (storage path; derived key and salt in IndexedDB `encryptionKeys`)
    - ✅Validate config and settings
    - ✅Global constants (app state with immutable objects)
 

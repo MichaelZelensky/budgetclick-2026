@@ -29,7 +29,7 @@ The salt is random, generated once at setup, stored unencrypted in the root as `
 
 # Encryption Setup
 
-On first launch: user provides storage path → app generates `clientId` → user provides passphrase → app generates salt → derives key → saves salt to storage → creates and encrypts the manifest → saves it → persists the derived key locally (not the raw passphrase). The user is warned not to lose the passphrase; setup may optionally offer a one-time printable/saveable recovery record (passphrase, salt, key).
+On first launch: user provides storage path → app generates `clientId` → user provides passphrase → app generates salt → derives key → saves salt to storage → creates and encrypts the manifest → saves it → persists the derived key and salt locally in the IndexedDB store `encryptionKeys` (not the raw passphrase). The user is warned not to lose the passphrase; setup may optionally offer a one-time printable/saveable recovery record (passphrase, salt, key).
 
 # Application Startup
 
@@ -58,7 +58,7 @@ Not part of MVP; the pipeline allows optional compression before encryption late
 
 # Passphrase Handling
 
-The passphrase is provided once, used to derive the key, never uploaded or persisted. Only the derived key is persisted locally. The user must retain the passphrase to recover access on reinstall or a new device.
+The passphrase is provided once, used to derive the key, never uploaded or persisted. Only the derived key and salt are persisted locally. The user must retain the passphrase to recover access on reinstall or a new device.
 
 # Key Rotation
 

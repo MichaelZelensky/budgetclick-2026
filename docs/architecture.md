@@ -31,7 +31,7 @@ BudgetClick maintains statistics and account balances as derived, regenerable da
 
 # Security Model
 
-All sensitive data is encrypted locally before upload; the storage provider is untrusted and stores only encrypted objects. Object names are obfuscated where practical (chunk naming is finalized in the storage spec).
+All sensitive data is encrypted locally before upload; the storage provider is untrusted and stores only encrypted objects. Object names are random (see `docs/storage.md`).
 
 # Identity
 
@@ -65,7 +65,3 @@ BudgetClick-managed accounts/cloud storage, banking integrations, server-side an
 # Future Domain Compatibility
 
 Design must not block: asset tracking, net worth, banking/third-party integrations, multi-user encrypted storage, secret storage. Principles: separate events from entities, avoid expense-only assumptions, keep storage/integrations extensible, avoid single-user hard-coding. Not part of MVP.
-
-# Future Improvements
-
-Private storage mode, better conflict resolution, version history, backup snapshots, multi-user support, storage version history, key rotation, search indexes for large transaction histories.

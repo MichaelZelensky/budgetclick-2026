@@ -7,8 +7,9 @@
 ## MVP Trade-offs
 - **No pull-before-push:** Push only updates the touched object's manifest entry; all others carry through from this device's *last-known local* manifest, not current remote state. If another device updated an untouched object while this device was offline, that update gets silently reverted. Fix (pull → rebase → push) is top post-MVP priority.
 - **No migration interaction:** Reconnecting clients don't check/run pending migrations before pushing. Deferred; will need integration with `migrations.md`'s exclusive lock.
+- **No dependency blocking:** A failed upload is logged and its flag stays set, but later objects are still attempted. A chunk can therefore upload even if an attachment it references failed.
 
-## OfflineSync Structur
+## OfflineSync Structure
 ```ts
 interface OfflineSync {
   manifest: Manifest | null;  // full manifest, or null if synced
@@ -16,9 +17,12 @@ interface OfflineSync {
     chunks: Record<string, boolean>;  // by month
     attachments: Record<string, boolean>;  // by attachment ID
     statistics: boolean;
+    balances: boolean;
     accounts: boolean;
     categories: boolean;
     contractors: boolean;
+    rates: boolean;
+    recurrences: boolean;
     // future types: boolean, or Record<string,boolean> if sharded
   };
 }
@@ -27,7 +31,7 @@ interface OfflineSync {
 - `objects[type][shard?] = true` marks an object as needing upload.
 
 ## Sync Order (fixed, must be explicit in code — not object property order)
-1. Reference data: `accounts`, `categories`, `contractors`, `rates`
+1. Reference data: `accounts`, `categories`, `contractors`, `rates`, `recurrences`
 2. Attachments
 3. Transaction `chunks[month]`
 4. Derived: `statistics`, `balances`
@@ -35,7 +39,7 @@ interface OfflineSync {
 Rationale: dependencies flow downward; attachments must be uploaded before transaction chunks that reference them.
 
 ## Flows
-**Normal/offline save:** `User change → IndexedDB → State → OfflineSync (if storage unreachable)`. No op-log — later local changes just overwrite; `OfflineSync` only flags "needs sync."
+**Normal/offline save:** `User change → IndexedDB → State → OfflineSync (marked pending before the upload attempt)`. No op-log — later local changes just overwrite; `OfflineSync` only flags "needs sync."
 
 **Connectivity:**
 - `navigator.onLine === false` → offline immediately.
@@ -51,15 +55,15 @@ upload object → success?
       → no: leave flag true (retry object+manifest together next time)
 ```
 
-Attachments are not represented in the manifest, so attachment synchronization is simply `upload attachment → success → clear OfflineSync.objects.attachments[id]`. The manifest is pushed after each manifest-backed object. A failed object blocks its dependents from syncing ahead of it.
+Attachments are not represented in the manifest, so attachment synchronization is simply `upload attachment → success → clear OfflineSync.objects.attachments[id]`. The manifest is pushed after each manifest-backed object.
 
 ## Crash/Reload Safety
 `OfflineSync` must be persisted *before* attempting remote sync, so any interruption (reload/crash/close) leaves pending state recoverable. DB persists: local data, full manifest, and sync state.
 
 ## Empty/Synced State
 ```json
-{"manifest": null, "objects": {"chunks": {}, "attachments": {}, "statistics": false, "accounts": false, "categories": false, "contractors": false}}
+{"manifest": null, "objects": {"chunks": {}, "attachments": {}, "statistics": false, "balances": false, "accounts": false, "categories": false, "contractors": false, "rates": false, "recurrences": false}}
 ```
 
 ## Failure/Recovery
-Persisted `OfflineSync` means any interruption is resumable: local data stays available, pending state persists, next sync attempt resumes. Object-upload-success-but-manifest-failure leaves the object flagged pending (safe to re-upload). Dependent objects never sync ahead of a failed prerequisite. App stays locally usable throughout.
+Persisted `OfflineSync` means any interruption is resumable: local data stays available, pending state persists, next sync attempt resumes. Object-upload-success-but-manifest-failure leaves the object flagged pending (safe to re-upload). App stays locally usable throughout.

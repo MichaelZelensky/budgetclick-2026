@@ -2,29 +2,19 @@
 
 ## Design Principles
 
-Every user data object is encrypted and independently versioned. Storage is untrusted and holds no plaintext except the salt. Objects remain independent whenever possible.
+Every user data object is encrypted and, except attachments, independently versioned. Storage is untrusted and holds no plaintext except the salt. Objects remain independent whenever possible.
 
 ## Storage Configuration
 
-BudgetClick supports local storage (dev/offline) and remote S3-compatible storage, selected by environment variable; the storage path lives in user settings. Remote storage is accessed either through the proxy (`storage.mode: "proxy"`) or directly from the browser (`storage.mode: "direct"`, requires bucket CORS). Dev always uses the local storage server.
+BudgetClick supports a local storage server (dev only) and remote S3-compatible storage, selected by environment variable; the storage path lives in user settings. Remote storage is accessed directly from the browser and requires bucket CORS. Dev always uses the local storage server (`docs/server.md`).
 
 ## S3 Storage
 
-The user provides a storage path, e.g. `https://budgetclick-user-example.s3.us-east-1.amazonaws.com/`. This path is the access capability: fully user-configured, never stored or controlled by BudgetClick, sent with every request, and treated as sensitive. The user is responsible for creating/configuring a bucket that allows read, write, and list. BudgetClick uses no AWS credentials.
+The user provides a storage path, e.g. `https://budgetclick-user-example.s3.us-east-1.amazonaws.com/`. This path is the access capability: fully user-configured, never stored or controlled by BudgetClick, and treated as sensitive. The user is responsible for creating/configuring a bucket that allows read, write, list, and delete. BudgetClick uses no AWS credentials.
 
 The bucket is public by design. Everything in it is encrypted, so the worst an outsider can do is delete or overwrite objects, not read them.
 
-## Remote Storage Proxy
-
-In proxy mode, browsers don't talk to S3 directly; requests go through a proxy hosted at `budgetclick.com/storage` (test: `liteed.com/budgetclick-storage`):
-
-```
-BudgetClick PWA → (storage path + operation) → Storage Proxy → User's S3 Bucket
-```
-
-The proxy validates and parses the user-provided path as a supported S3 location before making the S3 request — it must never act as an arbitrary URL proxy — and it doesn't own, store, or become the source of truth for the data. Its purpose is avoiding browser-to-S3 CORS issues and isolating S3 protocol details from the PWA.
-
-In direct mode the PWA calls the bucket itself: `GET`/`PUT`/`DELETE <storagePath><key>` and `GET <storagePath>?list-type=2` (ListObjectsV2, XML, paginated by `continuation-token`). No proxy is involved, so it sees no paths, sizes, or timing.
+The PWA calls the bucket directly: `GET`/`PUT`/`DELETE <storagePath><key>` and `GET <storagePath>?list-type=2` (ListObjectsV2, XML, paginated by `continuation-token`).
 
 # S3 Setup (AWS example)
 
@@ -52,7 +42,7 @@ aws s3api put-public-access-block --bucket "$BUCKET_NAME" \
 
 If the account-level S3 Block Public Access setting blocks public policies, it overrides the bucket settings and must be relaxed too.
 
-**3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket`/`DeleteObject`:
+**3. Bucket policy** — grants anonymous `GetObject`/`PutObject`/`ListBucket`/`DeleteObject`. Delete is required for replacement imports: import deletes every remote object except `manifest` and `salt`.
 
 ```json
 {
@@ -66,9 +56,7 @@ If the account-level S3 Block Public Access setting blocks public policies, it o
 }
 ```
 
-**4. Delete permission** — required for replacement imports. Import deletes every remote object except `manifest` and `salt`.
-
-**5. CORS** — required for direct mode (harmless for proxy mode). The origin must match exactly: `https://budgetclick.com`, with no `/pwa` and no trailing slash. Add the dev origin (e.g. `http://localhost:5173`) for local testing.
+**4. CORS** — required. The origin must match exactly: `https://budgetclick.com`, with no `/pwa` and no trailing slash. Add the dev origin (e.g. `http://localhost:5173`) for local testing.
 
 ```json
 [
@@ -82,20 +70,18 @@ If the account-level S3 Block Public Access setting blocks public policies, it o
 ]
 ```
 
-**6. Test**
+**5. Test**
 
-```
-curl -i "https://budgetclick.com/storage/get" \
-  -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: manifest"
+```bash
+P=https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/
 
-curl -i -X POST "https://budgetclick.com/storage/put" \
-  -H "Content-Type: application/octet-stream" \
-  -H "X-Storage-Path: https://budgetclick-pwa-storage.s3.us-east-1.amazonaws.com/" \
-  -H "X-Storage-Key: test.txt" --data-binary 'hello111'
+curl -i "${P}?list-type=2"
+curl -i -X PUT "${P}test.txt" -H "Content-Type: application/octet-stream" --data-binary 'hello111'
+curl -i "${P}test.txt"
+curl -i -X DELETE "${P}test.txt"
 ```
 
-## CloudFormation (alternative to steps 1-5)
+## CloudFormation (alternative to steps 1-4)
 
 The template creates the bucket, public-access settings, bucket policy, and CORS. In the AWS console: **CloudFormation → Create stack → With new resources → Upload a template file** (`server/s3/cloudformation.yml`), enter a unique `BucketName`, and submit. When the status is `CREATE_COMPLETE`, copy `StoragePath` from the **Outputs** tab into BudgetClick. The account-level Block Public Access note from step 2 still applies. To delete the stack, empty the bucket first.
 
@@ -114,7 +100,7 @@ bucket/
   ...
 ```
 
-`manifest` and `salt` are the only fixed-name objects (manifest encrypted, salt plaintext). All other objects use a random 8-character key, sharded by its first character. Application code uses the bare key; the storage layer adds the shard prefix and strips it from listed keys.
+`manifest` and `salt` are the only fixed-name objects (manifest encrypted, salt plaintext). All other objects use a random 8-character key, sharded by its first character; keys are unique across all storage objects. Application code uses the bare key; the storage layer adds the shard prefix and strips it from listed keys.
 
 # Object Lifecycle
 
@@ -132,7 +118,7 @@ Attachments use the same encryption flow. Each attachment is serialized as:
 {
   "name": "receipt.png",
   "type": "image/png",
-  "blob": "<base64-encoded file bytes>"
+  "data": "<base64-encoded file bytes>"
 }
 ```
 
@@ -141,11 +127,11 @@ The attachment object is then encrypted and stored under its attachment ID.
 # Storage Objects
 
 - **Salt:** random value for key derivation; fixed name `salt`; unencrypted, not secret; must not change for the life of the key.
-- **Manifest:** entry point into storage — schema version, manifest version, reference/chunk object locations, attachment root. Encrypted like all other objects.
-- **Reference objects:** relatively static data (accounts, categories, contractors), synced independently of transactions.
+- **Manifest:** entry point into storage — schema version, manifest version, reference/chunk/statistics/balances object locations. Encrypted like all other objects.
+- **Reference objects:** relatively static data (accounts, categories, contractors, rates, recurrences), synced independently of transactions.
 - **Monthly chunks:** primary sync unit; each holds metadata + transaction records. The month comes from the manifest entry, not duplicated in the chunk.
 - **Attachments:** encrypted JSON objects stored using their attachment ID as the object key. They have no metadata, version, or manifest entry. The `type` field preserves the MIME type required to recreate the browser Blob.
-- **File size limit:** Every storage object must be no larger than 5 MB, including monthly chunks and attachments. The client enforces this before upload in both modes. The limit comes from AWS Lambda's request payload limit and can be removed by using direct mode or a custom web server instead of Lambda.
+- **File size limit:** Every storage object must be no larger than 5 MB, including monthly chunks and attachments. The client enforces this before upload to keep storage usage under control.
 
 # Metadata & Versioning
 
@@ -159,7 +145,7 @@ Changing one object shouldn't require rewriting unrelated ones — e.g. editing 
 
 # Security Considerations
 
-The storage path is a bearer credential — anyone holding it can access the bucket per its public policy. Accordingly: dedicate the bucket to BudgetClick, don't treat the name as secret but avoid publishing the full path unnecessarily, and never send it to analytics, logs, or third parties other than the configured proxy.
+The storage path is a bearer credential — anyone holding it can access the bucket per its public policy. Accordingly: dedicate the bucket to BudgetClick, don't treat the name as secret but avoid publishing the full path unnecessarily, and never send it to analytics, logs, or third parties.
 
 The salt may be public. All stored application data is encrypted, so public S3 access exposes only encrypted objects, not plaintext finances. An attacker with write access can overwrite or delete objects — object authentication must detect tampering on decryption, but deletion cannot be prevented by encryption.
 
