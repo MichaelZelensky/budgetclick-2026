@@ -4,6 +4,7 @@ let logLevel = LogLevel.Error;
 
 export const initializeLogger = (level: LogLevel): void => {
     logLevel = level;
+    logger.debug("Logger initialized with level:", LogLevel[logLevel]);
 };
 
 const shouldLog = (level: LogLevel): boolean => level <= logLevel;

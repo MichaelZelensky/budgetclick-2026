@@ -1,7 +1,6 @@
 ﻿import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
 import { initializeLogger, logger } from "@/logger";
-import { LogLevel } from "@/types/Logger";
 import { initializeDatabase } from "@/database";
 import { initializeConfig } from "@/state/config";
 import { initializeSettings } from "@/state/settings";
@@ -19,8 +18,7 @@ export const initializeApplication = async () => {
   initializeConfig(config);
   const settings = await loadSettings();
   initializeSettings(settings);
-  const logLevel = import.meta.env.DEV ? config.logLevel : LogLevel.Error;
-  initializeLogger(logLevel);
+  initializeLogger(config.logLevel);
   await initializeDatabase();
   initializeOfflineSync();
   if (settings.clientId === "-" || settings.storage === "-") {

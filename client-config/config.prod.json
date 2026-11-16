@@ -1,7 +1,7 @@
 {
   "migrationVersion": 1,
   "encryptionVersion": 1,
-  "logLevel": 3,
+  "logLevel": 2,
   "storage": {
     "putUrl": "https://budgetclick.com/storage/put",
     "getUrl": "https://budgetclick.com/storage/get",
