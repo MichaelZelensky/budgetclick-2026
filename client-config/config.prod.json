@@ -3,10 +3,6 @@
   "encryptionVersion": 1,
   "logLevel": 2,
   "storage": {
-    "putUrl": "https://budgetclick.com/storage/put",
-    "getUrl": "https://budgetclick.com/storage/get",
-    "listUrl": "https://budgetclick.com/storage/list",
-    "deleteUrl": "https://budgetclick.com/storage/del",
     "mode": "direct"
   },
   "kdf": {

@@ -3,10 +3,6 @@
   "encryptionVersion": 1,
   "logLevel": 3,
   "storage": {
-    "putUrl": "https://liteed.com/budgetclick-storage/put",
-    "getUrl": "https://liteed.com/budgetclick-storage/get",
-    "listUrl": "https://liteed.com/budgetclick-storage/list",
-    "deleteUrl": "https://liteed.com/budgetclick-storage/del",
     "mode": "proxy"
   },
   "kdf": {
