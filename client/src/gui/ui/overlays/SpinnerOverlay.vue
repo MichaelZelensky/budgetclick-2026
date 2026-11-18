@@ -9,7 +9,7 @@
       <div v-if="showSpinner" class="modal-card spinner-card">
         <SpinnerAnimation />
         <span v-if="!noText" class="loading-text">
-          Loading. Do not close the browser.
+          Working. Do not close the browser.
         </span>
       </div>
     </Transition>
