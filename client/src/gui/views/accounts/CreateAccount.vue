@@ -18,7 +18,7 @@
     </label>
 
     <label>
-      Current balance
+      Starting balance
       <LiteInputField v-model="currentBalance" type="number" />
     </label>
 
