@@ -17,7 +17,7 @@ type Options<T extends AttachmentBase> = {
   prepareAttachments?: () => Promise<void>;
 };
 
-const maxAttachmentSize = 3 * 1024 * 1024;
+const maxAttachmentSize = 5 * 1024 * 1024;
 const supportedImageTypes = [
   "image/jpeg",
   "image/png",

@@ -134,7 +134,7 @@
       @close="closeAttachmentSizeModal"
       @ok="closeAttachmentSizeModal"
     >
-      Attachments must be smaller than 3 MB.
+      Attachments must be smaller than 5 MB.
       <LiteButton
         v-if="pendingOversizedImage"
         @click="editOversizedImage"

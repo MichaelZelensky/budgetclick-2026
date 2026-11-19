@@ -301,7 +301,7 @@
     <p>
       Add files such as receipts, invoices, or other supporting documents.
       Multiple attachments are supported. Each attachment must be no larger
-      than 3 MB. Duplicate attachments with the same filename and file type
+      than 5 MB. Duplicate attachments with the same filename and file type
       cannot be added to the same new record.
     </p>
 
