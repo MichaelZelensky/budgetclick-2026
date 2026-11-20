@@ -102,6 +102,10 @@ export const router = createRouter({
       component: () => import("@/gui/views/Help.vue"),
     },
     {
+      path: "/setup/before-you-start",
+      component: () => import("@/gui/views/setup/BeforeYouStart.vue"),
+    },
+    {
       path: "/setup/client-id",
       component: () => import("@/gui/views/setup/ClientId.vue"),
     },

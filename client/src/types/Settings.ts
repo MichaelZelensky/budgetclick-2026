@@ -24,4 +24,16 @@ export type Settings = {
    * @pattern ^.+$
    */
   defaultCurrency: string;
+
+  /**
+   * Version of the Terms of Use and Privacy Policy accepted by the user.
+   * @pattern ^.+$
+   */
+  termsVersion: string;
+
+  /**
+   * Timestamp when the Terms of Use and Privacy Policy were accepted.
+   * @pattern ^.+$
+   */
+  termsAcceptedAt: string;
 };

@@ -2,5 +2,7 @@
   "schemaVersion": 2,
   "storage": "-",
   "clientId": "-",
-  "defaultCurrency": "-"
+  "defaultCurrency": "-",
+  "termsVersion": "-",
+  "termsAcceptedAt": "-"
 }

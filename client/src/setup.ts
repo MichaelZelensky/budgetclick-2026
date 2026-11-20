@@ -6,6 +6,8 @@ import { ReferenceDataKey } from "@/types/AppState";
 import { encodeData } from "@/utils/data";
 import { logger } from "@/logger";
 
+export const currentTermsVersion = "1.0.0";
+
 export const saveInitialStorageObjects = async (): Promise<void> => {
   const state = getState();
   const manifest = getManifest();
@@ -38,6 +40,9 @@ export const getRequiredSetupRoute = async (): Promise<string | null> => {
   const settings = state.settings;
   if (settings === null) {
     return null;
+  }
+  if (settings.termsVersion !== currentTermsVersion) {
+    return "/setup/before-you-start";
   }
   if (settings.clientId === "-") {
     return "/setup/client-id";
