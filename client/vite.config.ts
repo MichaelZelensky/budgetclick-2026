@@ -1,5 +1,4 @@
 ﻿import { fileURLToPath, URL } from "node:url";
-
 import vue from "@vitejs/plugin-vue";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vite";
@@ -19,8 +18,8 @@ export default defineConfig({
         start_url: base,
         scope: base,
         display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#2563EB",
+        background_color: "#18181b",
+        theme_color: "#18181b",
         icons: [
           {
             src: `${base}icons/icon-192.png`,
