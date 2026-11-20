@@ -1,4 +1,3 @@
-import { getConfig } from "@/state/config";
 import { getSettings } from "@/state/settings";
 import { decryptData, encryptData } from "@/encryption/encryption";
 import { getArrayBuffer } from "@/utils/buffer";
@@ -35,19 +34,19 @@ const getStoragePath = (): string => {
 };
 
 const getGetUrl = (): string => {
-  return import.meta.env.DEV ? "http://localhost:3000/get" : getConfig().storage.getUrl;
+  return "http://localhost:3000/get";
 };
 
 const getPutUrl = (): string => {
-  return import.meta.env.DEV ? "http://localhost:3000/put" : getConfig().storage.putUrl;
+  return "http://localhost:3000/put";
 };
 
 const getListUrl = (): string => {
-  return import.meta.env.DEV ? "http://localhost:3000/list" : getConfig().storage.listUrl;
+  return "http://localhost:3000/list";
 };
 
 const getDeleteUrl = (): string => {
-  return import.meta.env.DEV ? "http://localhost:3000/delete" : getConfig().storage.deleteUrl;
+  return "http://localhost:3000/delete";
 };
 
 const getStorageKey = (key: string): string => {
@@ -65,7 +64,7 @@ const fromStorageKey = (storageKey: string): string => {
  * Dev always uses the local storage server.
  */
 const isDirect = (): boolean => {
-  return !import.meta.env.DEV && getConfig().storage.mode === "direct";
+  return !import.meta.env.DEV;
 };
 
 const getBaseUrl = (): string => {

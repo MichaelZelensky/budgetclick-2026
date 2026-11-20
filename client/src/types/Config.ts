@@ -4,13 +4,8 @@ export type Config = {
   migrationVersion: number;
   encryptionVersion: number;
   logLevel: LogLevel;
-  storage: StorageConfig;
   kdf: KdfConfig;
   cipher: CipherConfig;
-};
-
-type StorageConfig = {
-  mode: "proxy" | "direct";
 };
 
 type KdfConfig = {
