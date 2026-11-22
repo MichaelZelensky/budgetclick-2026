@@ -43,6 +43,9 @@ export default defineConfig({
         globPatterns: [
           "**/*.{js,css,html,ico,png,svg,webmanifest,json,woff,woff2}",
         ],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        navigateFallback: `${base}index.html`,
+        cleanupOutdatedCaches: true,
       },
     }),
   ],
