@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getRequiredSetupRoute } from "@/setup";
+import { currentTermsVersion, getRequiredSetupRoute } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 
 describe("application shell initialization", () => {
@@ -7,6 +7,7 @@ describe("application shell initialization", () => {
         initializeState();
         getState().settings = {
             schemaVersion: 1,
+            termsVersion: currentTermsVersion,
             storage: "test-storage",
             clientId: "client-123",
         };

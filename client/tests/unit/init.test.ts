@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import config from "@/../public/config.json";
 import settings from "@/../public/settings.json";
 import { initializeApplication } from "@/init";
+import { currentTermsVersion } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 import { initializeDatabase } from "@/database";
 import { initializeStoredEncryptionKey } from "@/encryption/key";
@@ -99,6 +100,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "-",
         clientId: "-",
       }),
@@ -119,6 +122,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "-",
       }),
@@ -140,6 +145,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "client-123",
       }),
@@ -159,6 +166,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "client-123",
       }),
@@ -184,6 +193,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "client-123",
       }),
@@ -205,6 +216,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "client-123",
       }),
@@ -223,6 +236,8 @@ describe("application initialization", () => {
       "budgetclick.settings",
       JSON.stringify({
         schemaVersion: 1,
+        termsVersion: currentTermsVersion,
+        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
         storage: "test-storage",
         clientId: "client-123",
       }),

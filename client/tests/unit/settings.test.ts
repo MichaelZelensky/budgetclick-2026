@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import Settings from "@/gui/views/Settings.vue";
 import { saveSettings } from "@/settings";
+import { currentTermsVersion } from "@/setup";
 import { initializeState, getState } from "@/state/state";
 import { initializeSettings } from "@/state/settings";
 
@@ -102,6 +103,8 @@ describe("settings", () => {
 
     const settings = {
       schemaVersion: 2,
+      termsVersion: currentTermsVersion,
+      termsAcceptedAt: "2026-08-23T00:00:00.000Z",
       storage: "test-storage",
       clientId: "client-123",
       defaultCurrency: "USD",
@@ -140,6 +143,8 @@ describe("settings", () => {
 
     expect(saveSettings).toHaveBeenCalledWith({
       schemaVersion: 2,
+      termsVersion: currentTermsVersion,
+      termsAcceptedAt: "2026-08-23T00:00:00.000Z",
       storage: "test-storage",
       clientId: "client-456",
       defaultCurrency: "USD",
@@ -154,6 +159,8 @@ describe("settings", () => {
     expect(wrapper.find("[data-test='modal']").exists()).toBe(false);
     expect(saveSettings).toHaveBeenCalledWith({
       schemaVersion: 2,
+      termsVersion: currentTermsVersion,
+      termsAcceptedAt: "2026-08-23T00:00:00.000Z",
       storage: "test-storage",
       clientId: "client-123",
       defaultCurrency: "USD",

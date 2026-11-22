@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import { getRequiredSetupRoute } from "@/setup";
+import { currentTermsVersion, getRequiredSetupRoute } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 import { resetSetupState, getSetupState } from "@/state/setup";
 import CreateAccount from "@/gui/views/setup/CreateAccount.vue";
@@ -41,6 +41,7 @@ describe("setup routing", () => {
   it("requires client ID", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "-",
       storage: "-",
     };
@@ -51,6 +52,7 @@ describe("setup routing", () => {
   it("requires storage after client ID", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "-",
     };
@@ -61,6 +63,7 @@ describe("setup routing", () => {
   it("requires storage when manifest is missing and storage has not been checked", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
     };
@@ -71,6 +74,7 @@ describe("setup routing", () => {
   it("requires passphrase creation for new storage", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
     };
@@ -82,6 +86,7 @@ describe("setup routing", () => {
   it("requires passphrase unlock for existing storage", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
     };
@@ -93,6 +98,7 @@ describe("setup routing", () => {
   it("requires an account after the manifest is initialized", async () => {
     getState().settings = {
       schemaVersion: 1,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
     };
@@ -123,6 +129,7 @@ describe("setup routing", () => {
   it("sets default currency when creating the first account", async () => {
     getState().settings = {
       schemaVersion: 2,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
       defaultCurrency: "-",
@@ -173,6 +180,7 @@ describe("setup routing", () => {
   it("returns null when setup is complete", async () => {
     getState().settings = {
       schemaVersion: 2,
+      termsVersion: currentTermsVersion,
       clientId: "client-123",
       storage: "test-storage",
       defaultCurrency: "USD",
