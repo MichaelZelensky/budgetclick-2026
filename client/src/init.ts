@@ -1,16 +1,12 @@
 ﻿import { loadConfig } from "@/config";
 import { loadSettings } from "@/settings";
-import { initializeLogger, logger } from "@/logger";
+import { initializeLogger } from "@/logger";
 import { initializeDatabase } from "@/database";
 import { initializeConfig } from "@/state/config";
 import { initializeSettings } from "@/state/settings";
 import { initializeState } from "@/state/state";
-import { initializeStoredEncryptionKey } from "@/encryption/key";
-import { initializeManifest } from "@/manifest";
-import { initializeData } from "@/repository/data";
-import { synchronizeRemoteData } from "@/sync";
-import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
-import { migrateStorage } from "@/migrations/migrate";
+import { initializeOfflineSync } from "@/offline-sync";
+import { initializeStorageData } from "@/init-storage";
 
 export const initializeApplication = async () => {
   initializeState();
@@ -21,27 +17,5 @@ export const initializeApplication = async () => {
   initializeLogger(config.logLevel);
   await initializeDatabase();
   initializeOfflineSync();
-  if (settings.clientId === "-" || settings.storage === "-") {
-    return;
-  }
-  const encryptionInitialized = await initializeStoredEncryptionKey();
-  if (!encryptionInitialized) {
-    return;
-  }
-  try {
-    await migrateStorage();
-    const manifestInitialized = await initializeManifest();
-    if (manifestInitialized) {
-      await initializeData();
-      await synchronizeOfflineData();
-      await synchronizeRemoteData();
-    }
-  } catch (error) {
-    if (!(error instanceof TypeError && error.message === "Failed to fetch")) {
-      throw error;
-    }
-    logger.warn("Initialize manifest failed; continuing with local data", error);
-    await initializeManifest();
-    await initializeData();
-  }
+  await initializeStorageData();
 };

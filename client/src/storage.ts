@@ -1,4 +1,5 @@
 import { getSettings } from "@/state/settings";
+import { getState } from "@/state/state";
 import { decryptData, encryptData } from "@/encryption/encryption";
 import { getArrayBuffer } from "@/utils/buffer";
 import { logger } from "@/logger";
@@ -25,6 +26,27 @@ export const createFileTooLargeError = (key: string): FileTooLargeError => {
 
 export const isFileTooLargeError = (error: unknown): error is FileTooLargeError => {
   return error instanceof Error && error.name === "FileTooLargeError";
+};
+
+export type StorageUnavailableError = Error & { name: "StorageUnavailableError" };
+
+export const createStorageUnavailableError = (cause?: unknown): StorageUnavailableError => {
+  const error = new Error(
+    "Storage request failed. Check the bucket CORS settings and the storage path.",
+  ) as StorageUnavailableError;
+  error.name = "StorageUnavailableError";
+  (error as Error & { cause?: unknown }).cause = cause;
+  return error;
+};
+
+export const isStorageUnavailableError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  if (error.name === "StorageUnavailableError") {
+    return true;
+  }
+  return error instanceof TypeError && /failed to fetch|load failed|networkerror/i.test(error.message);
 };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -59,10 +81,6 @@ const fromStorageKey = (storageKey: string): string => {
   return match ? match[1] : storageKey;
 };
 
-/**
- * Direct mode talks to the S3-compatible bucket from the browser (requires bucket CORS).
- * Dev always uses the local storage server.
- */
 const isDirect = (): boolean => {
   return !import.meta.env.DEV;
 };
@@ -82,12 +100,15 @@ const getObjectUrl = (key: string): string => {
   );
 };
 
-const directFetch = async (url: string, init: RequestInit): Promise<Response> => {
+const trackedFetch = async (url: string, init: RequestInit): Promise<Response> => {
   try {
-    return await fetch(url, init);
+    const response = await fetch(url, init);
+    getState().isOnline = true;
+    return response;
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("Storage request failed. Check the bucket CORS settings and the storage path.");
+      getState().isOnline = false;
+      throw createStorageUnavailableError(error);
     }
     throw error;
   }
@@ -95,8 +116,8 @@ const directFetch = async (url: string, init: RequestInit): Promise<Response> =>
 
 export const getRawFile = async (key: string): Promise<ArrayBuffer | null> => {
   const response = isDirect()
-    ? await directFetch(getObjectUrl(key), { method: "GET", cache: "no-store" })
-    : await fetch(getGetUrl(), {
+    ? await trackedFetch(getObjectUrl(key), { method: "GET", cache: "no-store" })
+    : await trackedFetch(getGetUrl(), {
         method: "GET",
         headers: {
           "X-Storage-Path": getStoragePath(),
@@ -113,19 +134,33 @@ export const getRawFile = async (key: string): Promise<ArrayBuffer | null> => {
   return response.arrayBuffer();
 };
 
+export const headRawFile = async (key: string): Promise<boolean> => {
+  const response = isDirect()
+    ? await trackedFetch(getObjectUrl(key), { method: "HEAD", cache: "no-store" })
+    : await trackedFetch(getGetUrl(), {
+        method: "GET",
+        headers: {
+          "X-Storage-Path": getStoragePath(),
+          "X-Storage-Key": getStorageKey(key),
+        },
+        cache: "no-store",
+      });
+  return response.ok;
+};
+
 export const putRawFile = async (key: string, body: Uint8Array): Promise<void> => {
   if (body.byteLength > MAX_FILE_SIZE) {
     throw createFileTooLargeError(key);
   }
   const response = isDirect()
-    ? await directFetch(getObjectUrl(key), {
+    ? await trackedFetch(getObjectUrl(key), {
         method: "PUT",
         headers: {
           "Content-Type": "application/octet-stream",
         },
         body: getArrayBuffer(body),
       })
-    : await fetch(getPutUrl(), {
+    : await trackedFetch(getPutUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/octet-stream",
@@ -151,7 +186,7 @@ const listDirectFiles = async (): Promise<string[]> => {
     if (token) {
       url.searchParams.set("continuation-token", token);
     }
-    const response = await directFetch(url.toString(), { method: "GET", cache: "no-store" });
+    const response = await trackedFetch(url.toString(), { method: "GET", cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Failed to list files (${response.status})`);
     }
@@ -173,7 +208,7 @@ export const listRawFiles = async (): Promise<string[]> => {
   if (isDirect()) {
     return listDirectFiles();
   }
-  const response = await fetch(getListUrl(), {
+  const response = await trackedFetch(getListUrl(), {
     method: "GET",
     headers: {
       "X-Storage-Path": getStoragePath(),
@@ -188,8 +223,8 @@ export const listRawFiles = async (): Promise<string[]> => {
 
 export const removeRawFile = async (key: string): Promise<void> => {
   const response = isDirect()
-    ? await directFetch(getObjectUrl(key), { method: "DELETE" })
-    : await fetch(getDeleteUrl(), {
+    ? await trackedFetch(getObjectUrl(key), { method: "DELETE" })
+    : await trackedFetch(getDeleteUrl(), {
         method: "DELETE",
         headers: {
           "X-Storage-Path": getStoragePath(),

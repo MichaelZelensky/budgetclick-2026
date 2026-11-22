@@ -3,51 +3,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import config from "@/../public/config.json";
 import settings from "@/../public/settings.json";
 import { initializeApplication } from "@/init";
-import { currentTermsVersion } from "@/setup";
 import { getState, initializeState } from "@/state/state";
 import { initializeDatabase } from "@/database";
-import { initializeStoredEncryptionKey } from "@/encryption/key";
-import { initializeManifest } from "@/manifest";
-import { initializeData } from "@/repository/data";
-import { synchronizeRemoteData } from "@/sync";
-import { initializeOfflineSync, synchronizeOfflineData } from "@/offline-sync";
-import { migrateStorage } from "@/migrations/migrate";
+import { initializeOfflineSync } from "@/offline-sync";
+import { initializeStorageData } from "@/init-storage";
 
 vi.mock("@/database", () => ({
   initializeDatabase: vi.fn(),
 }));
 
-vi.mock("@/encryption/key", () => ({
-  initializeStoredEncryptionKey: vi.fn(),
-}));
-
-vi.mock("@/manifest", () => ({
-  initializeManifest: vi.fn(),
-}));
-
-vi.mock("@/repository/data", () => ({
-  initializeData: vi.fn(),
-}));
-
-vi.mock("@/sync", () => ({
-  synchronizeRemoteData: vi.fn(),
-}));
-
 vi.mock("@/offline-sync", () => ({
   initializeOfflineSync: vi.fn(),
-  synchronizeOfflineData: vi.fn(),
 }));
 
-vi.mock("@/migrations/migrate", () => ({
-  migrateStorage: vi.fn(),
+vi.mock("@/init-storage", () => ({
+  initializeStorageData: vi.fn(),
 }));
 
 const mockedInitializeDatabase = vi.mocked(initializeDatabase);
-const mockedInitializeStoredEncryptionKey = vi.mocked(initializeStoredEncryptionKey);
-const mockedInitializeManifest = vi.mocked(initializeManifest);
-const mockedInitializeData = vi.mocked(initializeData);
-const mockedSynchronizeRemoteData = vi.mocked(synchronizeRemoteData);
-const mockedMigrateStorage = vi.mocked(migrateStorage);
+const mockedInitializeOfflineSync = vi.mocked(initializeOfflineSync);
+const mockedInitializeStorageData = vi.mocked(initializeStorageData);
 
 describe("application initialization", () => {
   beforeEach(() => {
@@ -55,17 +30,8 @@ describe("application initialization", () => {
     localStorage.clear();
 
     mockedInitializeDatabase.mockReset();
-    mockedInitializeStoredEncryptionKey.mockReset();
-    mockedInitializeManifest.mockReset();
-    mockedInitializeData.mockReset();
-    mockedSynchronizeRemoteData.mockReset();
-    mockedMigrateStorage.mockReset();
-
-    vi.mocked(initializeOfflineSync).mockReset();
-    vi.mocked(synchronizeOfflineData).mockReset();
-
-    mockedInitializeStoredEncryptionKey.mockResolvedValue(true);
-    mockedInitializeManifest.mockResolvedValue(false);
+    mockedInitializeOfflineSync.mockReset();
+    mockedInitializeStorageData.mockReset();
 
     vi.stubGlobal(
       "fetch",
@@ -95,158 +61,25 @@ describe("application initialization", () => {
     expect(mockedInitializeDatabase).toHaveBeenCalledOnce();
   });
 
-  it("does not initialize encryption when storage is not configured", async () => {
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "-",
-        clientId: "-",
-      }),
-    );
-
+  it("initializes offline sync after the database", async () => {
     await initializeApplication();
 
-    expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
-    expect(mockedMigrateStorage).not.toHaveBeenCalled();
-    expect(mockedInitializeManifest).not.toHaveBeenCalled();
-    expect(mockedInitializeData).not.toHaveBeenCalled();
-    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
-    expect(getState().manifest).toBeNull();
+    expect(mockedInitializeOfflineSync).toHaveBeenCalledOnce();
+    expect(mockedInitializeDatabase.mock.invocationCallOrder[0])
+      .toBeLessThan(mockedInitializeOfflineSync.mock.invocationCallOrder[0]);
   });
 
-  it("does not initialize encryption when client id is not configured", async () => {
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "-",
-      }),
-    );
-
+  it("initializes storage data after offline sync", async () => {
     await initializeApplication();
 
-    expect(mockedInitializeStoredEncryptionKey).not.toHaveBeenCalled();
-    expect(mockedMigrateStorage).not.toHaveBeenCalled();
-    expect(mockedInitializeManifest).not.toHaveBeenCalled();
-    expect(mockedInitializeData).not.toHaveBeenCalled();
-    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
+    expect(mockedInitializeStorageData).toHaveBeenCalledOnce();
+    expect(mockedInitializeOfflineSync.mock.invocationCallOrder[0])
+      .toBeLessThan(mockedInitializeStorageData.mock.invocationCallOrder[0]);
   });
 
-  it("does not initialize manifest when encryption key is unavailable", async () => {
-    mockedInitializeStoredEncryptionKey.mockResolvedValue(false);
+  it("propagates storage initialization errors", async () => {
+    mockedInitializeStorageData.mockRejectedValue(new Error("boom"));
 
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "client-123",
-      }),
-    );
-
-    await initializeApplication();
-
-    expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
-    expect(mockedMigrateStorage).not.toHaveBeenCalled();
-    expect(mockedInitializeManifest).not.toHaveBeenCalled();
-    expect(mockedInitializeData).not.toHaveBeenCalled();
-    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
-  });
-
-  it("initializes encryption and storage migration before loading the manifest", async () => {
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "client-123",
-      }),
-    );
-
-    await initializeApplication();
-
-    expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
-    expect(mockedMigrateStorage).toHaveBeenCalledOnce();
-    expect(mockedInitializeManifest).toHaveBeenCalledOnce();
-
-    expect(mockedInitializeStoredEncryptionKey.mock.invocationCallOrder[0])
-      .toBeLessThan(mockedMigrateStorage.mock.invocationCallOrder[0]);
-
-    expect(mockedMigrateStorage.mock.invocationCallOrder[0])
-      .toBeLessThan(mockedInitializeManifest.mock.invocationCallOrder[0]);
-  });
-
-  it("initializes data and synchronizes remote data when manifest is initialized", async () => {
-    mockedInitializeManifest.mockResolvedValue(true);
-
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "client-123",
-      }),
-    );
-
-    await initializeApplication();
-
-    expect(mockedInitializeStoredEncryptionKey).toHaveBeenCalledOnce();
-    expect(mockedMigrateStorage).toHaveBeenCalledOnce();
-    expect(mockedInitializeManifest).toHaveBeenCalledOnce();
-    expect(mockedInitializeData).toHaveBeenCalledOnce();
-    expect(mockedSynchronizeRemoteData).toHaveBeenCalledOnce();
-  });
-
-  it("synchronizes remote data after local data is initialized", async () => {
-    mockedInitializeManifest.mockResolvedValue(true);
-
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "client-123",
-      }),
-    );
-
-    await initializeApplication();
-
-    expect(mockedInitializeData.mock.invocationCallOrder[0])
-      .toBeLessThan(mockedSynchronizeRemoteData.mock.invocationCallOrder[0]);
-  });
-
-  it("does not initialize data or synchronize when manifest is not initialized", async () => {
-    mockedInitializeManifest.mockResolvedValue(false);
-
-    localStorage.setItem(
-      "budgetclick.settings",
-      JSON.stringify({
-        schemaVersion: 1,
-        termsVersion: currentTermsVersion,
-        termsAcceptedAt: "2026-08-23T00:00:00.000Z",
-        storage: "test-storage",
-        clientId: "client-123",
-      }),
-    );
-
-    await initializeApplication();
-
-    expect(mockedInitializeManifest).toHaveBeenCalledOnce();
-    expect(mockedInitializeData).not.toHaveBeenCalled();
-    expect(mockedSynchronizeRemoteData).not.toHaveBeenCalled();
+    await expect(initializeApplication()).rejects.toThrow("boom");
   });
 });

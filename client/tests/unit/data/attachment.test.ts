@@ -47,6 +47,15 @@ vi.mock("@/state/error", () => ({
   showError: vi.fn(),
 }));
 
+vi.mock("@/logger", () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 const attachment: Attachment = {
   name: "receipt.pdf",
   type: "application/pdf",
@@ -99,7 +108,15 @@ describe("attachments data flow", () => {
       expect(setAttachmentPending).toHaveBeenCalledWith("attachment-1");
       expect(putFile).toHaveBeenCalledOnce();
       expect(clearAttachmentPending).not.toHaveBeenCalled();
-      expect(getState().isOnline).toBe(false);
+    });
+
+    it("does not change the online state when remote storage fails", async () => {
+      vi.mocked(putFile).mockRejectedValueOnce(new Error("Storage failed"));
+
+      await saveAttachment("attachment-1", attachment);
+
+      // The online state is tracked by the storage layer, not by the data flow.
+      expect(getState().isOnline).toBe(true);
     });
 
     it("does not write to remote storage while offline", async () => {

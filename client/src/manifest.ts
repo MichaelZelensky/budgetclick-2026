@@ -1,7 +1,7 @@
 import type { Manifest } from "@/types/storage/Manifest";
 import validateManifest from "@/validators/default/Manifest.js";
 import { getState } from "@/state/state";
-import { getFile, getRawFile, isFileNotFoundError, putFile } from "@/storage";
+import { getFile, getRawFile, isFileNotFoundError, isStorageUnavailableError, putFile } from "@/storage";
 import { decryptData } from "@/encryption/encryption";
 import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
 import { decodeData, encodeData } from "@/utils/data";
@@ -110,7 +110,7 @@ export const initializeManifest = async (): Promise<boolean> => {
       getState().manifest = null;
       return false;
     }
-    if (error instanceof TypeError && error.message === "Failed to fetch") {
+    if (isStorageUnavailableError(error)) {
       const manifest = getCachedManifest();
       if (manifest !== null) {
         getState().manifest = structuredClone(manifest);

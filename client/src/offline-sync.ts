@@ -1,8 +1,9 @@
+import { watch } from "vue";
 import { getState } from "@/state/state";
 import { dbGetOfflineSync, dbSaveOfflineSync } from "@/repository/offline-sync";
 import { ReferenceDataKey } from "@/types/AppState";
 import type { OfflineSync } from "@/types/data/OfflineSync";
-import { putFile } from "@/storage";
+import { headRawFile, putFile } from "@/storage";
 import { encodeData } from "@/utils/data";
 import { manifestKey } from "@/manifest";
 import { dbGetChunks } from "@/repository/transaction";
@@ -18,6 +19,14 @@ import { setLoadingOff, setLoadingOn } from "@/state/loading";
 import { logger } from "@/logger";
 
 let synchronizing = false;
+let probing = false;
+let listenersRegistered = false;
+let probeTimer: number | null = null;
+
+const PROBE_MIN_DELAY_MS = 30_000;
+const PROBE_MAX_DELAY_MS = 300_000;
+
+let probeDelay = PROBE_MIN_DELAY_MS;
 
 const updatePending = async (
   update: (objects: OfflineSync["objects"]) => OfflineSync["objects"],
@@ -55,19 +64,87 @@ const getPendingManifest = async () => {
   return offlineSync.manifest;
 };
 
+const isPageVisible = (): boolean => {
+  return document.visibilityState === "visible";
+};
+
+const clearProbeTimer = (): void => {
+  if (probeTimer !== null) {
+    window.clearTimeout(probeTimer);
+    probeTimer = null;
+  }
+};
+
+const scheduleProbe = (): void => {
+  if (probeTimer !== null || getState().isOnline || !isPageVisible()) {
+    return;
+  }
+  probeTimer = window.setTimeout(() => {
+    probeTimer = null;
+    void probeStorage();
+  }, probeDelay);
+};
+
+const probeStorage = async (): Promise<void> => {
+  if (getState().isOnline || probing) {
+    return;
+  }
+  clearProbeTimer();
+  probing = true;
+  try {
+    await headRawFile(manifestKey);
+    probeDelay = PROBE_MIN_DELAY_MS;
+    if (getState().isOnline) {
+      await synchronizeOfflineData();
+    }
+  } catch {
+    // Still unreachable; storage.ts keeps isOnline false.
+    probeDelay = Math.min(probeDelay * 2, PROBE_MAX_DELAY_MS);
+  } finally {
+    probing = false;
+    scheduleProbe();
+  }
+};
+
 export const initializeOfflineSync = (): void => {
   getState().isOnline = navigator.onLine;
+  if (listenersRegistered) {
+    return;
+  }
+  listenersRegistered = true;
   window.addEventListener("online", handleOnline);
   window.addEventListener("offline", handleOffline);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  watch(
+    () => getState().isOnline,
+    (isOnline) => {
+      if (isOnline) {
+        clearProbeTimer();
+        probeDelay = PROBE_MIN_DELAY_MS;
+      } else {
+        scheduleProbe();
+      }
+    },
+  );
+  scheduleProbe();
 };
 
 const handleOnline = (): void => {
-  getState().isOnline = true;
-  void synchronizeOfflineData();
+  probeDelay = PROBE_MIN_DELAY_MS;
+  void probeStorage();
 };
 
 const handleOffline = (): void => {
   getState().isOnline = false;
+};
+
+const handleVisibilityChange = (): void => {
+  if (isPageVisible()) {
+    probeDelay = PROBE_MIN_DELAY_MS;
+    void probeStorage();
+  } else {
+    clearProbeTimer();
+  }
 };
 
 export const setReferenceDataPending = (key: ReferenceDataKey): Promise<void> => {

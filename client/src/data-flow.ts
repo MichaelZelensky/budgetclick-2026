@@ -34,6 +34,7 @@ import {
   setObjectPending,
 } from "@/offline-sync";
 import { generateObjectKey } from "@/utils/key";
+import { logger } from "@/logger";
 
 type SaveDataInput<K extends ReferenceDataKey> = {
   key: K;
@@ -117,8 +118,8 @@ export const saveReferenceData = async <K extends ReferenceDataKey>({ key, data 
         await putFile(manifestKey, encodeData(updatedManifest));
         await clearReferenceDataPending(key);
         await clearManifestPending();
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn(`Remote save failed; reference data stays pending: ${key}`, error);
       }
     }
   } catch (error) {
@@ -138,8 +139,8 @@ export const saveAttachment = async (id: string, data: Attachment): Promise<void
       try {
         await putFile(id, encodeData(data));
         await clearAttachmentPending(id);
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn(`Remote save failed; attachment stays pending: ${id}`, error);
       }
     }
   } catch (error) {
@@ -158,8 +159,8 @@ export const deleteAttachment = async (id: string): Promise<void> => {
     if (getState().isOnline) {
       try {
         await deleteFile(id);
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn(`Remote delete failed: ${id}`, error);
       }
     }
   } catch (error) {
@@ -212,8 +213,8 @@ export const saveChunkData = async ({ key, data }: SaveTransactionDataInput): Pr
         await putFile(manifestKey, encodeData(updatedManifest));
         await clearChunkPending(key);
         await clearManifestPending();
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn(`Remote save failed; chunk stays pending: ${key}`, error);
       }
     }
   } catch (error) {
@@ -252,8 +253,8 @@ export const saveStatisticsData = async (data: StatisticsStorage): Promise<void>
         await putFile(manifestKey, encodeData(updatedManifest));
         await setObjectPending("statistics", false);
         await clearManifestPending();
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn("Remote save failed; statistics stay pending", error);
       }
     }
   } catch (error) {
@@ -292,8 +293,8 @@ export const saveBalancesData = async (data: BalanceStorage): Promise<void> => {
         await putFile(manifestKey, encodeData(updatedManifest));
         await setObjectPending("balances", false);
         await clearManifestPending();
-      } catch {
-        getState().isOnline = false;
+      } catch (error) {
+        logger.warn("Remote save failed; balances stay pending", error);
       }
     }
   } catch (error) {

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 import { getState, initializeState } from "@/state/state";
 import {
   dbGetOfflineSync,
@@ -12,7 +13,7 @@ import { dbGetCategories } from "@/repository/category";
 import { dbGetContractors } from "@/repository/contractor";
 import { dbGetRates } from "@/repository/rates";
 import { dbGetRecurrences } from "@/repository/recurrence";
-import { putFile } from "@/storage";
+import { headRawFile, putFile } from "@/storage";
 import { encodeData } from "@/utils/data";
 import { manifestKey } from "@/manifest";
 import {
@@ -66,6 +67,7 @@ vi.mock("@/repository/recurrence", () => ({
 
 vi.mock("@/storage", () => ({
   putFile: vi.fn(),
+  headRawFile: vi.fn(),
 }));
 
 vi.mock("@/utils/data", () => ({
@@ -162,6 +164,7 @@ describe("offline-sync", () => {
     vi.mocked(dbGetBalances).mockResolvedValue(null);
 
     vi.mocked(putFile).mockResolvedValue();
+    vi.mocked(headRawFile).mockResolvedValue(true);
   });
 
   it("sets reference data pending", async () => {
@@ -378,7 +381,7 @@ describe("offline-sync", () => {
 
     await synchronizeOfflineData();
 
-    expect(putFile.mock.calls.map(([key]) => key)).toEqual([
+    expect(vi.mocked(putFile).mock.calls.map(([key]) => key)).toEqual([
       "accounts",
       manifestKey,
       "categories",
@@ -762,5 +765,234 @@ describe("offline-sync", () => {
     initializeOfflineSync();
 
     expect(getState().isOnline).toBe(true);
+  });
+});
+
+describe("offline-sync storage probing", () => {
+  const setVisibility = (state: "visible" | "hidden"): void => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => state,
+    });
+  };
+
+  const goOffline = async (): Promise<void> => {
+    getState().isOnline = false;
+    await nextTick();
+  };
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+
+    vi.clearAllMocks();
+
+    vi.mocked(dbGetOfflineSync).mockResolvedValue(createOfflineSync());
+    vi.mocked(dbSaveOfflineSync).mockResolvedValue();
+    vi.mocked(putFile).mockResolvedValue();
+    vi.mocked(headRawFile).mockRejectedValue(new Error("Storage unavailable"));
+
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+    setVisibility("visible");
+
+    initializeState();
+    initializeOfflineSync();
+
+    // Let the online-state watcher settle so timers and backoff are reset.
+    getState().isOnline = true;
+    await nextTick();
+  });
+
+  afterEach(async () => {
+    getState().isOnline = true;
+    await nextTick();
+    vi.useRealTimers();
+  });
+
+  it("does not probe while online", async () => {
+    await vi.advanceTimersByTimeAsync(600_000);
+
+    expect(headRawFile).not.toHaveBeenCalled();
+  });
+
+  it("probes the manifest after the initial delay once offline", async () => {
+    await goOffline();
+
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(headRawFile).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+    expect(headRawFile).toHaveBeenCalledWith(manifestKey);
+  });
+
+  it("synchronizes pending data when a probe finds the storage reachable", async () => {
+    vi.mocked(headRawFile).mockImplementation(async () => {
+      getState().isOnline = true;
+      return true;
+    });
+
+    await goOffline();
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(getState().isOnline).toBe(true);
+    expect(dbGetOfflineSync).toHaveBeenCalled();
+  });
+
+  it("stops probing once the storage is reachable", async () => {
+    vi.mocked(headRawFile).mockImplementation(async () => {
+      getState().isOnline = true;
+      return true;
+    });
+
+    await goOffline();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("backs off exponentially while the storage stays unreachable", async () => {
+    await goOffline();
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(119_999);
+    expect(headRawFile).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(3);
+  });
+
+  it("caps the backoff delay at five minutes", async () => {
+    await goOffline();
+
+    // Delays: 30s, 60s, 120s, 240s, then capped at 300s.
+    await vi.advanceTimersByTimeAsync(30_000 + 60_000 + 120_000 + 240_000);
+    expect(headRawFile).toHaveBeenCalledTimes(4);
+
+    await vi.advanceTimersByTimeAsync(299_999);
+    expect(headRawFile).toHaveBeenCalledTimes(4);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(5);
+
+    await vi.advanceTimersByTimeAsync(299_999);
+    expect(headRawFile).toHaveBeenCalledTimes(5);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(6);
+  });
+
+  it("resets the backoff after the storage becomes reachable", async () => {
+    await goOffline();
+
+    await vi.advanceTimersByTimeAsync(30_000 + 60_000);
+    expect(headRawFile).toHaveBeenCalledTimes(2);
+
+    getState().isOnline = true;
+    await nextTick();
+    vi.mocked(headRawFile).mockClear();
+
+    await goOffline();
+
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(headRawFile).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops probing when the state turns online by other means", async () => {
+    await goOffline();
+
+    getState().isOnline = true;
+    await nextTick();
+
+    await vi.advanceTimersByTimeAsync(600_000);
+
+    expect(headRawFile).not.toHaveBeenCalled();
+  });
+
+  it("does not probe while the page is hidden", async () => {
+    setVisibility("hidden");
+
+    await goOffline();
+    await vi.advanceTimersByTimeAsync(600_000);
+
+    expect(headRawFile).not.toHaveBeenCalled();
+  });
+
+  it("probes immediately when the page becomes visible while offline", async () => {
+    setVisibility("hidden");
+    await goOffline();
+
+    setVisibility("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels the scheduled probe when the page becomes hidden", async () => {
+    await goOffline();
+
+    setVisibility("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    await vi.advanceTimersByTimeAsync(600_000);
+
+    expect(headRawFile).not.toHaveBeenCalled();
+  });
+
+  it("probes immediately on the online event while offline", async () => {
+    await goOffline();
+
+    window.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not probe on the online event when the state is already online", async () => {
+    window.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(headRawFile).not.toHaveBeenCalled();
+  });
+
+  it("marks the storage offline on the offline event and schedules a probe", async () => {
+    window.dispatchEvent(new Event("offline"));
+    await nextTick();
+
+    expect(getState().isOnline).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not run overlapping probes", async () => {
+    let resolveProbe: (value: boolean) => void = () => undefined;
+    vi.mocked(headRawFile).mockImplementation(
+      () => new Promise<boolean>(resolve => {
+        resolveProbe = resolve;
+      }),
+    );
+
+    await goOffline();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(headRawFile).toHaveBeenCalledTimes(1);
+
+    resolveProbe(true);
+    await vi.advanceTimersByTimeAsync(0);
   });
 });
