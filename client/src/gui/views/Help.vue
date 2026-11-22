@@ -66,6 +66,17 @@
 
     <h2 id="storage" class="tw-mt-8">Storage</h2>
 
+    <p>
+      <a
+        class="btn btn-small"
+        href="/storage-setup-walkthrough/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        ▶ Watch Interactive Storage Setup Walkthrough
+      </a>
+    </p>
+
     <h3>1. Create a bucket</h3>
 
     <p>
