@@ -6,7 +6,7 @@ Your data is encrypted on your device before it leaves it, and it syncs to a sto
 
 | | |
 | --- | --- |
-| App | [budgetclick.com/pwa](https://budgetclick.com/pwa) |
+| App | [budgetclick.com/pwa](https://budgetclick.com/pwa/) |
 | Website | [budgetclick.com](https://budgetclick.com) |
 | User docs | [budgetclick.com/docs](https://budgetclick.com/docs) |
 | Product Hunt | [producthunt.com/posts/budgetclick](https://www.producthunt.com/posts/budgetclick) |
