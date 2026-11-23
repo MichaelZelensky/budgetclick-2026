@@ -22,7 +22,7 @@
 
     <ButtonGroup class="tw-mt-4">
       <LiteButton @click="save">
-        Continue
+        Start Setup
       </LiteButton>
     </ButtonGroup>
   </main>
